@@ -1,0 +1,13 @@
+import type { FastifyInstance } from "fastify";
+import { sql } from "drizzle-orm";
+import { db } from "../db/client.js";
+
+export async function healthRoutes(app: FastifyInstance) {
+  app.get("/health", async () => {
+    db.run(sql`select 1`);
+    return {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    };
+  });
+}

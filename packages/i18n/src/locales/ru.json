@@ -1,0 +1,9 @@
+{
+  "common": {
+    "print": "Печать",
+    "loading": "Загрузка..."
+  },
+  "home": {
+    "chooseLanguage": "Выберите язык"
+  }
+}

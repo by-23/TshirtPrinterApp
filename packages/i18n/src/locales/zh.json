@@ -1,0 +1,9 @@
+{
+  "common": {
+    "print": "打印",
+    "loading": "加载中..."
+  },
+  "home": {
+    "chooseLanguage": "选择语言"
+  }
+}

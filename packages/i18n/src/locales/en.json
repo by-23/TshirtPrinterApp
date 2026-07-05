@@ -1,0 +1,9 @@
+{
+  "common": {
+    "print": "Print",
+    "loading": "Loading..."
+  },
+  "home": {
+    "chooseLanguage": "Choose language"
+  }
+}
