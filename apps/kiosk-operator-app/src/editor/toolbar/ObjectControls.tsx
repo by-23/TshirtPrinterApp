@@ -35,13 +35,22 @@ export function ObjectControls({ canvas }: ObjectControlsProps) {
 
   if (!hasSelection) return null;
 
+  const controlBtnStyle = {
+    width: "var(--editor-objctrl-btn-width)",
+    height: "var(--editor-objctrl-btn-height)",
+  };
+
   return (
-    <div className="flex items-center gap-2 rounded-full border border-ink-600 bg-ink-950/90 px-2 py-1.5 shadow-lg backdrop-blur">
+    <div
+      className="flex items-center gap-2 bg-ink-950/90 px-2 py-1.5 shadow-lg backdrop-blur"
+      style={{ borderRadius: "var(--editor-objctrl-bar-radius)" }}
+    >
       <button
         type="button"
         onClick={handleDelete}
         title={t("editor.toolbar.delete")}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white transition-transform hover:scale-110"
+        style={{ ...controlBtnStyle, backgroundColor: "var(--editor-objctrl-delete-bg)", borderRadius: "var(--editor-objctrl-bar-radius)" }}
+        className="flex items-center justify-center text-sm font-bold text-white transition-transform hover:scale-110"
       >
         ✕
       </button>
@@ -49,7 +58,8 @@ export function ObjectControls({ canvas }: ObjectControlsProps) {
         type="button"
         onClick={() => withActiveObject((active) => active.set("flipX", !active.flipX))}
         title={t("editor.toolbar.flipHorizontal")}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-800 text-sm text-white transition-transform hover:scale-110 hover:bg-ink-700"
+        style={{ ...controlBtnStyle, backgroundColor: "var(--editor-objctrl-bg)", borderRadius: "var(--editor-objctrl-bar-radius)" }}
+        className="flex items-center justify-center text-sm text-white transition-transform hover:scale-110 hover:brightness-125"
       >
         ⇋
       </button>
@@ -57,7 +67,8 @@ export function ObjectControls({ canvas }: ObjectControlsProps) {
         type="button"
         onClick={() => withActiveObject((active) => active.set("flipY", !active.flipY))}
         title={t("editor.toolbar.flipVertical")}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-800 text-sm text-white transition-transform hover:scale-110 hover:bg-ink-700"
+        style={{ ...controlBtnStyle, backgroundColor: "var(--editor-objctrl-bg)", borderRadius: "var(--editor-objctrl-bar-radius)" }}
+        className="flex items-center justify-center text-sm text-white transition-transform hover:scale-110 hover:brightness-125"
       >
         ⇅
       </button>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PointServerStatus } from "./PointServerStatus.js";
 import { ThemePanel } from "./ThemePanel.js";
+import { EditorThemePanel } from "./EditorThemePanel.js";
 
 /** Real kiosk touchscreen resolution — every kiosk route is designed pixel-for-pixel at this size. */
 export const KIOSK_WIDTH = 1080;
@@ -44,7 +45,7 @@ export function KioskFrame({ children }: { children: ReactNode }) {
   return (
     <div
       ref={containerRef}
-      className="flex h-full w-full items-center justify-center bg-[#000]"
+      className="flex h-full w-full items-center justify-center bg-[#000] font-sans"
       style={{ minHeight: "100vh" }}
     >
       <div className="flex flex-col items-center gap-2">
@@ -75,6 +76,10 @@ export function KioskFrame({ children }: { children: ReactNode }) {
           that positions relative to that ancestor instead of the real
           viewport), so it stays put and usable at any kiosk zoom level. */}
       <ThemePanel />
+      {/* Same idea, but scoped to /kiosk/editor and its own block-by-block
+          tokens (see EditorThemePanel.tsx). Sits lower so its gear button
+          doesn't overlap the main Design Panel's one above it. */}
+      <EditorThemePanel />
     </div>
   );
 }

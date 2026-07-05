@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Settings } from "./icons.js";
+import { DEFAULT_UI_FONT, THEME_FONT_OPTIONS } from "../lib/fonts.js";
 import {
   getKioskImageUrl,
   KIOSK_IMAGE_SECTIONS,
@@ -7,6 +9,11 @@ import {
   setKioskImageOverride,
   useKioskImageOverrides,
 } from "../lib/kioskImages.js";
+
+const THEME_FONT_SELECT_OPTIONS = THEME_FONT_OPTIONS.map(({ label, family }) => ({
+  label,
+  value: family,
+}));
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
@@ -49,6 +56,18 @@ interface Section {
  * single list the panel reads/writes, and what "Reset" restores.
  */
 const SECTIONS: Section[] = [
+  {
+    title: "Шрифт",
+    tokens: [
+      {
+        key: "--font-family",
+        label: "Шрифт интерфейса",
+        type: "select",
+        defaultValue: DEFAULT_UI_FONT,
+        options: THEME_FONT_SELECT_OPTIONS,
+      },
+    ],
+  },
   {
     title: "Бренд-градиент",
     tokens: [
@@ -133,20 +152,6 @@ const SECTIONS: Section[] = [
           { label: "Вниз влево", value: "to bottom left" },
           { label: "Вверх вправо", value: "to top right" },
           { label: "Вверх влево", value: "to top left" },
-        ],
-      },
-      {
-        key: "--category-title-font-family",
-        label: "Шрифт",
-        type: "select",
-        defaultValue: "system-ui, sans-serif",
-        options: [
-          { label: "Системный", value: "system-ui, sans-serif" },
-          { label: "Segoe UI", value: "'Segoe UI', system-ui, sans-serif" },
-          { label: "Arial", value: "Arial, Helvetica, sans-serif" },
-          { label: "Georgia", value: "Georgia, serif" },
-          { label: "Impact", value: "Impact, Haettenschweiler, sans-serif" },
-          { label: "Courier", value: "'Courier New', Courier, monospace" },
         ],
       },
       {
@@ -246,20 +251,6 @@ const SECTIONS: Section[] = [
         unit: "px",
       },
       { key: "--category-select-icon-color", label: "Иконка — цвет", type: "color", defaultValue: "#ff2d95" },
-      {
-        key: "--category-select-title-font-family",
-        label: "Шрифт",
-        type: "select",
-        defaultValue: "system-ui, sans-serif",
-        options: [
-          { label: "Системный", value: "system-ui, sans-serif" },
-          { label: "Segoe UI", value: "'Segoe UI', system-ui, sans-serif" },
-          { label: "Arial", value: "Arial, Helvetica, sans-serif" },
-          { label: "Georgia", value: "Georgia, serif" },
-          { label: "Impact", value: "Impact, Haettenschweiler, sans-serif" },
-          { label: "Courier", value: "'Courier New', Courier, monospace" },
-        ],
-      },
       {
         key: "--category-select-title-size",
         label: "Заголовок — размер",
@@ -740,9 +731,10 @@ export function ThemePanel() {
             value={values[token.key] ?? token.defaultValue}
             onChange={(e) => handleChange(token.key, e.target.value)}
             className="min-w-[260px] rounded-xl border-2 border-white/15 bg-[#171a28] px-4 py-3 text-lg text-white outline-none transition-colors hover:border-white/30 focus:border-white/40"
+            style={{ fontFamily: values[token.key] ?? token.defaultValue }}
           >
             {token.options.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option key={option.value} value={option.value} style={{ fontFamily: option.value }}>
                 {option.label}
               </option>
             ))}
@@ -760,7 +752,7 @@ export function ThemePanel() {
   }
 
   return (
-    <div className="fixed right-6 top-6 z-50 flex flex-col items-end gap-5">
+    <div className="fixed right-6 top-6 z-50 flex flex-col items-end gap-5 font-sans">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -768,19 +760,7 @@ export function ThemePanel() {
         aria-label="Настройки оформления"
         className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/10 bg-[#12142099] text-white shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur transition-transform hover:scale-105 active:scale-95"
       >
-        <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10">
-          <path
-            d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"
-            stroke="currentColor"
-            strokeWidth="1.7"
-          />
-          <path
-            d="M19.4 13a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V19a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H4a2 2 0 110-4h.09A1.65 1.65 0 005.6 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H10a1.65 1.65 0 001-1.51V4a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V10c.7.1 1.36.48 1.51 1.18H20a2 2 0 110 4h-.09c-.53 0-1.01.32-1.51 1z"
-            stroke="currentColor"
-            strokeWidth="1.3"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Settings aria-hidden className="h-10 w-10" strokeWidth={1.5} />
       </button>
 
       {open ? (
@@ -798,7 +778,7 @@ export function ThemePanel() {
             </button>
           </div>
 
-          {SECTIONS.slice(0, 1).map((section) => (
+          {SECTIONS.slice(0, 2).map((section) => (
             <div key={section.title} className="flex flex-col gap-5">
               <span className="text-base font-bold uppercase tracking-wider text-white/50">
                 {section.title}
@@ -894,7 +874,7 @@ export function ThemePanel() {
             ))}
           </div>
 
-          {SECTIONS.slice(1).map((section) => (
+          {SECTIONS.slice(2).map((section) => (
             <div key={section.title} className="flex flex-col gap-5">
               <span className="text-base font-bold uppercase tracking-wider text-white/50">
                 {section.title}

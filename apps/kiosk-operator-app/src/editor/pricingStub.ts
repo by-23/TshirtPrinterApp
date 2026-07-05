@@ -12,7 +12,6 @@ const BASE_PRICE_TENGE: Record<GarmentType, number> = {
 };
 
 const SIZE_SURCHARGE_TENGE: Record<string, number> = {
-  XS: 0,
   S: 0,
   M: 0,
   L: 0,

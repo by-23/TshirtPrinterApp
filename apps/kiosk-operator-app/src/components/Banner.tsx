@@ -6,12 +6,15 @@ import "swiper/css/pagination";
 import { HOME_STATIC_LABELS } from "../lib/homeLabels.js";
 import {
   BoltIcon,
+  ChevronLeft,
+  ChevronRight,
   CrownIcon,
   FlameIcon,
   GamepadIcon,
   PhotoIcon,
   RobotIcon,
   SmileyIcon,
+  Sparkles,
   StarIcon,
 } from "./icons.js";
 import { PopularPrintSlideContent, type PopularPrintItem } from "./PopularPrintSlide.js";
@@ -49,7 +52,8 @@ export function Banner() {
         style={{ color: "var(--brand-primary)" }}
         className="text-center text-[26px] font-extrabold uppercase tracking-wide"
       >
-        <span aria-hidden>✦</span> {HOME_STATIC_LABELS.bannerTitle} <span aria-hidden>✦</span>
+        <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" /> {HOME_STATIC_LABELS.bannerTitle}{" "}
+        <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" />
       </h2>
 
       <div className="relative">
@@ -58,30 +62,14 @@ export function Banner() {
           aria-label="Предыдущий популярный принт"
           className="popular-swiper-nav popular-swiper-prev absolute left-[-34px] top-1/2 z-10 flex -translate-y-1/2 items-center justify-center transition-transform hover:scale-105 active:scale-95"
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
-            <path
-              d="M15 6l-6 6 6 6"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ChevronLeft aria-hidden className="h-6 w-6" strokeWidth={2.4} />
         </button>
         <button
           type="button"
           aria-label="Следующий популярный принт"
           className="popular-swiper-nav popular-swiper-next absolute right-[-34px] top-1/2 z-10 flex -translate-y-1/2 items-center justify-center transition-transform hover:scale-105 active:scale-95"
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
-            <path
-              d="M9 6l6 6-6 6"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ChevronRight aria-hidden className="h-6 w-6" strokeWidth={2.4} />
         </button>
 
         <div className="popular-frame overflow-hidden px-5 py-0">

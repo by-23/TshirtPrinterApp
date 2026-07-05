@@ -6,12 +6,27 @@ html,
 body,
 #root {
   height: 100%;
+  font-family: var(--font-family);
 }
 
 body {
   background: #000;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+.kiosk-theme-root {
+  font-family: var(--font-family);
+}
+
+.editor-theme-root {
+  font-family: var(--editor-font-family, var(--font-family));
+}
 /* ==========================================================================
    Live theme tokens
    --------------------------------------------------------------------------
@@ -23,6 +38,8 @@ body {
    «Сохранить по умолчанию» (dev server) to write them here permanently.
    ========================================================================== */
 :root {
+  /* Global UI typeface — every screen, panel and component inherits this. */
+    --font-family: 'Roboto', sans-serif;
   /* Brand accent hierarchy — header active language pill, banner frame, AI badge, hearts. */
   --brand-primary: #ff2d95;
   --brand-secondary: #22d3f5;
@@ -45,7 +62,6 @@ body {
   --category-gradient-direction: to top;
 
   /* Shared typography + position for category card labels (main + sub). */
-  --category-title-font-family: 'Segoe UI', system-ui, sans-serif;
   --category-title-size: 34px;
   --category-subtitle-size: 17px;
   --category-text-offset-x: 0px;
@@ -60,7 +76,6 @@ body {
   --category-select-glow-strength: 3;
   --category-select-icon-size: 83px;
   --category-select-icon-color: #c0527a;
-  --category-select-title-font-family: 'Segoe UI', system-ui, sans-serif;
   --category-select-title-size: 30px;
   --category-select-subtitle-size: 16px;
   --category-select-title-color: #ffffff;
@@ -151,6 +166,205 @@ body {
       var(--popular-bg-start),
       var(--popular-bg-middle),
       var(--popular-bg-end));
+/* ========================================================================
+     Editor screen tokens — tuned from EditorThemePanel.tsx (gear button under
+     the main Design Panel one, only visible on /kiosk/editor). Every block on
+     the editor screen (header, print-side toggle, tool rail, canvas card,
+     garment picker, price/print, popular elements, tips) reads its sizes
+     (width/height tracked separately), roundings and colors from here instead
+     of fixed Tailwind classes.
+     ======================================================================== */
+  --editor-page-bg: #02060d;
+
+  --editor-page-section-gap: 16px;
+  --editor-main-columns-gap: 24px;
+  --editor-right-panel-gap: 20px;
+  --editor-garment-blocks-gap: 20px;
+  --editor-center-column-gap: 16px;
+  --editor-price-section-gap: 20px;
+
+  --editor-header-title-size: 24px;
+  --editor-header-title-color: #ffffff;
+  --editor-header-category-size: 20px;
+  --editor-header-category-color: #de3770;
+  --editor-back-btn-width: 120px;
+  --editor-back-btn-height: 50px;
+  --editor-back-btn-radius: 8px;
+  --editor-back-btn-bg: #000307;
+  --editor-back-btn-border-width: 1.5px;
+  --editor-back-btn-border-color: #242938;
+  --editor-back-btn-border-opacity: 1;
+
+  --editor-lang-btn-width: 60px;
+  --editor-lang-btn-height: 50px;
+  --editor-lang-btn-radius: 12px;
+  --editor-lang-btn-gap: 12px;
+  --editor-lang-btn-font-size: 16px;
+  --editor-lang-btn-active-bg: #de3770;
+  --editor-lang-btn-idle-bg: #02060d;
+  --editor-lang-btn-idle-border: #1c212e;
+  --editor-lang-btn-idle-text: #cac9cb;
+  --editor-lang-btn-active-scale: 1.1;
+
+  --editor-header-divider-width: 1.5px;
+  --editor-header-divider-color: #242938;
+  --editor-header-divider-opacity: 0.8;
+
+  --editor-toggle-label-size: 18px;
+  --editor-toggle-gap: 12px;
+  --editor-toggle-pill-radius: 8px;
+  --editor-toggle-btn-height: 50px;
+  --editor-toggle-font-size: 18px;
+  --editor-toggle-active-bg: #dd3670;
+  --editor-toggle-idle-bg: #02060d;
+
+  --editor-rail-width: 120px;
+  --editor-rail-gap: 10px;
+  --editor-rail-btn-height: 98px;
+  --editor-rail-btn-radius: 16px;
+  --editor-rail-icon-size: 34px;
+  --editor-rail-label-size: 16px;
+  --editor-rail-idle-bg: #02060d;
+  --editor-rail-active-bg: #dd356f;
+  --editor-rail-idle-text: #cac9cb;
+  --editor-rail-block-border-width: 1.5px;
+  --editor-rail-block-border-color: #242938;
+  --editor-rail-block-border-opacity: 1;
+  --editor-rail-block-radius: 20px;
+  --editor-rail-block-padding: 12px;
+  --editor-rail-block-height: auto;
+  --editor-rail-divider-width: 1.5px;
+  --editor-rail-divider-color: #242938;
+  --editor-rail-divider-opacity: 0.6;
+
+  --editor-canvas-card-radius: 24px;
+  --editor-canvas-card-width: 620px;
+  --editor-canvas-card-height: 1200px;
+  --editor-canvas-card-bg: #02060d;
+  --editor-canvas-card-padding: 0px;
+  --editor-canvas-scale: 1;
+
+  --editor-strip-radius: 16px;
+  --editor-strip-bg: #02060d;
+  --editor-strip-border-color: #1c1e26;
+  --editor-strip-border-width: 1.5px;
+  --editor-strip-border-opacity: 1;
+  --editor-strip-padding: 16px;
+  --editor-strip-height: auto;
+  --editor-strip-btn-bg: #02060d;
+  --editor-strip-btn-width: 24px;
+  --editor-strip-btn-height: 32px;
+  --editor-strip-btn-radius: 0px;
+
+  --editor-objctrl-bar-radius: 16px;
+  --editor-objctrl-btn-width: 50px;
+  --editor-objctrl-btn-height: 50px;
+  --editor-objctrl-bg: #1c1e26;
+  --editor-objctrl-delete-bg: #dc2626;
+
+  --editor-swatch-width: 60px;
+  --editor-swatch-height: 60px;
+  --editor-swatch-radius: 8px;
+  --editor-swatch-gap: 12px;
+  --editor-color-block-border-width: 1.5px;
+  --editor-color-block-border-color: #242938;
+  --editor-color-block-border-opacity: 1;
+  --editor-color-block-radius: 16px;
+  --editor-color-block-padding: 10px;
+  --editor-color-block-height: auto;
+
+  --editor-size-pill-radius: 12px;
+  --editor-size-pill-gap: 12px;
+  --editor-size-pill-width: 60px;
+  --editor-size-pill-height: 60px;
+  --editor-size-pill-font-size: 18px;
+  --editor-size-pill-active-bg: #ff2d95;
+  --editor-size-pill-idle-bg: #02060d;
+  --editor-size-block-border-width: 1.5px;
+  --editor-size-block-border-color: #242938;
+  --editor-size-block-border-opacity: 1;
+  --editor-size-block-radius: 16px;
+  --editor-size-block-padding: 10px;
+  --editor-size-block-height: auto;
+
+  --editor-fabric-pill-radius: 12px;
+  --editor-fabric-pill-gap: 12px;
+  --editor-fabric-pill-width: 100px;
+  --editor-fabric-pill-height: 80px;
+  --editor-fabric-pill-font-size: 16px;
+  --editor-fabric-pill-active-bg: #ff2d95;
+  --editor-fabric-pill-idle-bg: #02060d;
+  --editor-fabric-block-border-width: 1.5px;
+  --editor-fabric-block-border-color: #242938;
+  --editor-fabric-block-border-opacity: 1;
+  --editor-fabric-block-radius: 16px;
+  --editor-fabric-block-padding: 20px;
+  --editor-fabric-block-height: auto;
+
+  --editor-secondary-btn-radius: 16px;
+  --editor-secondary-btn-gap: 10px;
+  --editor-secondary-btn-height: 50px;
+  --editor-secondary-btn-bg: #02060d;
+  --editor-secondary-btn-font-size: 18px;
+  --editor-secondary-block-border-width: 1.5px;
+  --editor-secondary-block-border-color: #242938;
+  --editor-secondary-block-border-opacity: 1;
+  --editor-secondary-block-radius: 16px;
+  --editor-secondary-block-padding: 10px;
+  --editor-secondary-divider-width: 1.5px;
+  --editor-secondary-divider-color: #242938;
+  --editor-secondary-divider-opacity: 0.6;
+  --editor-secondary-block-height: auto;
+
+  --editor-price-label-size: 18px;
+  --editor-price-amount-size: 40px;
+  --editor-price-color: #de366f;
+  --editor-price-leadtime-size: 17px;
+  --editor-price-block-border-width: 1.5px;
+  --editor-price-block-border-color: #242938;
+  --editor-price-block-border-opacity: 1;
+  --editor-price-block-radius: 16px;
+  --editor-price-block-padding: 16px;
+  --editor-price-block-height: auto;
+  --editor-print-btn-radius: 16px;
+  --editor-print-btn-height: 150px;
+  --editor-print-btn-bg: #de3770;
+  --editor-print-btn-font-size: 38px;
+
+  --editor-ordernote-text-size: 13px;
+  --editor-ordernote-block-border-width: 1.5px;
+  --editor-ordernote-block-border-color: #242938;
+  --editor-ordernote-block-border-opacity: 1;
+  --editor-ordernote-block-radius: 12px;
+  --editor-ordernote-block-padding: 12px;
+  --editor-ordernote-block-height: auto;
+
+  --editor-popular-tile-width: 183px;
+  --editor-popular-tile-height: 60px;
+  --editor-popular-tile-radius: 12px;
+  --editor-popular-tile-gap: 16px;
+  --editor-popular-tile-bg: #02060d;
+  --editor-popular-emoji-size: 48px;
+  --editor-popular-block-border-width: 1.5px;
+  --editor-popular-block-border-color: #242938;
+  --editor-popular-block-border-opacity: 1;
+  --editor-popular-block-radius: 16px;
+  --editor-popular-block-padding: 16px;
+  --editor-popular-block-height: auto;
+  --editor-popular-block-width: fit-content;
+
+  --editor-tips-icon-width: 50px;
+  --editor-tips-icon-height: 50px;
+  --editor-tips-icon-radius: 40px;
+  --editor-tips-text-size: 18px;
+  --editor-tips-icon-bg: #02060d;
+  --editor-tips-block-border-width: 1.5px;
+  --editor-tips-block-border-color: #242938;
+  --editor-tips-block-border-opacity: 1;
+  --editor-tips-block-radius: 16px;
+  --editor-tips-block-padding: 16px;
+  --editor-tips-block-height: auto;
+  --editor-tips-block-width: fit-content;
 }
 
 /* Category cards read their whole gradient directly from CSS variables. */
@@ -169,7 +383,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--category-text-gap, 6px);
-  font-family: var(--category-title-font-family, system-ui, sans-serif);
+  font-family: var(--font-family);
   text-align: center;
 }
 
@@ -233,7 +447,7 @@ body {
   flex-direction: column;
   gap: var(--category-select-text-gap, 4px);
   text-align: left;
-  font-family: var(--category-select-title-font-family, system-ui, sans-serif);
+  font-family: var(--font-family);
 }
 
 .category-select-title {

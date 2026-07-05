@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { TouchButton } from "@tshirt/ui-kit";
 import { useEditorStore } from "./store.js";
 import { estimatePriceTenge } from "./pricingStub.js";
+import { blockBorderStyle } from "./borderStyle.js";
 
 export interface PriceAndPrintProps {
   onPrint: () => void;
@@ -19,27 +20,44 @@ export function PriceAndPrint({ onPrint }: PriceAndPrintProps) {
   const price = estimatePriceTenge(garmentType, size);
 
   return (
-    <div className="flex flex-col gap-3 border-t border-ink-700 pt-4">
-      <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-200">
+    <div className="flex flex-col" style={{ gap: "var(--editor-price-section-gap)" }}>
+      <div style={blockBorderStyle("price-block")}>
+        <h3
+          className="font-semibold uppercase tracking-wide text-ink-200"
+          style={{ fontSize: "var(--editor-price-label-size)" }}
+        >
           {t("editor.price.label")}
         </h3>
-        <p className="text-2xl font-extrabold text-white">
+        <p
+          className="font-extrabold"
+          style={{ fontSize: "var(--editor-price-amount-size)", color: "var(--editor-price-color)" }}
+        >
           {price.toLocaleString("ru-RU")} ₸
         </p>
-        <p className="text-xs text-ink-200">
+        <p className="text-ink-200" style={{ fontSize: "var(--editor-price-leadtime-size)" }}>
           {t("editor.price.leadTime", { time: t("editor.price.leadTimeValue") })}
         </p>
       </div>
 
       <TouchButton
         onClick={onPrint}
-        className="rounded-full bg-neon-pink py-4 text-lg font-bold uppercase tracking-wide text-white shadow-neon-pink transition-transform hover:scale-[1.02]"
+        className="flex w-full items-center justify-center font-bold uppercase tracking-wide text-white shadow-neon-pink transition-transform hover:scale-[1.02]"
+        style={{
+          height: "var(--editor-print-btn-height)",
+          borderRadius: "var(--editor-print-btn-radius)",
+          backgroundColor: "var(--editor-print-btn-bg)",
+          fontSize: "var(--editor-print-btn-font-size)",
+        }}
       >
         🖶 {t("common.print")}
       </TouchButton>
 
-      <p className="text-center text-[11px] text-ink-200">🔒 {t("editor.orderSavedNote")}</p>
+      <p
+        className="text-center text-ink-200"
+        style={{ fontSize: "var(--editor-ordernote-text-size)", ...blockBorderStyle("ordernote-block") }}
+      >
+        🔒 {t("editor.orderSavedNote")}
+      </p>
     </div>
   );
 }

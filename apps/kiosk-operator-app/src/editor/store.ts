@@ -35,7 +35,7 @@ const initialState = {
   garmentType: "tshirt" as GarmentType,
   side: "front" as GarmentSide,
   color: GARMENT_COLORS[0]!.hex,
-  size: GARMENT_SIZES[2],
+  size: GARMENT_SIZES[1],
   fabricName: GARMENT_FABRICS[0],
   canvasSnapshots: { front: null, back: null } as CanvasSnapshots,
   hasSelection: false,

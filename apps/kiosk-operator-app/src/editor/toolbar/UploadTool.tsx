@@ -2,12 +2,11 @@ import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
 import { TouchButton } from "@tshirt/ui-kit";
+import { placeImageCentered } from "../canvasImage.js";
 
 export interface UploadToolProps {
   canvas: Canvas | null;
 }
-
-const MAX_IMAGE_FRACTION = 0.85;
 
 export function UploadTool({ canvas }: UploadToolProps) {
   const { t } = useTranslation();
@@ -22,22 +21,7 @@ export function UploadTool({ canvas }: UploadToolProps) {
     reader.onload = () => {
       const dataUrl = reader.result;
       if (typeof dataUrl !== "string") return;
-      void FabricImage.fromURL(dataUrl).then((image) => {
-        const maxWidth = canvas.getWidth() * MAX_IMAGE_FRACTION;
-        const maxHeight = canvas.getHeight() * MAX_IMAGE_FRACTION;
-        const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-        image.set({
-          left: canvas.getWidth() / 2,
-          top: canvas.getHeight() / 2,
-          originX: "center",
-          originY: "center",
-          scaleX: scale,
-          scaleY: scale,
-        });
-        canvas.add(image);
-        canvas.setActiveObject(image);
-        canvas.requestRenderAll();
-      });
+      void FabricImage.fromURL(dataUrl).then((image) => placeImageCentered(canvas, image));
     };
     reader.readAsDataURL(file);
   }

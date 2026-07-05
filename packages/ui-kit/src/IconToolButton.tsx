@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 
 export interface IconToolButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: ReactNode;
@@ -9,6 +9,8 @@ export interface IconToolButtonProps extends ButtonHTMLAttributes<HTMLButtonElem
 /**
  * Vertical icon + label button used in the editor's left tool rail
  * (`docs/ui-mockups/editor.png`): dark idle card, pink glow when active.
+ * Size/radius/colors read from `--editor-rail-*` CSS custom properties so
+ * the in-app EditorThemePanel can retune the whole rail live.
  */
 export function IconToolButton({
   icon,
@@ -16,22 +18,39 @@ export function IconToolButton({
   active = false,
   className = "",
   disabled,
+  style,
   ...rest
 }: IconToolButtonProps) {
+  const buttonStyle: CSSProperties = {
+    height: "var(--editor-rail-btn-height)",
+    borderRadius: "var(--editor-rail-btn-radius)",
+    backgroundColor: active ? "var(--editor-rail-active-bg)" : "var(--editor-rail-idle-bg)",
+    color: active ? "#ffffff" : "var(--editor-rail-idle-text)",
+    ...style,
+  };
+
   return (
     <button
       type="button"
       aria-pressed={active}
       disabled={disabled}
-      className={`flex w-full flex-col items-center gap-1 rounded-2xl px-2 py-3 text-center text-[11px] font-semibold uppercase leading-tight tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
-        active
-          ? "bg-neon-pink text-white shadow-neon-pink"
-          : "bg-ink-800 text-ink-200 hover:bg-ink-700 hover:text-white"
+      style={buttonStyle}
+      className={`flex w-full flex-col items-center gap-1.5 px-2 py-4 text-center font-semibold uppercase leading-tight tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
+        active ? "shadow-neon-pink" : "hover:brightness-125"
       } ${className}`}
       {...rest}
     >
-      <span className="text-lg leading-none">{icon}</span>
-      {label}
+      <span
+        className="flex items-center justify-center leading-none"
+        style={{
+          width: "calc(var(--editor-rail-icon-size) * 1.25)",
+          height: "calc(var(--editor-rail-icon-size) * 1.25)",
+          fontSize: "var(--editor-rail-icon-size)",
+        }}
+      >
+        {icon}
+      </span>
+      <span style={{ fontSize: "var(--editor-rail-label-size)", lineHeight: 1.1 }}>{label}</span>
     </button>
   );
 }

@@ -18,3 +18,14 @@ export const designSchema = z.object({
   isFeatured: z.boolean().default(false),
 });
 export type Design = z.infer<typeof designSchema>;
+
+export const createDesignSchema = z.object({
+  category: designCategorySchema,
+  title: z.string().min(1),
+  imageUrl: z.string().default(""),
+  isFeatured: z.boolean().default(false),
+});
+export type CreateDesignInput = z.infer<typeof createDesignSchema>;
+
+export const updateDesignSchema = createDesignSchema.partial();
+export type UpdateDesignInput = z.infer<typeof updateDesignSchema>;

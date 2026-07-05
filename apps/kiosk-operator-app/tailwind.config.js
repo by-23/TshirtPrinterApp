@@ -7,6 +7,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Roboto", "sans-serif"],
+        display: ["Roboto", "sans-serif"],
+      },
       colors: {
         // Dark navy/near-black surfaces used across all kiosk mockups.
         ink: {

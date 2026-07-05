@@ -1,7 +1,9 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { IText, FabricImage, type Canvas } from "fabric";
+import { Plus } from "../../components/icons.js";
 import { STICKERS } from "../types.js";
+import { bottomStripLayoutStyle } from "../borderStyle.js";
 
 export interface PopularElementsStripProps {
   canvas: Canvas | null;
@@ -65,17 +67,27 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
   }
 
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-200">
+    <section className="flex flex-col gap-3" style={bottomStripLayoutStyle("popular-block")}>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-200">
         {t("editor.popularElements")}
       </h3>
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      <div
+        className="flex pb-1"
+        style={{ gap: "var(--editor-popular-tile-gap)", overflowX: "auto", overflowY: "visible" }}
+      >
         {popularStickers.map((sticker) => (
           <button
             key={sticker.id}
             type="button"
             onClick={() => addSticker(sticker.emoji)}
-            className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl border border-ink-600 bg-ink-800 text-3xl transition-colors hover:bg-ink-700"
+            style={{
+              width: "var(--editor-popular-tile-width)",
+              height: "var(--editor-popular-tile-height)",
+              borderRadius: "var(--editor-popular-tile-radius)",
+              backgroundColor: "var(--editor-popular-tile-bg)",
+              fontSize: "var(--editor-popular-emoji-size)",
+            }}
+            className="flex flex-shrink-0 items-center justify-center overflow-hidden leading-none transition-colors hover:brightness-125"
           >
             {sticker.emoji}
           </button>
@@ -84,12 +96,15 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex h-16 w-16 flex-shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-600 text-ink-200 transition-colors hover:border-neon-pink hover:text-white"
+          style={{
+            width: "var(--editor-popular-tile-width)",
+            height: "var(--editor-popular-tile-height)",
+            borderRadius: "var(--editor-popular-tile-radius)",
+          }}
+          className="flex flex-shrink-0 flex-col items-center justify-center gap-1.5 text-ink-200 transition-colors hover:text-white"
         >
-          <span className="text-xl leading-none" aria-hidden>
-            +
-          </span>
-          <span className="text-[9px] font-semibold uppercase leading-none">{t("editor.addOwn")}</span>
+          <Plus aria-hidden className="h-8 w-8" strokeWidth={2.2} />
+          <span className="text-xs font-semibold uppercase leading-none">{t("editor.addOwn")}</span>
         </button>
       </div>
     </section>

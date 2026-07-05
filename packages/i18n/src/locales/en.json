@@ -41,17 +41,22 @@
     "colors": {
       "white": "White",
       "black": "Black",
-      "red": "Red",
-      "navy": "Navy",
       "gray": "Gray",
-      "yellow": "Yellow"
+      "cream": "Cream",
+      "pink": "Pink",
+      "lightBlue": "Light blue",
+      "green": "Green",
+      "yellow": "Yellow",
+      "red": "Red",
+      "darkGreen": "Dark green",
+      "purple": "Purple",
+      "navy": "Navy"
     },
     "size": "Size",
     "fabric": "Material",
     "fabrics": {
       "cotton": "Cotton",
-      "polyester": "Polyester",
-      "blend": "Blend"
+      "premium": "Premium"
     },
     "toolbar": {
       "select": "Select",
@@ -79,6 +84,7 @@
     },
     "popularElements": "Popular elements",
     "addOwn": "Add your own",
+    "tipsTitle": "Tips",
     "tips": [
       "Use high-quality images",
       "Don't place important elements too close to the edges",
@@ -96,5 +102,10 @@
     "exitPreview": "Exit preview",
     "next": "Next",
     "nextPlaceholder": "The payment screen will be added in the next stage"
+  },
+  "gallery": {
+    "loading": "Loading designs...",
+    "empty": "This section will be filled with new designs soon",
+    "error": "Couldn't load designs. Check the connection to the point server."
   }
 }

@@ -9,6 +9,8 @@ export interface FontOption {
   family: string;
 }
 
+export { EDITOR_FONTS as FONTS } from "../lib/fonts.js";
+
 export const STICKERS: StickerDef[] = [
   { id: "fire", emoji: "🔥" },
   { id: "heart", emoji: "❤️" },
@@ -18,14 +20,6 @@ export const STICKERS: StickerDef[] = [
   { id: "crown", emoji: "👑" },
   { id: "thumbsUp", emoji: "👍" },
   { id: "rocket", emoji: "🚀" },
-];
-
-export const FONTS: FontOption[] = [
-  { id: "sans", label: "Arial", family: "Arial, sans-serif" },
-  { id: "impact", label: "Impact", family: "Impact, sans-serif" },
-  { id: "serif", label: "Georgia", family: "Georgia, serif" },
-  { id: "mono", label: "Courier", family: "'Courier New', monospace" },
-  { id: "comic", label: "Comic Sans", family: "'Comic Sans MS', cursive" },
 ];
 
 export const TEXT_COLORS: string[] = [

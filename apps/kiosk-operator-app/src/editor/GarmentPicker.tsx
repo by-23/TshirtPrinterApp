@@ -1,12 +1,19 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { GARMENT_COLORS, GARMENT_SIZES, GARMENT_FABRICS } from "@tshirt/shared-types";
+import { GARMENT_COLORS, GARMENT_SIZES, GARMENT_FABRICS, type GarmentFabric } from "@tshirt/shared-types";
 import { PillButton } from "@tshirt/ui-kit";
+import { Diamond, RAIL_ICON_CLASS } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
+import { blockBorderStyle } from "./borderStyle.js";
+
+const FABRIC_ICONS: Partial<Record<GarmentFabric, ReactNode>> = {
+  premium: <Diamond className={RAIL_ICON_CLASS} />,
+};
 
 /**
  * Right-panel garment options (color / size / material) for the editor,
- * matching `docs/ui-mockups/editor.png`. Garment type + print side live in
- * `GarmentTypeToggle` under the header instead.
+ * matching the reference mockup. Print side lives in `PrintSideToggle`
+ * under the header instead.
  */
 export function GarmentPicker() {
   const { t } = useTranslation();
@@ -18,61 +25,89 @@ export function GarmentPicker() {
   const setFabricName = useEditorStore((state) => state.setFabricName);
 
   return (
-    <div className="flex flex-col gap-5">
-      <section>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-200">
+    <div className="flex flex-col" style={{ gap: "var(--editor-garment-blocks-gap)" }}>
+      <section style={blockBorderStyle("color-block")}>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.color")}
         </h3>
-        <div className="grid grid-cols-3 gap-2">
-          {GARMENT_COLORS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setColor(option.hex)}
-              aria-pressed={color === option.hex}
-              aria-label={t(`editor.colors.${option.id}`)}
-              title={t(`editor.colors.${option.id}`)}
-              className={`h-9 w-full rounded-lg border-2 transition-transform ${
-                color === option.hex ? "scale-105 border-neon-pink shadow-neon-pink" : "border-ink-600"
-              }`}
-              style={{ backgroundColor: option.hex }}
-            />
-          ))}
+        <div className="flex flex-wrap" style={{ gap: "var(--editor-swatch-gap)" }}>
+          {GARMENT_COLORS.map((option) => {
+            const active = color === option.hex;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setColor(option.hex)}
+                aria-pressed={active}
+                aria-label={t(`editor.colors.${option.id}`)}
+                title={t(`editor.colors.${option.id}`)}
+                className={`flex-shrink-0 transition-transform ${active ? "scale-105 shadow-neon-pink" : ""}`}
+                style={{
+                  backgroundColor: option.hex,
+                  width: "var(--editor-swatch-width)",
+                  height: "var(--editor-swatch-height)",
+                  borderRadius: "var(--editor-swatch-radius)",
+                }}
+              />
+            );
+          })}
         </div>
       </section>
 
-      <section>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-200">
+      <section style={blockBorderStyle("size-block")}>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.size")}
         </h3>
-        <div className="grid grid-cols-3 gap-2">
-          {GARMENT_SIZES.map((sizeOption) => (
-            <PillButton
-              key={sizeOption}
-              active={size === sizeOption}
-              onClick={() => setSize(sizeOption)}
-              className="w-full px-0 py-2"
-            >
-              {sizeOption}
-            </PillButton>
-          ))}
+        <div className="flex flex-wrap" style={{ gap: "var(--editor-size-pill-gap)" }}>
+          {GARMENT_SIZES.map((sizeOption) => {
+            const active = size === sizeOption;
+            return (
+              <PillButton
+                key={sizeOption}
+                active={active}
+                onClick={() => setSize(sizeOption)}
+                className="flex-shrink-0 px-0"
+                style={{
+                  width: "var(--editor-size-pill-width)",
+                  height: "var(--editor-size-pill-height)",
+                  borderRadius: "var(--editor-size-pill-radius)",
+                  fontSize: "var(--editor-size-pill-font-size)",
+                  backgroundColor: active ? "var(--editor-size-pill-active-bg)" : "var(--editor-size-pill-idle-bg)",
+                }}
+              >
+                {sizeOption}
+              </PillButton>
+            );
+          })}
         </div>
       </section>
 
-      <section>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-200">
+      <section style={blockBorderStyle("fabric-block")}>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.fabric")}
         </h3>
-        <div className="flex flex-wrap gap-2">
-          {GARMENT_FABRICS.map((fabricOption) => (
-            <PillButton
-              key={fabricOption}
-              active={fabricName === fabricOption}
-              onClick={() => setFabricName(fabricOption)}
-            >
-              {t(`editor.fabrics.${fabricOption}`)}
-            </PillButton>
-          ))}
+        <div className="flex flex-wrap" style={{ gap: "var(--editor-fabric-pill-gap)" }}>
+          {GARMENT_FABRICS.map((fabricOption) => {
+            const active = fabricName === fabricOption;
+            return (
+              <PillButton
+                key={fabricOption}
+                active={active}
+                onClick={() => setFabricName(fabricOption)}
+                icon={FABRIC_ICONS[fabricOption]}
+                className="flex-shrink-0"
+                style={{
+                  width: "var(--editor-fabric-pill-width)",
+                  height: "var(--editor-fabric-pill-height)",
+                  borderRadius: "var(--editor-fabric-pill-radius)",
+                  fontSize: "var(--editor-fabric-pill-font-size)",
+                  backgroundColor: active ? "var(--editor-fabric-pill-active-bg)" : "var(--editor-fabric-pill-idle-bg)",
+                }}
+              >
+                {t(`editor.fabrics.${fabricOption}`)}
+              </PillButton>
+            );
+          })}
         </div>
       </section>
     </div>

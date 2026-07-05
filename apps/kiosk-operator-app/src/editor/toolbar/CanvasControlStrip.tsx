@@ -125,26 +125,49 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
     },
   ];
 
+  const stepperBtnStyle = {
+    width: "var(--editor-strip-btn-width)",
+    height: "var(--editor-strip-btn-height)",
+    borderRadius: "var(--editor-strip-btn-radius)",
+    backgroundColor: "var(--editor-strip-btn-bg)",
+  };
+
   return (
-    <div className="grid w-full grid-cols-2 gap-2 rounded-2xl border border-ink-700 bg-ink-900 p-3 sm:grid-cols-4">
+    <div
+      className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4"
+      style={{
+        borderStyle: "solid",
+        borderWidth: "var(--editor-strip-border-width)",
+        borderRadius: "var(--editor-strip-radius)",
+        borderColor:
+          "color-mix(in srgb, var(--editor-strip-border-color) calc(var(--editor-strip-border-opacity) * 100%), transparent)",
+        backgroundColor: "var(--editor-strip-bg)",
+        padding: "var(--editor-strip-padding)",
+        height: "var(--editor-strip-height, auto)",
+        boxSizing: "border-box",
+        overflow: "auto",
+      }}
+    >
       {steppers.map((stepper) => (
-        <div key={stepper.id} className="flex flex-col items-center gap-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-200">{stepper.label}</span>
+        <div key={stepper.id} className="flex flex-col items-center gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-200">{stepper.label}</span>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={stepper.onDecrease}
               disabled={!hasSelection}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-800 text-white transition-colors hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-30"
+              style={stepperBtnStyle}
+              className="flex items-center justify-center text-white transition-colors hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-30"
             >
               −
             </button>
-            <span className="w-12 text-center text-sm font-semibold text-white">{stepper.value}</span>
+            <span className="w-14 text-center text-base font-semibold text-white">{stepper.value}</span>
             <button
               type="button"
               onClick={stepper.onIncrease}
               disabled={!hasSelection}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-800 text-white transition-colors hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-30"
+              style={stepperBtnStyle}
+              className="flex items-center justify-center text-white transition-colors hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-30"
             >
               +
             </button>

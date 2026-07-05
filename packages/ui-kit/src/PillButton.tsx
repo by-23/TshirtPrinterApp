@@ -18,7 +18,7 @@ export function PillButton({ children, active = false, icon, className = "", ...
       className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         active
           ? "bg-neon-pink text-white shadow-neon-pink"
-          : "border border-ink-600 bg-ink-800 text-ink-200 hover:border-neon-pink/60 hover:text-white"
+          : "bg-ink-800 text-ink-200 hover:brightness-125 hover:text-white"
       } ${className}`}
       {...rest}
     >

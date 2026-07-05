@@ -1,8 +1,10 @@
+import type { LucideProps } from "lucide-react";
 import { DEFAULT_TSHIRT_BLACK, DEFAULT_TSHIRT_WHITE, useKioskImage } from "../lib/kioskImages.js";
+import { Heart } from "./icons.js";
 
 export interface PopularPrintItem {
   id: string;
-  Icon: import("react").ComponentType<import("react").SVGProps<SVGSVGElement>>;
+  Icon: import("react").ComponentType<LucideProps>;
   shirt: "white" | "black";
   color: string;
   likes: string;
@@ -41,9 +43,13 @@ export function PopularPrintSlideContent({ print }: { print: PopularPrintItem })
         )}
       </div>
       <span className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-pill bg-ink-950/80 px-2.5 py-1 text-[13px] font-bold text-white backdrop-blur">
-        <span aria-hidden style={{ color: "var(--brand-primary)" }}>
-          ❤
-        </span>
+        <Heart
+          aria-hidden
+          className="h-3.5 w-3.5"
+          fill="var(--brand-primary)"
+          stroke="var(--brand-primary)"
+          strokeWidth={0}
+        />
         {print.likes}
       </span>
     </div>

@@ -31,12 +31,19 @@ export interface GarmentColorOption {
 export const GARMENT_COLORS: readonly GarmentColorOption[] = [
   { id: "white", hex: "#ffffff" },
   { id: "black", hex: "#111111" },
-  { id: "red", hex: "#dc2626" },
-  { id: "navy", hex: "#1e3a8a" },
-  { id: "gray", hex: "#6b7280" },
-  { id: "yellow", hex: "#eab308" },
+  { id: "gray", hex: "#959594" },
+  { id: "cream", hex: "#e8ddc9" },
+  { id: "pink", hex: "#ecb9c0" },
+  { id: "lightBlue", hex: "#8cb6d2" },
+  { id: "green", hex: "#7ec196" },
+  { id: "yellow", hex: "#e2b954" },
+  { id: "red", hex: "#a52525" },
+  { id: "darkGreen", hex: "#556540" },
+  { id: "purple", hex: "#7a449a" },
+  { id: "navy", hex: "#10152a" },
 ];
 
-export const GARMENT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"] as const;
+export const GARMENT_SIZES = ["S", "M", "L", "XL", "XXL", "3XL"] as const;
 
-export const GARMENT_FABRICS = ["cotton", "polyester", "blend"] as const;
+export const GARMENT_FABRICS = ["cotton", "premium"] as const;
+export type GarmentFabric = (typeof GARMENT_FABRICS)[number];

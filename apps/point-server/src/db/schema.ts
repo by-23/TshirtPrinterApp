@@ -23,6 +23,19 @@ export const operators = sqliteTable("operators", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const designs = sqliteTable("designs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  category: text("category", {
+    enum: ["memes", "anime_movies", "games", "text", "custom", "ai_style"],
+  }).notNull(),
+  title: text("title").notNull(),
+  imageUrl: text("image_url").notNull().default(""),
+  isFeatured: integer("is_featured", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const orders = sqliteTable("orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   status: text("status", { enum: ["new", "accepted", "printing", "done"] })
