@@ -26,5 +26,53 @@
     "kk": "KK",
     "en": "EN",
     "zh": "ZH"
+  },
+  "editor": {
+    "title": "Дизайн редакторы",
+    "garmentType": "Киім түрі",
+    "garmentTypes": {
+      "tshirt": "Футболка",
+      "hoodie": "Худи"
+    },
+    "side": "Жағы",
+    "sides": {
+      "front": "Алды",
+      "back": "Арты"
+    },
+    "color": "Түсі",
+    "colors": {
+      "white": "Ақ",
+      "black": "Қара",
+      "red": "Қызыл",
+      "navy": "Қою көк",
+      "gray": "Сұр",
+      "yellow": "Сары"
+    },
+    "size": "Өлшемі",
+    "fabric": "Мата",
+    "fabrics": {
+      "cotton": "Мақта",
+      "polyester": "Полиэстер",
+      "blend": "Аралас"
+    },
+    "toolbar": {
+      "text": "Мәтін",
+      "addText": "Мәтін қосу",
+      "textPlaceholder": "Мәтін",
+      "stickers": "Стикерлер",
+      "uploadPhoto": "Фото жүктеу",
+      "object": "Нысан",
+      "flipHorizontal": "Көлденең айналдыру",
+      "flipVertical": "Тік айналдыру",
+      "scaleUp": "Үлкейту",
+      "scaleDown": "Кішірейту",
+      "rotateLeft": "Солға бұру",
+      "rotateRight": "Оңға бұру",
+      "bringForward": "Алға шығару",
+      "sendBackward": "Артқа жіберу",
+      "delete": "Жою"
+    },
+    "next": "Келесі",
+    "nextPlaceholder": "Төлем экраны келесі кезеңде қосылады"
   }
 }

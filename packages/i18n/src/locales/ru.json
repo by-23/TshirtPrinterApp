@@ -26,5 +26,53 @@
     "kk": "KK",
     "en": "EN",
     "zh": "ZH"
+  },
+  "editor": {
+    "title": "Редактор дизайна",
+    "garmentType": "Тип одежды",
+    "garmentTypes": {
+      "tshirt": "Футболка",
+      "hoodie": "Толстовка"
+    },
+    "side": "Сторона",
+    "sides": {
+      "front": "Перед",
+      "back": "Зад"
+    },
+    "color": "Цвет",
+    "colors": {
+      "white": "Белый",
+      "black": "Чёрный",
+      "red": "Красный",
+      "navy": "Тёмно-синий",
+      "gray": "Серый",
+      "yellow": "Жёлтый"
+    },
+    "size": "Размер",
+    "fabric": "Ткань",
+    "fabrics": {
+      "cotton": "Хлопок",
+      "polyester": "Полиэстер",
+      "blend": "Смесовая"
+    },
+    "toolbar": {
+      "text": "Текст",
+      "addText": "Добавить текст",
+      "textPlaceholder": "Текст",
+      "stickers": "Стикеры",
+      "uploadPhoto": "Загрузить фото",
+      "object": "Объект",
+      "flipHorizontal": "Отразить гориз.",
+      "flipVertical": "Отразить верт.",
+      "scaleUp": "Крупнее",
+      "scaleDown": "Мельче",
+      "rotateLeft": "Повернуть влево",
+      "rotateRight": "Повернуть вправо",
+      "bringForward": "На передний план",
+      "sendBackward": "На задний план",
+      "delete": "Удалить"
+    },
+    "next": "Далее",
+    "nextPlaceholder": "Экран оплаты появится на следующем этапе"
   }
 }

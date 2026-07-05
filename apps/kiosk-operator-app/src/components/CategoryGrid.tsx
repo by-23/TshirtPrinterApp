@@ -20,6 +20,11 @@ const CATEGORY_ICONS: Record<DesignCategory, string> = {
   ai_style: "✨",
 };
 
+// "text" and "custom" open straight into the editor with a blank garment
+// (per ТЗ: "чистая одежда + полный редактор"). The other categories still
+// point to the gallery stub until Stage 3 (catalog) and Stage 9 (AI) land.
+const EDITOR_CATEGORIES = new Set<DesignCategory>(["text", "custom"]);
+
 export function CategoryGrid() {
   const { t } = useTranslation();
   const categories = designCategorySchema.options;
@@ -29,7 +34,7 @@ export function CategoryGrid() {
       {categories.map((category) => (
         <Link
           key={category}
-          to={`/kiosk/category/${category}`}
+          to={EDITOR_CATEGORIES.has(category) ? "/kiosk/editor" : `/kiosk/category/${category}`}
           className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-gray-100 p-6 text-center transition-colors hover:bg-gray-200 active:bg-gray-300"
         >
           <span className="text-4xl">{CATEGORY_ICONS[category]}</span>

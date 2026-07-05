@@ -26,5 +26,53 @@
     "kk": "KK",
     "en": "EN",
     "zh": "ZH"
+  },
+  "editor": {
+    "title": "设计编辑器",
+    "garmentType": "服装类型",
+    "garmentTypes": {
+      "tshirt": "T恤",
+      "hoodie": "卫衣"
+    },
+    "side": "面",
+    "sides": {
+      "front": "正面",
+      "back": "背面"
+    },
+    "color": "颜色",
+    "colors": {
+      "white": "白色",
+      "black": "黑色",
+      "red": "红色",
+      "navy": "藏青色",
+      "gray": "灰色",
+      "yellow": "黄色"
+    },
+    "size": "尺寸",
+    "fabric": "面料",
+    "fabrics": {
+      "cotton": "棉",
+      "polyester": "聚酯纤维",
+      "blend": "混纺"
+    },
+    "toolbar": {
+      "text": "文字",
+      "addText": "添加文字",
+      "textPlaceholder": "文字",
+      "stickers": "贴纸",
+      "uploadPhoto": "上传照片",
+      "object": "对象",
+      "flipHorizontal": "水平翻转",
+      "flipVertical": "垂直翻转",
+      "scaleUp": "放大",
+      "scaleDown": "缩小",
+      "rotateLeft": "向左旋转",
+      "rotateRight": "向右旋转",
+      "bringForward": "上移一层",
+      "sendBackward": "下移一层",
+      "delete": "删除"
+    },
+    "next": "下一步",
+    "nextPlaceholder": "支付界面将在下一阶段添加"
   }
 }

@@ -26,5 +26,53 @@
     "kk": "KK",
     "en": "EN",
     "zh": "ZH"
+  },
+  "editor": {
+    "title": "Design Editor",
+    "garmentType": "Garment type",
+    "garmentTypes": {
+      "tshirt": "T-Shirt",
+      "hoodie": "Hoodie"
+    },
+    "side": "Side",
+    "sides": {
+      "front": "Front",
+      "back": "Back"
+    },
+    "color": "Color",
+    "colors": {
+      "white": "White",
+      "black": "Black",
+      "red": "Red",
+      "navy": "Navy",
+      "gray": "Gray",
+      "yellow": "Yellow"
+    },
+    "size": "Size",
+    "fabric": "Fabric",
+    "fabrics": {
+      "cotton": "Cotton",
+      "polyester": "Polyester",
+      "blend": "Blend"
+    },
+    "toolbar": {
+      "text": "Text",
+      "addText": "Add text",
+      "textPlaceholder": "Text",
+      "stickers": "Stickers",
+      "uploadPhoto": "Upload photo",
+      "object": "Object",
+      "flipHorizontal": "Flip horiz.",
+      "flipVertical": "Flip vert.",
+      "scaleUp": "Bigger",
+      "scaleDown": "Smaller",
+      "rotateLeft": "Rotate left",
+      "rotateRight": "Rotate right",
+      "bringForward": "Bring forward",
+      "sendBackward": "Send backward",
+      "delete": "Delete"
+    },
+    "next": "Next",
+    "nextPlaceholder": "The payment screen will be added in the next stage"
   }
 }
