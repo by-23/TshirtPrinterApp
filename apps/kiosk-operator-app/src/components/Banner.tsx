@@ -1,59 +1,113 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
-import { useTranslation } from "react-i18next";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import { HOME_STATIC_LABELS } from "../lib/homeLabels.js";
+import {
+  BoltIcon,
+  CrownIcon,
+  FlameIcon,
+  GamepadIcon,
+  PhotoIcon,
+  RobotIcon,
+  SmileyIcon,
+  StarIcon,
+} from "./icons.js";
+import { PopularPrintSlideContent, type PopularPrintItem } from "./PopularPrintSlide.js";
 
 /**
  * Placeholder "popular prints" until the catalog (Stage 3) provides real
- * designs/thumbnails. Layout (card + like badge + dots) matches
- * `docs/ui-mockups/category-select.png`; the artwork itself is a stand-in.
+ * designs/thumbnails. Each card renders the actual blank t-shirt mockup
+ * (`Tshirt_White.png` / `Tshirt_Black.png`, provided by the client) with a
+ * placeholder graphic "printed" on the chest — no color emoji (renders as
+ * empty boxes on systems without a color emoji font) and no external stock
+ * photos, just the real garment art + simple SVG stand-ins.
+ *
+ * T-shirt mockups and per-slide print images can be swapped live from the
+ * Design Panel (stored in localStorage as data URLs until exported).
+ *
+ * More entries than fit on screen at once (slidesPerView=5): Swiper
+ * auto-hides its arrows/dots ("swiper-button-lock") whenever every slide
+ * already fits in view, which isn't the carousel look the mockup wants.
  */
-const POPULAR_PRINTS = [
-  { id: "cool-bear", emoji: "🐻", gradient: "from-cyan-500 to-blue-700", likes: "1.2k" },
-  { id: "smiley-drip", emoji: "🙂", gradient: "from-slate-700 to-slate-900", likes: "987" },
-  { id: "synthwave-car", emoji: "🚗", gradient: "from-fuchsia-600 to-purple-800", likes: "1.5k" },
-  { id: "anime-hero", emoji: "🥷", gradient: "from-orange-500 to-red-700", likes: "2.3k" },
-  { id: "marble-bust", emoji: "🗿", gradient: "from-amber-200 to-amber-500", likes: "1.1k" },
+const POPULAR_PRINTS: PopularPrintItem[] = [
+  { id: "cool-bear", Icon: StarIcon, shirt: "white", color: "#38bdf8", likes: "1.2k" },
+  { id: "smiley-drip", Icon: SmileyIcon, shirt: "black", color: "#f8fafc", likes: "987" },
+  { id: "synthwave-car", Icon: BoltIcon, shirt: "black", color: "#e879f9", likes: "1.5k" },
+  { id: "anime-hero", Icon: FlameIcon, shirt: "white", color: "#fb923c", likes: "2.3k" },
+  { id: "marble-bust", Icon: CrownIcon, shirt: "black", color: "#fcd34d", likes: "1.1k" },
+  { id: "retro-console", Icon: GamepadIcon, shirt: "white", color: "#fb7185", likes: "860" },
+  { id: "gallery-print", Icon: PhotoIcon, shirt: "black", color: "#34d399", likes: "1.4k" },
+  { id: "bot-buddy", Icon: RobotIcon, shirt: "white", color: "#a78bfa", likes: "742" },
 ];
 
 export function Banner() {
-  const { t } = useTranslation();
-
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-center text-lg font-bold uppercase tracking-wide text-neon-pink sm:text-xl">
-        <span aria-hidden>✦</span> {t("home.banner.title")} <span aria-hidden>✦</span>
+    <section className="flex flex-col gap-5">
+      <h2
+        style={{ color: "var(--brand-primary)" }}
+        className="text-center text-[26px] font-extrabold uppercase tracking-wide"
+      >
+        <span aria-hidden>✦</span> {HOME_STATIC_LABELS.bannerTitle} <span aria-hidden>✦</span>
       </h2>
 
-      <Swiper
-        modules={[Autoplay, Navigation, Pagination]}
-        autoplay={{ delay: 4000, disableOnInteraction: false }}
-        navigation
-        pagination={{ clickable: true }}
-        slidesPerView={2.2}
-        spaceBetween={16}
-        loop
-        breakpoints={{ 768: { slidesPerView: 4.2 } }}
-        className="w-full !pb-8 [--swiper-navigation-color:#ff2d95] [--swiper-pagination-color:#ff2d95] [--swiper-pagination-bullet-inactive-color:#5b6690]"
-      >
-        {POPULAR_PRINTS.map((print) => (
-          <SwiperSlide key={print.id}>
-            <div
-              className={`relative flex h-32 w-full items-center justify-center overflow-hidden rounded-2xl border border-ink-600 bg-gradient-to-br ${print.gradient} sm:h-40`}
-            >
-              <span className="text-5xl drop-shadow" aria-hidden>
-                {print.emoji}
-              </span>
-              <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-ink-950/70 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur">
-                <span aria-hidden>❤</span>
-                {print.likes}
-              </span>
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+      <div className="relative">
+        <button
+          type="button"
+          aria-label="Предыдущий популярный принт"
+          className="popular-swiper-nav popular-swiper-prev absolute left-[-34px] top-1/2 z-10 flex -translate-y-1/2 items-center justify-center transition-transform hover:scale-105 active:scale-95"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+            <path
+              d="M15 6l-6 6 6 6"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          aria-label="Следующий популярный принт"
+          className="popular-swiper-nav popular-swiper-next absolute right-[-34px] top-1/2 z-10 flex -translate-y-1/2 items-center justify-center transition-transform hover:scale-105 active:scale-95"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+            <path
+              d="M9 6l6 6-6 6"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
+        <div className="popular-frame overflow-hidden px-5 py-0">
+          <Swiper
+            modules={[Autoplay, Navigation, Pagination]}
+            autoplay={{ delay: 4000, disableOnInteraction: false }}
+            navigation={{
+              prevEl: ".popular-swiper-prev",
+              nextEl: ".popular-swiper-next",
+            }}
+            pagination={{ clickable: true, el: ".popular-swiper-pagination" }}
+            slidesPerView={5}
+            spaceBetween={10}
+            loop
+            className="popular-swiper h-[310px] w-full"
+          >
+            {POPULAR_PRINTS.map((print) => (
+              <SwiperSlide key={print.id}>
+                <PopularPrintSlideContent print={print} />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+
+        <div className="popular-swiper-pagination mt-3" />
+      </div>
     </section>
   );
 }

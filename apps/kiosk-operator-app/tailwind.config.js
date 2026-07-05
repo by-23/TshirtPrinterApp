@@ -18,7 +18,14 @@ export default {
           400: "#5b6690",
           200: "#a7b0d0",
         },
-        // Neon accent palette matching the reference mockups' category/button colors.
+        // NOTE: brand primary/secondary/tertiary + all card corner radii used
+        // to live here as static Tailwind tokens. They're now CSS custom
+        // properties in `index.css` instead (--brand-primary, --radius-card,
+        // etc.) so the in-app Design Panel (ThemePanel.tsx) can retune them
+        // live, with components reading them via `style={{ ... }}` or
+        // Tailwind arbitrary values like `rounded-[var(--radius-card)]`.
+        // Neon accent palette used to color-code catalog categories (kept
+        // separate from `brand` since it's a categorization tool, not identity).
         neon: {
           pink: "#ff2d95",
           cyan: "#22d3f5",
@@ -28,6 +35,12 @@ export default {
           green: "#22c55e",
           yellow: "#eab308",
         },
+      },
+      borderRadius: {
+        // `pill` is the only corner radius still fixed at build time (it's
+        // always "fully round" regardless of element size, so there's
+        // nothing to tune). Card radii are CSS vars — see the note above.
+        pill: "9999px",
       },
       boxShadow: {
         "neon-pink": "0 0 0 1px rgba(255,45,149,0.6), 0 0 20px rgba(255,45,149,0.45)",

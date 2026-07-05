@@ -1,3 +1,313 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: #000;
+}
+
+/* ==========================================================================
+   Live theme tokens
+   --------------------------------------------------------------------------
+   Every brand color, corner radius and glow used on the kiosk home screen
+   reads from these custom properties instead of being hard-coded in Tailwind
+   classes. That's what lets the in-app Design Panel (ThemePanel.tsx, toggled
+   from the gear button next to the kiosk frame) retune the whole look live,
+   with zero rebuild. Once you land on values you like, use the Design Panel's
+   «Сохранить по умолчанию» (dev server) to write them here permanently.
+   ========================================================================== */
+:root {
+  /* Brand accent hierarchy — header active language pill, banner frame, AI badge, hearts. */
+  --brand-primary: #ff2d95;
+  --brand-secondary: #22d3f5;
+  --brand-tertiary: #8b5cf6;
+
+  /* Corner rounding shared by every card/panel in the app. Radius scales with
+     element size: big panels use --radius-card, nested/smaller ones use the
+     smaller tokens, so everything still reads as one consistent language. */
+  --radius-card: 50px;
+  --radius-card-inner: 30px;
+  --radius-card-sm: 24px;
+
+  /* Multiplier applied to every card's outer glow (0 = off, 1 = default, 2 = intense). */
+  --glow-strength: 1;
+
+  /* Shared controls for category cards. These are exposed in the Design Panel:
+     border width changes the light outline, gradient direction changes the
+     inner darkened fill direction while keeping each card's own accent color. */
+  --category-border-width: 5px;
+  --category-gradient-direction: to top;
+
+  /* Shared typography + position for category card labels (main + sub). */
+  --category-title-font-family: 'Segoe UI', system-ui, sans-serif;
+  --category-title-size: 34px;
+  --category-subtitle-size: 17px;
+  --category-text-offset-x: 0px;
+  --category-text-offset-y: 10px;
+  --category-text-gap: 6px;
+
+  /* Bottom «Выберите категорию» callout bar. */
+  --category-select-border-width: 0.5px;
+  --category-select-radius: 32px;
+  --category-select-bg-start: #0b0f1e;
+  --category-select-bg-end: #070a14;
+  --category-select-glow-strength: 3;
+  --category-select-icon-size: 83px;
+  --category-select-icon-color: #c0527a;
+  --category-select-title-font-family: 'Segoe UI', system-ui, sans-serif;
+  --category-select-title-size: 30px;
+  --category-select-subtitle-size: 16px;
+  --category-select-title-color: #ffffff;
+  --category-select-subtitle-opacity: 0.55;
+  --category-select-text-gap: 8px;
+  --category-select-content-gap: 36px;
+  --category-select-padding-x: 32px;
+  --category-select-padding-y: 42px;
+  --category-select-offset-x: 0px;
+  --category-select-offset-y: 0px;
+
+  /* Background of the wide "Popular prints" carousel block, inside the bright
+     brand frame. Kept separate from the frame colors so the panel can tune the
+     dark fill without changing the outer neon border. */
+  --popular-border-width: 4px;
+  --popular-glow-strength: 3;
+  --popular-shirt-scale: 0.85;
+  --popular-print-scale: 1.3;
+  --popular-bg-direction: to right;
+  --popular-bg-start: #131a2e;
+  --popular-bg-middle: #3c084c;
+  --popular-bg-end: #0d0f50;
+
+  /* Direct gradient stops per category card. The panel exposes these as
+     gradient controls (top / middle / bottom / border), not a single accent. */
+  --cat-memes-start: #07408c;
+  --cat-memes-middle: #031758;
+  --cat-memes-end: #020c43;
+  --cat-memes-border: #0d619a;
+
+  --cat-anime-start: #aa4e1d;
+  --cat-anime-middle: #a33505;
+  --cat-anime-end: #852800;
+  --cat-anime-border: #d14900;
+
+  --cat-games-start: #840606;
+  --cat-games-middle: #540303;
+  --cat-games-end: #410101;
+  --cat-games-border: #921111;
+
+  --cat-text-start: #00474a;
+  --cat-text-middle: #004043;
+  --cat-text-end: #002a33;
+  --cat-text-border: #00797a;
+
+  --cat-custom-start: #7e4207;
+  --cat-custom-middle: #613405;
+  --cat-custom-end: #582804;
+  --cat-custom-border: #a26013;
+
+  --cat-ai-start: #300651;
+  --cat-ai-middle: #160945;
+  --cat-ai-end: #160745;
+  --cat-ai-border: #6d338b;
+
+  /* Per-category image layout (scale + vertical offset from card bottom). */
+  --cat-memes-image-scale: 2.95;
+  --cat-memes-image-offset-x: 0px;
+  --cat-memes-image-offset-y: 94px;
+  --cat-anime-image-scale: 2.5;
+  --cat-anime-image-offset-x: 23px;
+  --cat-anime-image-offset-y: 40px;
+  --cat-games-image-scale: 2.3;
+  --cat-games-image-offset-x: 0px;
+  --cat-games-image-offset-y: 32px;
+  --cat-text-image-scale: 1.55;
+  --cat-text-image-offset-x: 0px;
+  --cat-text-image-offset-y: -40px;
+  --cat-custom-image-scale: 1.55;
+  --cat-custom-image-offset-x: 0px;
+  --cat-custom-image-offset-y: -40px;
+  --cat-ai-image-scale: 1.55;
+  --cat-ai-image-offset-x: 0px;
+  --cat-ai-image-offset-y: -40px;
+
+  /* Derived tokens — recompute automatically whenever the base variables
+     above change, so components never need to duplicate this math. */
+  --brand-frame: linear-gradient(to bottom right,
+      var(--brand-primary),
+      var(--brand-secondary),
+      var(--brand-tertiary));
+  --brand-glow: 0 0 calc(46px * var(--glow-strength)) calc(-10px * var(--glow-strength)) color-mix(in srgb, var(--brand-primary) 55%, transparent);
+  --popular-frame-glow: 0 0 calc(54px * var(--popular-glow-strength)) calc(-10px * var(--popular-glow-strength)) color-mix(in srgb, var(--brand-primary) 62%, transparent);
+  --brand-pill-glow:
+    0 0 0 1px color-mix(in srgb, var(--brand-primary) 65%, transparent),
+    0 0 calc(24px * var(--glow-strength)) color-mix(in srgb, var(--brand-primary) 55%, transparent);
+  --popular-bg: linear-gradient(var(--popular-bg-direction),
+      var(--popular-bg-start),
+      var(--popular-bg-middle),
+      var(--popular-bg-end));
+}
+
+/* Category cards read their whole gradient directly from CSS variables. */
+.category-card {
+  border-width: var(--category-border-width);
+  background-image: linear-gradient(var(--category-gradient-direction),
+      var(--cat-gradient-start),
+      var(--cat-gradient-middle) 55%,
+      var(--cat-gradient-end));
+  border-color: var(--cat-border-color);
+  box-shadow: 0 0 calc(30px * var(--glow-strength)) calc(-10px * var(--glow-strength)) color-mix(in srgb, var(--cat-border-color) 62%, transparent);
+}
+
+.category-card-labels {
+  translate: var(--category-text-offset-x, 0px) var(--category-text-offset-y, 0px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--category-text-gap, 6px);
+  font-family: var(--category-title-font-family, system-ui, sans-serif);
+  text-align: center;
+}
+
+.category-card-title {
+  font-size: var(--category-title-size, 21px);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.category-card-subtitle {
+  font-size: var(--category-subtitle-size, 11px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.7);
+}
+
+/* Popular prints frame — one element, no nested radii. Gradient border uses the
+   padding-box / border-box clip trick so corners stay smooth at any border
+   width (nested inner divs often clip the ring when radii don't match exactly). */
+.popular-frame {
+  border: var(--popular-border-width) solid transparent;
+  border-radius: var(--radius-card);
+  background-image: var(--popular-bg), var(--brand-frame);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: var(--popular-frame-glow);
+}
+
+.category-select-banner {
+  translate: var(--category-select-offset-x, 0px) var(--category-select-offset-y, 0px);
+  display: flex;
+  align-items: center;
+  gap: var(--category-select-content-gap, 24px);
+  padding: var(--category-select-padding-y, 42px) var(--category-select-padding-x, 32px);
+  border: var(--category-select-border-width, 2px) solid transparent;
+  border-radius: var(--category-select-radius, var(--radius-card-sm));
+  background-image:
+    linear-gradient(var(--category-select-bg-start, #0b0f1e), var(--category-select-bg-end, #070a14)),
+    var(--brand-frame);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow:
+    0 0 calc(28px * var(--category-select-glow-strength, 1)) calc(-8px * var(--category-select-glow-strength, 1)) color-mix(in srgb, var(--brand-primary) 35%, transparent);
+}
+
+.category-select-icon {
+  width: var(--category-select-icon-size, 52px);
+  height: var(--category-select-icon-size, 52px);
+  flex-shrink: 0;
+  color: var(--category-select-icon-color, var(--brand-primary));
+}
+
+.category-select-labels {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--category-select-text-gap, 4px);
+  text-align: left;
+  font-family: var(--category-select-title-font-family, system-ui, sans-serif);
+}
+
+.category-select-title {
+  font-size: var(--category-select-title-size, 22px);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: var(--category-select-title-color, #fff);
+}
+
+.category-select-subtitle {
+  font-size: var(--category-select-subtitle-size, 13px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / var(--category-select-subtitle-opacity, 0.7));
+}
+
+.category-art-wrap {
+  translate: var(--cat-image-offset-x, 0px) var(--cat-image-offset-y, 0px);
+}
+
+.category-art-scale {
+  scale: var(--cat-image-scale, 1);
+  transform-origin: bottom center;
+}
+
+.popular-print-art {
+  width: calc(4rem * var(--popular-print-scale, 1));
+  height: calc(4rem * var(--popular-print-scale, 1));
+}
+
+.popular-swiper .swiper-slide {
+  height: auto;
+}
+
+/* Banner carousel chrome (custom external arrows + dots). */
+.popular-swiper-nav {
+  width: 44px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 70%, transparent);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18), transparent 34%),
+    rgba(5, 6, 15, 0.72);
+  border-radius: 9999px;
+  color: #fff;
+  box-shadow: 0 0 calc(24px * var(--popular-glow-strength)) color-mix(in srgb, var(--brand-primary) 36%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.popular-swiper-nav svg {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--brand-primary) 70%, transparent));
+}
+
+.popular-swiper-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 12px;
+}
+
+.popular-swiper-pagination .swiper-pagination-bullet {
+  width: 7px;
+  height: 7px;
+  margin: 0;
+  opacity: 1;
+  background: #5b6690;
+  transition: width 0.2s ease;
+}
+
+.popular-swiper-pagination .swiper-pagination-bullet-active {
+  width: 22px;
+  border-radius: 9999px;
+  background: var(--brand-primary);
+}

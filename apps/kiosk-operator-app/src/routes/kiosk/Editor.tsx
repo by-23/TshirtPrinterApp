@@ -50,7 +50,7 @@ export function Editor() {
   }
 
   return (
-    <div ref={containerRef} className="flex min-h-screen flex-col gap-4 bg-ink-950 p-4 text-white">
+    <div ref={containerRef} className="flex h-full w-full flex-col gap-4 overflow-y-auto bg-ink-950 p-4 text-white">
       <header className="flex items-center justify-between gap-4">
         <Link
           to="/kiosk"

@@ -10,7 +10,7 @@ export function CategoryStub() {
   const title = parsed.success ? t(CATEGORY_LABEL_KEYS[parsed.data]) : category;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ink-950 text-white">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-ink-950 text-white">
       <h1 className="text-4xl font-bold">{title} (заглушка)</h1>
       <p className="text-ink-200">Раздел будет реализован в следующих этапах.</p>
       <Link
