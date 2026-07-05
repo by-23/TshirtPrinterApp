@@ -1,9 +1,30 @@
 {
   "common": {
+    "appTitle": "Print Kiosk",
     "print": "Print",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "back": "Back"
   },
   "home": {
-    "chooseLanguage": "Choose language"
+    "chooseLanguage": "Choose language",
+    "categories": {
+      "memes": "Memes",
+      "animeMovies": "Anime & Movies",
+      "games": "Games",
+      "text": "Text",
+      "custom": "Custom Design",
+      "aiStyle": "AI Style"
+    },
+    "banner": {
+      "newTitle": "New this season",
+      "popularTitle": "Popular designs",
+      "promoTitle": "10% off your first order"
+    }
+  },
+  "language": {
+    "ru": "RU",
+    "kk": "KK",
+    "en": "EN",
+    "zh": "ZH"
   }
 }

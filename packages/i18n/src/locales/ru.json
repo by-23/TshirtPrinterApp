@@ -1,9 +1,30 @@
 {
   "common": {
+    "appTitle": "Принт-Киоск",
     "print": "Печать",
-    "loading": "Загрузка..."
+    "loading": "Загрузка...",
+    "back": "Назад"
   },
   "home": {
-    "chooseLanguage": "Выберите язык"
+    "chooseLanguage": "Выберите язык",
+    "categories": {
+      "memes": "Мемы",
+      "animeMovies": "Аниме и Фильмы",
+      "games": "Игры",
+      "text": "Надписи",
+      "custom": "Свой дизайн",
+      "aiStyle": "ИИ-стиль"
+    },
+    "banner": {
+      "newTitle": "Новинки сезона",
+      "popularTitle": "Популярные дизайны",
+      "promoTitle": "Скидка 10% на первый заказ"
+    }
+  },
+  "language": {
+    "ru": "RU",
+    "kk": "KK",
+    "en": "EN",
+    "zh": "ZH"
   }
 }

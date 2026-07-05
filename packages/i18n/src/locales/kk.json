@@ -1,9 +1,30 @@
 {
   "common": {
+    "appTitle": "Баспа Киоскі",
     "print": "Басып шығару",
-    "loading": "Жүктелуде..."
+    "loading": "Жүктелуде...",
+    "back": "Артқа"
   },
   "home": {
-    "chooseLanguage": "Тілді таңдаңыз"
+    "chooseLanguage": "Тілді таңдаңыз",
+    "categories": {
+      "memes": "Мемдер",
+      "animeMovies": "Аниме және Фильмдер",
+      "games": "Ойындар",
+      "text": "Жазулар",
+      "custom": "Өз дизайны",
+      "aiStyle": "ЖИ-стилі"
+    },
+    "banner": {
+      "newTitle": "Маусым жаңалықтары",
+      "popularTitle": "Танымал дизайндар",
+      "promoTitle": "Бірінші тапсырысқа 10% жеңілдік"
+    }
+  },
+  "language": {
+    "ru": "RU",
+    "kk": "KK",
+    "en": "EN",
+    "zh": "ZH"
   }
 }

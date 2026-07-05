@@ -1,9 +1,30 @@
 {
   "common": {
+    "appTitle": "打印亭",
     "print": "打印",
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "back": "返回"
   },
   "home": {
-    "chooseLanguage": "选择语言"
+    "chooseLanguage": "选择语言",
+    "categories": {
+      "memes": "表情包",
+      "animeMovies": "动漫与电影",
+      "games": "游戏",
+      "text": "文字",
+      "custom": "自定义设计",
+      "aiStyle": "AI风格"
+    },
+    "banner": {
+      "newTitle": "本季新品",
+      "popularTitle": "热门设计",
+      "promoTitle": "首单享9折优惠"
+    }
+  },
+  "language": {
+    "ru": "RU",
+    "kk": "KK",
+    "en": "EN",
+    "zh": "ZH"
   }
 }
