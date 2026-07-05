@@ -5,7 +5,10 @@ import { CategorySelectBanner } from "../../components/CategorySelectBanner.js";
 
 export function KioskHome() {
   return (
-    <div className="kiosk-theme-root flex h-full w-full flex-col overflow-y-auto bg-ink-950 px-10 pb-12 pt-12 text-white">
+    <div
+      className="kiosk-theme-root flex h-full w-full flex-col overflow-y-auto px-10 pb-12 pt-12 text-white"
+      style={{ backgroundColor: "var(--kiosk-page-bg)" }}
+    >
       <header className="mb-10 flex justify-end">
         <LanguageSwitcher />
       </header>

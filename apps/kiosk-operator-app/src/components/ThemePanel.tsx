@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Settings } from "./icons.js";
 import { DEFAULT_UI_FONT, THEME_FONT_OPTIONS } from "../lib/fonts.js";
 import {
@@ -8,6 +8,7 @@ import {
   resetKioskImage,
   setKioskImageOverride,
   useKioskImageOverrides,
+  type KioskImageDefinition,
 } from "../lib/kioskImages.js";
 
 const THEME_FONT_SELECT_OPTIONS = THEME_FONT_OPTIONS.map(({ label, family }) => ({
@@ -56,6 +57,10 @@ interface Section {
  * single list the panel reads/writes, and what "Reset" restores.
  */
 const SECTIONS: Section[] = [
+  {
+    title: "Общий фон страницы",
+    tokens: [{ key: "--kiosk-page-bg", label: "Фон страницы", type: "color", defaultValue: "#05060f" }],
+  },
   {
     title: "Шрифт",
     tokens: [
@@ -688,15 +693,12 @@ export function ThemePanel() {
     }
   }
 
-  function handleImagePick(key: string, file: File | undefined) {
+  async function handleImagePick(key: string, file: File | undefined) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setKioskImageOverride(key, reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    const saved = await setKioskImageOverride(key, file);
+    if (!saved) {
+      window.alert("Не удалось сохранить изображение. Проверьте свободное место на диске.");
+    }
   }
 
   function renderToken(token: Token) {
@@ -821,55 +823,16 @@ export function ThemePanel() {
                 <span className="text-sm font-bold uppercase tracking-wider text-white/40">
                   {section.title}
                 </span>
-                {section.images.map((image) => {
-                  const previewUrl = getKioskImageUrl(image.key);
-                  const isOverridden = Boolean(imageOverrides[image.key]);
-
-                  return (
-                    <div key={image.key} className="flex items-center justify-between gap-6 text-xl">
-                      <span className="min-w-[180px] text-white/80">{image.label}</span>
-                      <div className="flex flex-1 items-center gap-4">
-                        {previewUrl ? (
-                          <img
-                            src={previewUrl}
-                            alt=""
-                            className="h-14 w-14 rounded-xl border-2 border-white/15 bg-[#171a28] object-contain p-1"
-                          />
-                        ) : (
-                          <span className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-dashed border-white/15 text-sm text-white/40">
-                            —
-                          </span>
-                        )}
-                        <label className="cursor-pointer rounded-xl border-2 border-white/15 bg-white/5 px-4 py-3 text-base font-semibold uppercase tracking-wide text-white/90 transition-colors hover:bg-white/10">
-                          Заменить
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              handleImagePick(image.key, e.target.files?.[0]);
-                              e.target.value = "";
-                            }}
-                          />
-                        </label>
-                        {isOverridden ? (
-                          <span className="text-sm text-white/45">своё</span>
-                        ) : image.optional ? (
-                          <span className="text-sm text-white/45">по умолчанию</span>
-                        ) : (
-                          <span className="text-sm text-white/45">встроенное</span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => resetKioskImage(image.key)}
-                        className="shrink-0 rounded-full border-2 border-white/10 px-3 py-1.5 text-sm font-semibold uppercase tracking-wide text-white/50 transition-colors hover:border-white/30 hover:text-white"
-                      >
-                        Сброс
-                      </button>
-                    </div>
-                  );
-                })}
+                {section.images.map((image) => (
+                  <KioskImagePickerRow
+                    key={image.key}
+                    image={image}
+                    previewUrl={getKioskImageUrl(image.key)}
+                    isOverridden={imageOverrides.has(image.key)}
+                    onPick={(file) => handleImagePick(image.key, file)}
+                    onReset={() => resetKioskImage(image.key)}
+                  />
+                ))}
               </div>
             ))}
           </div>
@@ -899,6 +862,71 @@ export function ThemePanel() {
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function KioskImagePickerRow({
+  image,
+  previewUrl,
+  isOverridden,
+  onPick,
+  onReset,
+}: {
+  image: KioskImageDefinition;
+  previewUrl: string;
+  isOverridden: boolean;
+  onPick: (file: File | undefined) => void;
+  onReset: () => void;
+}) {
+  const inputId = useId();
+
+  return (
+    <div className="flex items-center justify-between gap-6 text-xl">
+      <span className="min-w-[180px] text-white/80">{image.label}</span>
+      <div className="flex flex-1 items-center gap-4">
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt=""
+            className="h-14 w-14 rounded-xl border-2 border-white/15 bg-[#171a28] object-contain p-1"
+          />
+        ) : (
+          <span className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-dashed border-white/15 text-sm text-white/40">
+            —
+          </span>
+        )}
+        <label
+          htmlFor={inputId}
+          className="cursor-pointer rounded-xl border-2 border-white/15 bg-white/5 px-4 py-3 text-base font-semibold uppercase tracking-wide text-white/90 transition-colors hover:bg-white/10"
+        >
+          Заменить
+        </label>
+        <input
+          id={inputId}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(e) => {
+            onPick(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+        {isOverridden ? (
+          <span className="text-sm text-white/45">своё</span>
+        ) : image.optional ? (
+          <span className="text-sm text-white/45">по умолчанию</span>
+        ) : (
+          <span className="text-sm text-white/45">встроенное</span>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onReset}
+        className="shrink-0 rounded-full border-2 border-white/10 px-3 py-1.5 text-sm font-semibold uppercase tracking-wide text-white/50 transition-colors hover:border-white/30 hover:text-white"
+      >
+        Сброс
+      </button>
     </div>
   );
 }

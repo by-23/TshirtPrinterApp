@@ -40,6 +40,8 @@ textarea {
 :root {
   /* Global UI typeface — every screen, panel and component inherits this. */
     --font-family: 'Roboto', sans-serif;
+  /* Main kiosk home screen page background — tuned from ThemePanel.tsx. */
+    --kiosk-page-bg: #05060f;
   /* Brand accent hierarchy — header active language pill, banner frame, AI badge, hearts. */
   --brand-primary: #ff2d95;
   --brand-secondary: #22d3f5;
@@ -179,6 +181,7 @@ textarea {
   --editor-page-section-gap: 16px;
   --editor-main-columns-gap: 24px;
   --editor-right-panel-gap: 20px;
+  --editor-right-panel-width: 288px;
   --editor-garment-blocks-gap: 20px;
   --editor-center-column-gap: 16px;
   --editor-price-section-gap: 20px;
@@ -272,6 +275,7 @@ textarea {
   --editor-color-block-radius: 16px;
   --editor-color-block-padding: 10px;
   --editor-color-block-height: auto;
+  --editor-color-block-content-align: center;
 
   --editor-size-pill-radius: 12px;
   --editor-size-pill-gap: 12px;
@@ -286,6 +290,7 @@ textarea {
   --editor-size-block-radius: 16px;
   --editor-size-block-padding: 10px;
   --editor-size-block-height: auto;
+  --editor-size-block-content-align: center;
 
   --editor-fabric-pill-radius: 12px;
   --editor-fabric-pill-gap: 12px;
@@ -300,6 +305,7 @@ textarea {
   --editor-fabric-block-radius: 16px;
   --editor-fabric-block-padding: 20px;
   --editor-fabric-block-height: auto;
+  --editor-fabric-block-content-align: center;
 
   --editor-secondary-btn-radius: 16px;
   --editor-secondary-btn-gap: 10px;
@@ -326,6 +332,7 @@ textarea {
   --editor-price-block-radius: 16px;
   --editor-price-block-padding: 16px;
   --editor-price-block-height: auto;
+  --editor-price-block-content-align: center;
   --editor-print-btn-radius: 16px;
   --editor-print-btn-height: 150px;
   --editor-print-btn-bg: #de3770;
@@ -338,20 +345,25 @@ textarea {
   --editor-ordernote-block-radius: 12px;
   --editor-ordernote-block-padding: 12px;
   --editor-ordernote-block-height: auto;
+  --editor-ordernote-block-content-align: center;
 
-  --editor-popular-tile-width: 183px;
-  --editor-popular-tile-height: 60px;
   --editor-popular-tile-radius: 12px;
-  --editor-popular-tile-gap: 16px;
+  --editor-popular-image-gap: 16px;
   --editor-popular-tile-bg: #02060d;
-  --editor-popular-emoji-size: 48px;
+  --editor-popular-image-width: 167px;
+    --editor-popular-image-height: 44px;
   --editor-popular-block-border-width: 1.5px;
   --editor-popular-block-border-color: #242938;
   --editor-popular-block-border-opacity: 1;
   --editor-popular-block-radius: 16px;
   --editor-popular-block-padding: 16px;
   --editor-popular-block-height: auto;
-  --editor-popular-block-width: fit-content;
+  --editor-popular-block-width: 100%;
+  --editor-popular-scroll-size: 6px;
+    --editor-popular-scroll-track-color: #242938;
+    --editor-popular-scroll-track-opacity: 0.45;
+    --editor-popular-scroll-thumb-color: #5b6690;
+    --editor-popular-scroll-thumb-opacity: 0.9;
 
   --editor-tips-icon-width: 50px;
   --editor-tips-icon-height: 50px;
@@ -364,7 +376,7 @@ textarea {
   --editor-tips-block-radius: 16px;
   --editor-tips-block-padding: 16px;
   --editor-tips-block-height: auto;
-  --editor-tips-block-width: fit-content;
+  --editor-tips-block-width: 100%;
 }
 
 /* Category cards read their whole gradient directly from CSS variables. */
@@ -524,4 +536,49 @@ textarea {
   width: 22px;
   border-radius: 9999px;
   background: var(--brand-primary);
+}
+@property --editor-popular-scroll-size {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 6px;
+}
+
+.editor-popular-scroll {
+  --editor-popular-scroll-size: 6px;
+  --editor-popular-scroll-track-color: #242938;
+  --editor-popular-scroll-track-opacity: 0.45;
+  --editor-popular-scroll-thumb-color: #5b6690;
+  --editor-popular-scroll-thumb-opacity: 0.9;
+  padding-bottom: var(--editor-popular-scroll-size);
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--editor-popular-scroll-thumb-color) calc(var(--editor-popular-scroll-thumb-opacity) * 100%), transparent) color-mix(in srgb, var(--editor-popular-scroll-track-color) calc(var(--editor-popular-scroll-track-opacity) * 100%), transparent);
+}
+
+.editor-popular-scroll::-webkit-scrollbar {
+  height: var(--editor-popular-scroll-size);
+}
+
+.editor-popular-scroll::-webkit-scrollbar-button,
+.editor-popular-scroll::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.editor-popular-scroll::-webkit-scrollbar-track {
+  height: var(--editor-popular-scroll-size);
+  background: color-mix(in srgb, var(--editor-popular-scroll-track-color) calc(var(--editor-popular-scroll-track-opacity) * 100%), transparent);
+  border-radius: 9999px;
+}
+
+.editor-popular-scroll::-webkit-scrollbar-thumb {
+  height: var(--editor-popular-scroll-size);
+  min-height: var(--editor-popular-scroll-size);
+  background: color-mix(in srgb, var(--editor-popular-scroll-thumb-color) calc(var(--editor-popular-scroll-thumb-opacity) * 100%), transparent);
+  border-radius: 9999px;
+}
+
+.editor-popular-scroll::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.15);
 }

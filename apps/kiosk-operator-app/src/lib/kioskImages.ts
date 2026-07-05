@@ -2,19 +2,20 @@ import { useEffect, useState } from "react";
 import tshirtBlack from "../assets/tshirt-black.png";
 import tshirtWhite from "../assets/tshirt-white.png";
 import { CATEGORY_HOME_LABELS } from "./homeLabels.js";
+import {
+  clearAllImageOverrides,
+  deleteImageOverride,
+  ensureKioskImageStoreReady,
+  getCachedImageUrl,
+  getOverrideKeys,
+  hasCachedOverride,
+  saveImageOverride,
+} from "./kioskImageStore.js";
+import { PRINT_CATALOG, printImageKey } from "./printCatalog.js";
 
-export const POPULAR_PRINT_IDS = [
-  "cool-bear",
-  "smiley-drip",
-  "synthwave-car",
-  "anime-hero",
-  "marble-bust",
-  "retro-console",
-  "gallery-print",
-  "bot-buddy",
-] as const;
+export type PopularPrintId = string;
 
-export type PopularPrintId = (typeof POPULAR_PRINT_IDS)[number];
+export { PRINT_CATALOG, printImageKey, type PrintDefinition } from "./printCatalog.js";
 
 export const CATEGORY_IMAGE_IDS = [
   "memes",
@@ -43,11 +44,10 @@ export interface KioskImageSection {
 const POPULAR_IMAGES: KioskImageDefinition[] = [
   { key: "tshirt-white", label: "Футболка белая", defaultUrl: tshirtWhite },
   { key: "tshirt-black", label: "Футболка чёрная", defaultUrl: tshirtBlack },
-  ...POPULAR_PRINT_IDS.map((id, index) => ({
-    key: `print-${id}`,
-    label: `Принт ${index + 1}`,
-    defaultUrl: "",
-    optional: true,
+  ...PRINT_CATALOG.map((print, index) => ({
+    key: printImageKey(print.id),
+    label: `Принт ${index + 1} — ${print.label}`,
+    defaultUrl: print.url,
   })),
 ];
 
@@ -68,9 +68,7 @@ export const KIOSK_IMAGE_DEFINITIONS: KioskImageDefinition[] = KIOSK_IMAGE_SECTI
 );
 
 const IMAGE_BY_KEY = new Map(KIOSK_IMAGE_DEFINITIONS.map((item) => [item.key, item]));
-const STORAGE_KEY = "kiosk-image-overrides";
-
-type ImageOverrides = Record<string, string>;
+const ALLOWED_IMAGE_KEYS = new Set(IMAGE_BY_KEY.keys());
 
 const listeners = new Set<() => void>();
 
@@ -80,19 +78,7 @@ function notifyListeners() {
   }
 }
 
-function loadOverrides(): ImageOverrides {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) as ImageOverrides;
-  } catch {
-    return {};
-  }
-}
-
-function saveOverrides(overrides: ImageOverrides) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
-}
+void ensureKioskImageStoreReady(ALLOWED_IMAGE_KEYS).then(() => notifyListeners());
 
 export function subscribeKioskImages(listener: () => void) {
   listeners.add(listener);
@@ -101,12 +87,12 @@ export function subscribeKioskImages(listener: () => void) {
   };
 }
 
+function defaultUrlFor(key: string): string {
+  return IMAGE_BY_KEY.get(key)?.defaultUrl ?? "";
+}
+
 export function getKioskImageUrl(key: string): string {
-  const definition = IMAGE_BY_KEY.get(key);
-  const override = loadOverrides()[key]?.trim();
-  if (override) return override;
-  const url = definition?.defaultUrl ?? "";
-  return url.trim();
+  return getCachedImageUrl(key, defaultUrlFor(key));
 }
 
 /** Built-in shirt mockups — use as fallback if override/storage returns empty. */
@@ -114,47 +100,73 @@ export const DEFAULT_TSHIRT_WHITE = tshirtWhite;
 export const DEFAULT_TSHIRT_BLACK = tshirtBlack;
 
 export function hasKioskImageOverride(key: string): boolean {
-  return Boolean(loadOverrides()[key]);
+  return hasCachedOverride(key);
 }
 
-export function setKioskImageOverride(key: string, dataUrl: string) {
-  if (!IMAGE_BY_KEY.has(key)) return;
-  const next = { ...loadOverrides(), [key]: dataUrl };
-  saveOverrides(next);
+export async function setKioskImageOverride(key: string, source: Blob | File | string): Promise<boolean> {
+  if (!IMAGE_BY_KEY.has(key)) return false;
+  const saved = await saveImageOverride(key, source);
+  if (!saved) return false;
   notifyListeners();
+  return true;
 }
 
 export function resetKioskImage(key: string) {
-  const next = { ...loadOverrides() };
-  delete next[key];
-  saveOverrides(next);
-  notifyListeners();
+  void deleteImageOverride(key).then(() => notifyListeners());
 }
 
 export function resetAllKioskImages() {
-  window.localStorage.removeItem(STORAGE_KEY);
-  notifyListeners();
+  void clearAllImageOverrides().then(() => notifyListeners());
+}
+
+function useKioskImageStoreVersion(): number {
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void ensureKioskImageStoreReady(ALLOWED_IMAGE_KEYS).then(() => {
+      if (!cancelled) setVersion((value) => value + 1);
+    });
+
+    return subscribeKioskImages(() => setVersion((value) => value + 1));
+  }, []);
+
+  return version;
 }
 
 /** Re-render when any kiosk image override changes (used by Banner + ThemePanel). */
 export function useKioskImage(key: string): string {
-  const [, setVersion] = useState(0);
-
-  useEffect(() => subscribeKioskImages(() => setVersion((v) => v + 1)), []);
-
+  useKioskImageStoreVersion();
   return getKioskImageUrl(key);
 }
 
-export function useKioskImageOverrides(): ImageOverrides {
-  const [overrides, setOverrides] = useState<ImageOverrides>(() => loadOverrides());
+/** Keys of images replaced via the design panel (values live in IndexedDB, not here). */
+export function useKioskImageOverrides(): ReadonlySet<string> {
+  const [overrideKeys, setOverrideKeys] = useState<ReadonlySet<string>>(() => getOverrideKeys());
 
   useEffect(() => {
-    return subscribeKioskImages(() => setOverrides(loadOverrides()));
+    let cancelled = false;
+
+    void ensureKioskImageStoreReady(ALLOWED_IMAGE_KEYS).then(() => {
+      if (!cancelled) setOverrideKeys(getOverrideKeys());
+    });
+
+    return subscribeKioskImages(() => setOverrideKeys(getOverrideKeys()));
   }, []);
 
-  return overrides;
+  return overrideKeys;
 }
 
 export function categoryImageKey(category: CategoryImageId): string {
   return `category-${category}`;
+}
+
+export function popularPrintImageKey(id: PopularPrintId): string {
+  return printImageKey(id);
+}
+
+/** Bump when any kiosk image override changes (e.g. remount Swiper loop clones). */
+export function useKioskImagesRevision(): number {
+  return useKioskImageStoreVersion();
 }

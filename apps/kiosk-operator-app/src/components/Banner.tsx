@@ -4,48 +4,31 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { HOME_STATIC_LABELS } from "../lib/homeLabels.js";
-import {
-  BoltIcon,
-  ChevronLeft,
-  ChevronRight,
-  CrownIcon,
-  FlameIcon,
-  GamepadIcon,
-  PhotoIcon,
-  RobotIcon,
-  SmileyIcon,
-  Sparkles,
-  StarIcon,
-} from "./icons.js";
-import { PopularPrintSlideContent, type PopularPrintItem } from "./PopularPrintSlide.js";
-
-/**
- * Placeholder "popular prints" until the catalog (Stage 3) provides real
- * designs/thumbnails. Each card renders the actual blank t-shirt mockup
- * (`Tshirt_White.png` / `Tshirt_Black.png`, provided by the client) with a
- * placeholder graphic "printed" on the chest — no color emoji (renders as
- * empty boxes on systems without a color emoji font) and no external stock
- * photos, just the real garment art + simple SVG stand-ins.
- *
- * T-shirt mockups and per-slide print images can be swapped live from the
- * Design Panel (stored in localStorage as data URLs until exported).
- *
- * More entries than fit on screen at once (slidesPerView=5): Swiper
- * auto-hides its arrows/dots ("swiper-button-lock") whenever every slide
- * already fits in view, which isn't the carousel look the mockup wants.
- */
-const POPULAR_PRINTS: PopularPrintItem[] = [
-  { id: "cool-bear", Icon: StarIcon, shirt: "white", color: "#38bdf8", likes: "1.2k" },
-  { id: "smiley-drip", Icon: SmileyIcon, shirt: "black", color: "#f8fafc", likes: "987" },
-  { id: "synthwave-car", Icon: BoltIcon, shirt: "black", color: "#e879f9", likes: "1.5k" },
-  { id: "anime-hero", Icon: FlameIcon, shirt: "white", color: "#fb923c", likes: "2.3k" },
-  { id: "marble-bust", Icon: CrownIcon, shirt: "black", color: "#fcd34d", likes: "1.1k" },
-  { id: "retro-console", Icon: GamepadIcon, shirt: "white", color: "#fb7185", likes: "860" },
-  { id: "gallery-print", Icon: PhotoIcon, shirt: "black", color: "#34d399", likes: "1.4k" },
-  { id: "bot-buddy", Icon: RobotIcon, shirt: "white", color: "#a78bfa", likes: "742" },
-];
+import { useKioskImagesRevision } from "../lib/kioskImages.js";
+import { PRINT_CATALOG } from "../lib/printCatalog.js";
+import { ChevronLeft, ChevronRight, Sparkles } from "./icons.js";
+import { PopularPrintSlideContent } from "./PopularPrintSlide.js";
 
 export function Banner() {
+  const imageRevision = useKioskImagesRevision();
+
+  if (PRINT_CATALOG.length === 0) {
+    return (
+      <section className="flex flex-col gap-5">
+        <h2
+          style={{ color: "var(--brand-primary)" }}
+          className="text-center text-[26px] font-extrabold uppercase tracking-wide"
+        >
+          <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" /> {HOME_STATIC_LABELS.bannerTitle}{" "}
+          <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" />
+        </h2>
+        <p className="text-center text-base text-white/50">
+          Добавьте PNG или WebP в папку <code className="text-white/70">src/assets/prints/</code> и обновите страницу.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="flex flex-col gap-5">
       <h2
@@ -74,6 +57,7 @@ export function Banner() {
 
         <div className="popular-frame overflow-hidden px-5 py-0">
           <Swiper
+            key={`popular-prints-${imageRevision}`}
             modules={[Autoplay, Navigation, Pagination]}
             autoplay={{ delay: 4000, disableOnInteraction: false }}
             navigation={{
@@ -83,10 +67,13 @@ export function Banner() {
             pagination={{ clickable: true, el: ".popular-swiper-pagination" }}
             slidesPerView={5}
             spaceBetween={10}
-            loop
+            loop={PRINT_CATALOG.length > 5}
+            observer
+            observeParents
+            observeSlideChildren
             className="popular-swiper h-[310px] w-full"
           >
-            {POPULAR_PRINTS.map((print) => (
+            {PRINT_CATALOG.map((print) => (
               <SwiperSlide key={print.id}>
                 <PopularPrintSlideContent print={print} />
               </SwiperSlide>

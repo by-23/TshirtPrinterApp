@@ -129,71 +129,86 @@ export function Editor() {
 
       <PrintSideToggle />
 
-      <div className="flex flex-col lg:flex-row lg:items-start" style={{ gap: "var(--editor-main-columns-gap)" }}>
-        {!isPreview && (
-          <aside style={{ width: "var(--editor-rail-width)", flexShrink: 0 }}>
-            <ToolRail canvas={canvas} />
-          </aside>
-        )}
+      <div
+        className="flex min-h-0 flex-1 flex-col lg:flex-row lg:items-start"
+        style={{ gap: "var(--editor-main-columns-gap)" }}
+      >
+        <div
+          className="flex min-w-0 flex-1 flex-col"
+          style={{ gap: "var(--editor-center-column-gap)" }}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-start" style={{ gap: "var(--editor-main-columns-gap)" }}>
+            {!isPreview && (
+              <aside style={{ width: "var(--editor-rail-width)", flexShrink: 0 }}>
+                <ToolRail canvas={canvas} />
+              </aside>
+            )}
 
-        <div className="flex flex-1 flex-col items-center" style={{ gap: "var(--editor-center-column-gap)" }}>
-          <div
-            className="relative flex items-center justify-center overflow-visible"
-            style={{
-              width: "var(--editor-canvas-card-width)",
-              height: "var(--editor-canvas-card-height)",
-              borderRadius: "var(--editor-canvas-card-radius)",
-              backgroundColor: "var(--editor-canvas-card-bg)",
-              padding: "var(--editor-canvas-card-padding)",
-            }}
-          >
-            <div
-              className="relative"
-              style={{
-                width: mockupPixelWidth,
-                height: mockupPixelHeight,
-                transform: "scale(var(--editor-canvas-scale))",
-                transformOrigin: "top center",
-              }}
-            >
-              <GarmentMockup
-                garmentType={garmentType}
-                side={side}
-                color={color}
-                className="absolute inset-0 h-full w-full"
-              />
+            <div className="flex min-w-0 flex-1 flex-col items-center" style={{ gap: "var(--editor-center-column-gap)" }}>
               <div
-                className="absolute overflow-hidden"
+                className="relative flex items-center justify-center overflow-visible"
                 style={{
-                  left: printArea.x * MOCKUP_DISPLAY_SCALE,
-                  top: printArea.y * MOCKUP_DISPLAY_SCALE,
-                  width: printArea.width * MOCKUP_DISPLAY_SCALE,
-                  height: printArea.height * MOCKUP_DISPLAY_SCALE,
+                  width: "var(--editor-canvas-card-width)",
+                  height: "var(--editor-canvas-card-height)",
+                  borderRadius: "var(--editor-canvas-card-radius)",
+                  backgroundColor: "var(--editor-canvas-card-bg)",
+                  padding: "var(--editor-canvas-card-padding)",
                 }}
               >
-                <FabricCanvas side={side} printArea={printArea} className="h-full w-full" onReady={setCanvas} />
-              </div>
+                <div
+                  className="relative"
+                  style={{
+                    width: mockupPixelWidth,
+                    height: mockupPixelHeight,
+                    transform: "scale(var(--editor-canvas-scale))",
+                    transformOrigin: "top center",
+                  }}
+                >
+                  <GarmentMockup
+                    garmentType={garmentType}
+                    side={side}
+                    color={color}
+                    className="absolute inset-0 h-full w-full"
+                  />
+                  <div
+                    className="absolute overflow-hidden"
+                    style={{
+                      left: printArea.x * MOCKUP_DISPLAY_SCALE,
+                      top: printArea.y * MOCKUP_DISPLAY_SCALE,
+                      width: printArea.width * MOCKUP_DISPLAY_SCALE,
+                      height: printArea.height * MOCKUP_DISPLAY_SCALE,
+                    }}
+                  >
+                    <FabricCanvas side={side} printArea={printArea} className="h-full w-full" onReady={setCanvas} />
+                  </div>
 
-              <div
-                className="pointer-events-none absolute flex justify-end"
-                style={{
-                  left: printArea.x * MOCKUP_DISPLAY_SCALE,
-                  top: printArea.y * MOCKUP_DISPLAY_SCALE - 40,
-                  width: printArea.width * MOCKUP_DISPLAY_SCALE,
-                }}
-              >
-                <div className="pointer-events-auto">
-                  <ObjectControls canvas={canvas} />
+                  <div
+                    className="pointer-events-none absolute flex justify-end"
+                    style={{
+                      left: printArea.x * MOCKUP_DISPLAY_SCALE,
+                      top: printArea.y * MOCKUP_DISPLAY_SCALE - 40,
+                      width: printArea.width * MOCKUP_DISPLAY_SCALE,
+                    }}
+                  >
+                    <div className="pointer-events-auto">
+                      <ObjectControls canvas={canvas} />
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {!isPreview && <CanvasControlStrip canvas={canvas} />}
             </div>
           </div>
 
-          {!isPreview && <CanvasControlStrip canvas={canvas} />}
+          {!isPreview && <PopularElementsStrip canvas={canvas} />}
         </div>
 
         {!isPreview && (
-          <aside className="flex w-full flex-col lg:w-72" style={{ gap: "var(--editor-right-panel-gap)" }}>
+          <aside
+            className="flex w-full flex-shrink-0 flex-col lg:w-[var(--editor-right-panel-width)]"
+            style={{ gap: "var(--editor-right-panel-gap)" }}
+          >
             <GarmentPicker />
 
             <div
@@ -244,12 +259,7 @@ export function Editor() {
         )}
       </div>
 
-      {!isPreview && (
-        <>
-          <PopularElementsStrip canvas={canvas} />
-          <TipsBar />
-        </>
-      )}
+      {!isPreview && <TipsBar />}
 
       {showNextNotice && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-ink-800 px-5 py-3 text-sm font-semibold text-white shadow-xl">

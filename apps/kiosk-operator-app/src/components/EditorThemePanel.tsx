@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import {
+  POPULAR_SCROLL_CSS_VARS,
+  syncAllPopularScrollElements,
+} from "../editor/popularScrollTheme.js";
 import { SlidersVertical } from "./icons.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
@@ -69,11 +73,26 @@ const BORDER_WIDTH_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "un
   unit: "px",
 };
 
+const SCROLL_SIZE_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 2,
+  max: 16,
+  step: 1,
+  unit: "px",
+};
+
 const OPACITY_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step"> = {
   type: "range",
   min: 0,
   max: 1,
   step: 0.05,
+};
+
+const CONTENT_ALIGN_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step"> = {
+  type: "range",
+  min: 0,
+  max: 1,
+  step: 1,
 };
 
 const BLOCK_HEIGHT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
@@ -107,6 +126,8 @@ interface BlockBorderDefaults {
   radius: number;
   padding: number;
   height?: number;
+  /** 0 = start (left), 1 = center */
+  contentAlign?: number;
 }
 
 /** Border + rounding + padding row set for a page-level "block" wrapper — see `borderStyle.ts`. */
@@ -141,6 +162,12 @@ function blockBorderTokens(prefix: string, defaults: BlockBorderDefaults): Token
       step: 1,
       unit: "px",
     },
+    {
+      key: `--editor-${prefix}-content-align`,
+      label: "Содержимое — выравнивание (0 слева, 1 центр)",
+      defaultValue: defaults.contentAlign ?? 0,
+      ...CONTENT_ALIGN_RANGE,
+    },
   ];
 }
 
@@ -163,6 +190,14 @@ const BLOCK_BORDER_DEFAULT: Omit<BlockBorderDefaults, "radius" | "padding"> = {
   width: 1.5,
   color: "#242938",
   opacity: 1,
+  contentAlign: 0,
+};
+
+const GARMENT_BLOCK_DEFAULT: BlockBorderDefaults = {
+  ...BLOCK_BORDER_DEFAULT,
+  radius: 16,
+  padding: 16,
+  contentAlign: 1,
 };
 
 const DIVIDER_DEFAULT_STRONG: DividerDefaults = { width: 1.5, color: "#242938", opacity: 0.8 };
@@ -390,6 +425,21 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    title: "Правая панель",
+    tokens: [
+      {
+        key: "--editor-right-panel-width",
+        label: "Ширина панели",
+        defaultValue: 288,
+        type: "range",
+        min: 200,
+        max: 480,
+        step: 1,
+        unit: "px",
+      },
+    ],
+  },
+  {
     title: "Цвет изделия (плитки)",
     tokens: [
       { key: "--editor-swatch-width", label: "Плитка — ширина", defaultValue: 48, ...SIZE_RANGE },
@@ -405,7 +455,7 @@ const SECTIONS: Section[] = [
         unit: "px",
       },
       { key: "--editor-swatch-gap", label: "Зазор", defaultValue: 12, ...GAP_RANGE },
-      ...blockBorderTokens("color-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 16 }),
+      ...blockBorderTokens("color-block", GARMENT_BLOCK_DEFAULT),
     ],
   },
   {
@@ -418,7 +468,7 @@ const SECTIONS: Section[] = [
       { key: "--editor-size-pill-font-size", label: "Текст — размер", defaultValue: 16, ...FONT_RANGE },
       { key: "--editor-size-pill-active-bg", label: "Активная — фон", type: "color", defaultValue: "#ff2d95" },
       { key: "--editor-size-pill-idle-bg", label: "Неактивная — фон", type: "color", defaultValue: "#131a2e" },
-      ...blockBorderTokens("size-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 16 }),
+      ...blockBorderTokens("size-block", GARMENT_BLOCK_DEFAULT),
     ],
   },
   {
@@ -431,7 +481,7 @@ const SECTIONS: Section[] = [
       { key: "--editor-fabric-pill-font-size", label: "Текст — размер", defaultValue: 16, ...FONT_RANGE },
       { key: "--editor-fabric-pill-active-bg", label: "Активная — фон", type: "color", defaultValue: "#ff2d95" },
       { key: "--editor-fabric-pill-idle-bg", label: "Неактивная — фон", type: "color", defaultValue: "#131a2e" },
-      ...blockBorderTokens("fabric-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 16 }),
+      ...blockBorderTokens("fabric-block", GARMENT_BLOCK_DEFAULT),
     ],
   },
   {
@@ -457,14 +507,14 @@ const SECTIONS: Section[] = [
       { key: "--editor-print-btn-radius", label: "Кнопка печати — скругление", defaultValue: 999, ...RADIUS_FULL },
       { key: "--editor-print-btn-bg", label: "Кнопка печати — фон", type: "color", defaultValue: "#ff2d95" },
       { key: "--editor-print-btn-font-size", label: "Кнопка печати — текст", defaultValue: 18, ...FONT_RANGE },
-      ...blockBorderTokens("price-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 16 }),
+      ...blockBorderTokens("price-block", { ...GARMENT_BLOCK_DEFAULT, padding: 16 }),
     ],
   },
   {
     title: "«Заказ сохраняется после оплаты» (сноска)",
     tokens: [
       { key: "--editor-ordernote-text-size", label: "Текст — размер", defaultValue: 12, ...FONT_RANGE },
-      ...blockBorderTokens("ordernote-block", { ...BLOCK_BORDER_DEFAULT, radius: 12, padding: 12 }),
+      ...blockBorderTokens("ordernote-block", { ...BLOCK_BORDER_DEFAULT, radius: 12, padding: 12, contentAlign: 1 }),
     ],
   },
   {
@@ -476,8 +526,6 @@ const SECTIONS: Section[] = [
         defaultValue: 0,
         ...BLOCK_WIDTH_RANGE,
       },
-      { key: "--editor-popular-tile-width", label: "Плитка — ширина", defaultValue: 112, ...SIZE_RANGE },
-      { key: "--editor-popular-tile-height", label: "Плитка — высота", defaultValue: 112, ...SIZE_RANGE },
       {
         key: "--editor-popular-tile-radius",
         label: "Плитка — скругление",
@@ -488,9 +536,40 @@ const SECTIONS: Section[] = [
         step: 1,
         unit: "px",
       },
-      { key: "--editor-popular-tile-gap", label: "Зазор", defaultValue: 16, ...GAP_RANGE },
-      { key: "--editor-popular-tile-bg", label: "Плитка — фон", type: "color", defaultValue: "#131a2e" },
-      { key: "--editor-popular-emoji-size", label: "Эмодзи — размер", defaultValue: 48, ...FONT_RANGE },
+      { key: "--editor-popular-tile-bg", label: "Плитка — фон", type: "color", defaultValue: "#02060d" },
+      { key: "--editor-popular-image-width", label: "Картинка — ширина", defaultValue: 167, ...SIZE_RANGE },
+      { key: "--editor-popular-image-height", label: "Картинка — высота", defaultValue: 44, ...SIZE_RANGE },
+      {
+        key: "--editor-popular-image-gap",
+        label: "Отступ между картинками",
+        defaultValue: 16,
+        ...LAYOUT_GAP_RANGE,
+      },
+      { key: "--editor-popular-scroll-size", label: "Скроллбар — толщина", defaultValue: 6, ...SCROLL_SIZE_RANGE },
+      {
+        key: "--editor-popular-scroll-track-color",
+        label: "Скроллбар — дорожка, цвет",
+        type: "color",
+        defaultValue: "#242938",
+      },
+      {
+        key: "--editor-popular-scroll-track-opacity",
+        label: "Скроллбар — дорожка, прозрачность",
+        defaultValue: 0.45,
+        ...OPACITY_RANGE,
+      },
+      {
+        key: "--editor-popular-scroll-thumb-color",
+        label: "Скроллбар — ползунок, цвет",
+        type: "color",
+        defaultValue: "#5b6690",
+      },
+      {
+        key: "--editor-popular-scroll-thumb-opacity",
+        label: "Скроллбар — ползунок, прозрачность",
+        defaultValue: 0.9,
+        ...OPACITY_RANGE,
+      },
       ...blockBorderTokens("popular-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 16 }),
     ],
   },
@@ -539,12 +618,14 @@ function formatCssValue(token: Token, value: string): string {
   const normalized = normalizeValue(token, value);
   if (token.key.endsWith("-height") && normalized === "0") return "auto";
   if (token.key.endsWith("-block-width") && normalized === "0") return "fit-content";
+  if (token.key.endsWith("-content-align")) return normalized === "1" ? "center" : "start";
   return token.type === "range" && token.unit ? `${normalized}${token.unit}` : normalized;
 }
 
 function cssRawToState(token: Token, raw: string): string {
   if (token.key.endsWith("-height") && raw === "auto") return "0";
   if (token.key.endsWith("-block-width") && raw === "fit-content") return "0";
+  if (token.key.endsWith("-content-align")) return raw === "center" ? "1" : "0";
   if (token.type === "range" && token.unit && raw.endsWith(token.unit)) {
     return raw.slice(0, -token.unit.length);
   }
@@ -582,6 +663,9 @@ function loadStoredValues(): Record<string, string> {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, string>;
+    if (parsed["--editor-popular-tile-gap"] && !parsed["--editor-popular-image-gap"]) {
+      parsed["--editor-popular-image-gap"] = parsed["--editor-popular-tile-gap"];
+    }
     const normalized: Record<string, string> = {};
     for (const [key, value] of Object.entries(parsed)) {
       const token = TOKEN_BY_KEY.get(key);
@@ -602,6 +686,9 @@ function applyValue(key: string, value: string) {
   const editorRoot = document.querySelector(SCOPE_SELECTOR);
   if (editorRoot instanceof HTMLElement) {
     editorRoot.style.setProperty(key, cssValue);
+    if (POPULAR_SCROLL_CSS_VARS.includes(key as (typeof POPULAR_SCROLL_CSS_VARS)[number])) {
+      syncAllPopularScrollElements(editorRoot);
+    }
   }
 }
 
@@ -610,6 +697,9 @@ function clearToken(key: string) {
   const editorRoot = document.querySelector(SCOPE_SELECTOR);
   if (editorRoot instanceof HTMLElement) {
     editorRoot.style.removeProperty(key);
+    if (POPULAR_SCROLL_CSS_VARS.includes(key as (typeof POPULAR_SCROLL_CSS_VARS)[number])) {
+      syncAllPopularScrollElements(editorRoot);
+    }
   }
 }
 
@@ -639,6 +729,10 @@ export function EditorThemePanel() {
       for (const [key, value] of Object.entries(values)) {
         applyValue(key, value);
       }
+      const editorRoot = document.querySelector(SCOPE_SELECTOR);
+      if (editorRoot instanceof HTMLElement) {
+        syncAllPopularScrollElements(editorRoot);
+      }
     }
     applyAll();
     const frame = requestAnimationFrame(applyAll);
@@ -650,6 +744,10 @@ export function EditorThemePanel() {
     if (!open) return;
     for (const [key, value] of Object.entries(values)) {
       applyValue(key, value);
+    }
+    const editorRoot = document.querySelector(SCOPE_SELECTOR);
+    if (editorRoot instanceof HTMLElement) {
+      syncAllPopularScrollElements(editorRoot);
     }
   }, [open, values]);
 

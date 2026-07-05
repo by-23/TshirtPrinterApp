@@ -1,40 +1,64 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { IText, FabricImage, type Canvas } from "fabric";
+import { FabricImage, type Canvas } from "fabric";
 import { Plus } from "../../components/icons.js";
-import { STICKERS } from "../types.js";
-import { bottomStripLayoutStyle } from "../borderStyle.js";
+import { addImageFromUrl, placeImageCentered } from "../canvasImage.js";
+import { blockBorderStyle } from "../borderStyle.js";
+import { syncPopularScrollElement } from "../popularScrollTheme.js";
+import { EDITOR_POPULAR_PRINTS, type PrintDefinition } from "../../lib/printCatalog.js";
+import { popularPrintImageKey, useKioskImage } from "../../lib/kioskImages.js";
 
 export interface PopularElementsStripProps {
   canvas: Canvas | null;
 }
 
-const MAX_IMAGE_FRACTION = 0.85;
-const POPULAR_COUNT = 4;
+function PopularPrintTile({
+  print,
+  onAdd,
+}: {
+  print: PrintDefinition;
+  onAdd: (url: string) => void;
+}) {
+  const previewUrl = useKioskImage(popularPrintImageKey(print.id)) || print.url;
+  const tileStyle = {
+    width: "var(--editor-popular-image-width)",
+    height: "var(--editor-popular-image-height)",
+    borderRadius: "var(--editor-popular-tile-radius)",
+    backgroundColor: "var(--editor-popular-tile-bg)",
+  } as const;
+
+  return (
+    <button
+      type="button"
+      aria-label={print.label}
+      onClick={() => onAdd(previewUrl)}
+      style={tileStyle}
+      className="flex flex-shrink-0 items-center justify-center overflow-hidden transition-colors hover:brightness-125"
+    >
+      <img src={previewUrl} alt="" className="h-full w-full object-contain" />
+    </button>
+  );
+}
 
 /**
- * Bottom "Популярные элементы" strip from `docs/ui-mockups/editor.png`:
- * quick-access shortcuts for frequently used stickers plus an
- * "Add your own" tile that opens the file picker directly.
+ * Bottom "Популярные элементы" strip: bundled prints from `src/assets/prints/`
+ * plus an "Add your own" tile that opens the file picker.
  */
 export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
-  const popularStickers = STICKERS.slice(0, POPULAR_COUNT);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  function addSticker(emoji: string) {
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    const themeRoot = scrollEl?.closest(".editor-theme-root");
+    if (!scrollEl || !(themeRoot instanceof HTMLElement)) return;
+    syncPopularScrollElement(scrollEl, themeRoot);
+  }, []);
+
+  function addPrint(url: string) {
     if (!canvas) return;
-    const sticker = new IText(emoji, {
-      left: canvas.getWidth() / 2,
-      top: canvas.getHeight() / 2,
-      originX: "center",
-      originY: "center",
-      fontSize: 64,
-      editable: false,
-    });
-    canvas.add(sticker);
-    canvas.setActiveObject(sticker);
-    canvas.requestRenderAll();
+    void addImageFromUrl(canvas, url);
   }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -46,59 +70,34 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
     reader.onload = () => {
       const dataUrl = reader.result;
       if (typeof dataUrl !== "string") return;
-      void FabricImage.fromURL(dataUrl).then((image) => {
-        const maxWidth = canvas.getWidth() * MAX_IMAGE_FRACTION;
-        const maxHeight = canvas.getHeight() * MAX_IMAGE_FRACTION;
-        const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-        image.set({
-          left: canvas.getWidth() / 2,
-          top: canvas.getHeight() / 2,
-          originX: "center",
-          originY: "center",
-          scaleX: scale,
-          scaleY: scale,
-        });
-        canvas.add(image);
-        canvas.setActiveObject(image);
-        canvas.requestRenderAll();
-      });
+      void FabricImage.fromURL(dataUrl).then((image) => placeImageCentered(canvas, image));
     };
     reader.readAsDataURL(file);
   }
 
   return (
-    <section className="flex flex-col gap-3" style={bottomStripLayoutStyle("popular-block")}>
+    <section
+      className="flex w-full min-w-0 flex-col gap-3"
+      style={{ ...blockBorderStyle("popular-block"), width: "100%" }}
+    >
       <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-200">
         {t("editor.popularElements")}
       </h3>
       <div
-        className="flex pb-1"
-        style={{ gap: "var(--editor-popular-tile-gap)", overflowX: "auto", overflowY: "visible" }}
+        ref={scrollRef}
+        className="editor-popular-scroll flex"
+        style={{ gap: "var(--editor-popular-image-gap)", overflowX: "auto", overflowY: "hidden" }}
       >
-        {popularStickers.map((sticker) => (
-          <button
-            key={sticker.id}
-            type="button"
-            onClick={() => addSticker(sticker.emoji)}
-            style={{
-              width: "var(--editor-popular-tile-width)",
-              height: "var(--editor-popular-tile-height)",
-              borderRadius: "var(--editor-popular-tile-radius)",
-              backgroundColor: "var(--editor-popular-tile-bg)",
-              fontSize: "var(--editor-popular-emoji-size)",
-            }}
-            className="flex flex-shrink-0 items-center justify-center overflow-hidden leading-none transition-colors hover:brightness-125"
-          >
-            {sticker.emoji}
-          </button>
+        {EDITOR_POPULAR_PRINTS.map((print) => (
+          <PopularPrintTile key={print.id} print={print} onAdd={addPrint} />
         ))}
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           style={{
-            width: "var(--editor-popular-tile-width)",
-            height: "var(--editor-popular-tile-height)",
+            width: "var(--editor-popular-image-width)",
+            height: "var(--editor-popular-image-height)",
             borderRadius: "var(--editor-popular-tile-radius)",
           }}
           className="flex flex-shrink-0 flex-col items-center justify-center gap-1.5 text-ink-200 transition-colors hover:text-white"

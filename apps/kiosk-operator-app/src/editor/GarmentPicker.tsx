@@ -4,7 +4,7 @@ import { GARMENT_COLORS, GARMENT_SIZES, GARMENT_FABRICS, type GarmentFabric } fr
 import { PillButton } from "@tshirt/ui-kit";
 import { Diamond, RAIL_ICON_CLASS } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
-import { blockBorderStyle } from "./borderStyle.js";
+import { blockBorderStyle, blockContentRowStyle } from "./borderStyle.js";
 
 const FABRIC_ICONS: Partial<Record<GarmentFabric, ReactNode>> = {
   premium: <Diamond className={RAIL_ICON_CLASS} />,
@@ -30,7 +30,7 @@ export function GarmentPicker() {
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.color")}
         </h3>
-        <div className="flex flex-wrap" style={{ gap: "var(--editor-swatch-gap)" }}>
+        <div className="flex flex-wrap" style={{ gap: "var(--editor-swatch-gap)", ...blockContentRowStyle("color-block") }}>
           {GARMENT_COLORS.map((option) => {
             const active = color === option.hex;
             return (
@@ -58,7 +58,7 @@ export function GarmentPicker() {
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.size")}
         </h3>
-        <div className="flex flex-wrap" style={{ gap: "var(--editor-size-pill-gap)" }}>
+        <div className="flex flex-wrap" style={{ gap: "var(--editor-size-pill-gap)", ...blockContentRowStyle("size-block") }}>
           {GARMENT_SIZES.map((sizeOption) => {
             const active = size === sizeOption;
             return (
@@ -86,7 +86,7 @@ export function GarmentPicker() {
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.fabric")}
         </h3>
-        <div className="flex flex-wrap" style={{ gap: "var(--editor-fabric-pill-gap)" }}>
+        <div className="flex flex-wrap" style={{ gap: "var(--editor-fabric-pill-gap)", ...blockContentRowStyle("fabric-block") }}>
           {GARMENT_FABRICS.map((fabricOption) => {
             const active = fabricName === fabricOption;
             return (

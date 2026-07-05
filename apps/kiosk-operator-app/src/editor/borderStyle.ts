@@ -20,6 +20,14 @@ export function blockBorderStyle(prefix: string): CSSProperties {
     boxSizing: "border-box",
     overflowX: "visible",
     overflowY: "visible",
+    textAlign: `var(--editor-${prefix}-content-align, start)`,
+  };
+}
+
+/** Flex row inside a themed block — shares `--editor-<prefix>-content-align` with headings (`start` | `center`). */
+export function blockContentRowStyle(prefix: string): CSSProperties {
+  return {
+    justifyContent: `var(--editor-${prefix}-content-align, start)`,
   };
 }
 

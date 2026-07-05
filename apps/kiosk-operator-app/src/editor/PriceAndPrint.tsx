@@ -53,7 +53,7 @@ export function PriceAndPrint({ onPrint }: PriceAndPrintProps) {
       </TouchButton>
 
       <p
-        className="text-center text-ink-200"
+        className="text-ink-200"
         style={{ fontSize: "var(--editor-ordernote-text-size)", ...blockBorderStyle("ordernote-block") }}
       >
         🔒 {t("editor.orderSavedNote")}

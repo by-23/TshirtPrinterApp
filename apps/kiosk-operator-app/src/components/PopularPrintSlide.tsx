@@ -1,20 +1,17 @@
-import type { LucideProps } from "lucide-react";
-import { DEFAULT_TSHIRT_BLACK, DEFAULT_TSHIRT_WHITE, useKioskImage } from "../lib/kioskImages.js";
+import {
+  DEFAULT_TSHIRT_BLACK,
+  DEFAULT_TSHIRT_WHITE,
+  popularPrintImageKey,
+  useKioskImage,
+} from "../lib/kioskImages.js";
+import type { PrintDefinition } from "../lib/printCatalog.js";
 import { Heart } from "./icons.js";
 
-export interface PopularPrintItem {
-  id: string;
-  Icon: import("react").ComponentType<LucideProps>;
-  shirt: "white" | "black";
-  color: string;
-  likes: string;
-}
-
 /** Slide content only — SwiperSlide must be a direct child of Swiper in Banner.tsx. */
-export function PopularPrintSlideContent({ print }: { print: PopularPrintItem }) {
+export function PopularPrintSlideContent({ print }: { print: PrintDefinition }) {
   const whiteShirt = useKioskImage("tshirt-white") || DEFAULT_TSHIRT_WHITE;
   const blackShirt = useKioskImage("tshirt-black") || DEFAULT_TSHIRT_BLACK;
-  const printImage = useKioskImage(`print-${print.id}`);
+  const printImage = useKioskImage(popularPrintImageKey(print.id)) || print.url;
   const shirtUrl = print.shirt === "white" ? whiteShirt : blackShirt;
 
   return (
@@ -34,13 +31,7 @@ export function PopularPrintSlideContent({ print }: { print: PopularPrintItem })
             aria-hidden
             className="popular-print-art object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
           />
-        ) : (
-          <print.Icon
-            aria-hidden
-            style={{ color: print.color }}
-            className="popular-print-art drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
-          />
-        )}
+        ) : null}
       </div>
       <span className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-pill bg-ink-950/80 px-2.5 py-1 text-[13px] font-bold text-white backdrop-blur">
         <Heart
