@@ -86,7 +86,7 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
       <div
         ref={scrollRef}
         className="editor-popular-scroll flex"
-        style={{ gap: "var(--editor-popular-image-gap)", overflowX: "auto", overflowY: "hidden" }}
+        style={{ gap: "var(--editor-popular-image-gap)", overflowX: "hidden", overflowY: "hidden" }}
       >
         {EDITOR_POPULAR_PRINTS.map((print) => (
           <PopularPrintTile key={print.id} print={print} onAdd={addPrint} />

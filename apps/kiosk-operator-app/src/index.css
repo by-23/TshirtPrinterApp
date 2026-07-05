@@ -6,11 +6,14 @@ html,
 body,
 #root {
   height: 100%;
+  overflow: hidden;
+    overscroll-behavior: none;
   font-family: var(--font-family);
 }
 
 body {
   background: #000;
+  touch-action: manipulation;
 }
 
 button,
@@ -27,6 +30,9 @@ textarea {
 .editor-theme-root {
   font-family: var(--editor-font-family, var(--font-family));
 }
+.checkout-theme-root {
+  font-family: var(--checkout-font-family, var(--font-family));
+}
 /* ==========================================================================
    Live theme tokens
    --------------------------------------------------------------------------
@@ -42,6 +48,20 @@ textarea {
     --font-family: 'Roboto', sans-serif;
   /* Main kiosk home screen page background — tuned from ThemePanel.tsx. */
     --kiosk-page-bg: #05060f;
+  /* Fixed position of the global language switcher (KioskShell.tsx, ThemePanel). */
+    --kiosk-lang-top: 48px;
+    /* Distance from the right edge of the kiosk screen. */
+    --kiosk-lang-right: 40px;
+    --kiosk-lang-btn-width: 74px;
+    --kiosk-lang-btn-height: 44px;
+    --kiosk-lang-btn-radius: 999px;
+    --kiosk-lang-btn-gap: 10px;
+    --kiosk-lang-btn-font-size: 15px;
+    --kiosk-lang-btn-active-bg: #ff2d95;
+    --kiosk-lang-btn-idle-bg: #131a2e;
+    --kiosk-lang-btn-idle-border: #26325a;
+    --kiosk-lang-btn-idle-text: #a7b0d0;
+    --kiosk-lang-btn-active-scale: 1.1;
   /* Brand accent hierarchy — header active language pill, banner frame, AI badge, hearts. */
   --brand-primary: #ff2d95;
   --brand-secondary: #22d3f5;
@@ -198,17 +218,6 @@ textarea {
   --editor-back-btn-border-color: #242938;
   --editor-back-btn-border-opacity: 1;
 
-  --editor-lang-btn-width: 60px;
-  --editor-lang-btn-height: 50px;
-  --editor-lang-btn-radius: 12px;
-  --editor-lang-btn-gap: 12px;
-  --editor-lang-btn-font-size: 16px;
-  --editor-lang-btn-active-bg: #de3770;
-  --editor-lang-btn-idle-bg: #02060d;
-  --editor-lang-btn-idle-border: #1c212e;
-  --editor-lang-btn-idle-text: #cac9cb;
-  --editor-lang-btn-active-scale: 1.1;
-
   --editor-header-divider-width: 1.5px;
   --editor-header-divider-color: #242938;
   --editor-header-divider-opacity: 0.8;
@@ -258,6 +267,8 @@ textarea {
   --editor-strip-btn-width: 24px;
   --editor-strip-btn-height: 32px;
   --editor-strip-btn-radius: 0px;
+  --editor-strip-label-font-size: 12px;
+    --editor-strip-value-font-size: 16px;
 
   --editor-objctrl-bar-radius: 16px;
   --editor-objctrl-btn-width: 50px;
@@ -312,6 +323,7 @@ textarea {
   --editor-secondary-btn-height: 50px;
   --editor-secondary-btn-bg: #02060d;
   --editor-secondary-btn-font-size: 18px;
+  --editor-secondary-btn-icon-size: 18px;
   --editor-secondary-block-border-width: 1.5px;
   --editor-secondary-block-border-color: #242938;
   --editor-secondary-block-border-opacity: 1;
@@ -377,6 +389,225 @@ textarea {
   --editor-tips-block-padding: 16px;
   --editor-tips-block-height: auto;
   --editor-tips-block-width: 100%;
+/* ========================================================================
+     Checkout screen ("/kiosk/checkout") — own independent token set, tuned
+     from CheckoutThemePanel.tsx the same way the editor tokens above are
+     tuned from EditorThemePanel.tsx.
+     ======================================================================== */
+  --checkout-page-bg: #02060d;
+  --checkout-page-section-gap: 18px;
+
+  --checkout-back-btn-width: 150px;
+  --checkout-back-btn-height: 52px;
+  --checkout-back-btn-radius: 12px;
+  --checkout-back-btn-bg: #02060d;
+  --checkout-back-btn-border-width: 1.5px;
+  --checkout-back-btn-border-color: #242938;
+  --checkout-back-btn-border-opacity: 1;
+  --checkout-header-title-size: 30px;
+  --checkout-header-title-color: #ffffff;
+  --checkout-header-subtitle-size: 20px;
+  --checkout-header-subtitle-color: #ffffff;
+  --checkout-header-divider-width: 1.5px;
+  --checkout-header-divider-color: #1e1e26;
+  --checkout-header-divider-opacity: 0.8;
+
+  --checkout-main-columns-gap: 25px;
+  --checkout-preview-column-width: 500px;
+
+  --checkout-preview-gap: 20px;
+  --checkout-preview-card-width: 500px;
+  --checkout-preview-card-height: 600px;
+  --checkout-preview-mockup-area-height: 500px;
+  --checkout-preview-card-bg: #02060d;
+  --checkout-preview-card-border-width: 1.5px;
+  --checkout-preview-card-border-color: #1e1e26;
+  --checkout-preview-card-border-opacity: 1;
+  --checkout-preview-card-radius: 24px;
+  --checkout-preview-card-padding: 10px;
+  --checkout-preview-card-content-align: center;
+  --checkout-preview-scale: 0.8;
+  --checkout-preview-toggle-gap: 12px;
+  --checkout-preview-toggle-height: 44px;
+  --checkout-preview-toggle-radius: 12px;
+  --checkout-preview-toggle-font-size: 16px;
+  --checkout-preview-toggle-active-bg: #de366f;
+  --checkout-preview-toggle-idle-bg: #02060d;
+
+  --checkout-summary-block-border-width: 1.5px;
+  --checkout-summary-block-border-color: #242938;
+  --checkout-summary-block-border-opacity: 1;
+  --checkout-summary-block-radius: 16px;
+  --checkout-summary-block-padding: 36px;
+  --checkout-summary-block-height: var(--checkout-preview-card-height);
+  --checkout-summary-block-content-align: start;
+  --checkout-summary-section-gap: 8px;
+  --checkout-summary-title-size: 26px;
+  --checkout-summary-title-color: #dd366f;
+  --checkout-summary-row-gap: 30px;
+  --checkout-summary-row-icon-gap: 16px;
+  --checkout-summary-row-icon-size: 38px;
+  --checkout-summary-row-label-size: 26px;
+  --checkout-summary-row-label-color: #ffffff;
+  --checkout-summary-row-detail-size: 20px;
+  --checkout-summary-row-detail-color: #ffffff;
+  --checkout-summary-row-amount-size: 28px;
+  --checkout-summary-row-icon-color: #ffffff;
+  --checkout-summary-row-amount-color: #de366f;
+  --checkout-summary-row-surcharge-color: #de366f;
+  --checkout-summary-divider-width: 1.5px;
+  --checkout-summary-divider-color: #242938;
+  --checkout-summary-divider-opacity: 0.8;
+  --checkout-summary-total-label-size: 30px;
+  --checkout-summary-total-label-color: #ffffff;
+  --checkout-summary-total-amount-size: 48px;
+  --checkout-summary-total-color: #de366f;
+  --checkout-summary-leadtime-size: 17px;
+  --checkout-summary-leadtime-icon-size: 44px;
+  --checkout-summary-leadtime-width: 264px;
+  --checkout-summary-leadtime-color: #ffffff;
+  --checkout-summary-leadtime-gap: 9px;
+
+  --checkout-payment-section-gap: 30px;
+  --checkout-payment-title-size: 36px;
+  --checkout-payment-cards-gap: 10px;
+  --checkout-payment-or-gap: 10px;
+  --checkout-payment-or-font-size: 24px;
+  --checkout-payment-or-divider-width: 1.5px;
+  --checkout-payment-or-divider-color: #242938;
+  --checkout-payment-or-divider-opacity: 0.8;
+
+  --checkout-qr-card-bg-direction: to bottom;
+  --checkout-qr-card-bg-start: #842050;
+  --checkout-qr-card-bg-end: #07060c;
+  --checkout-qr-card-gap: 12px;
+  --checkout-qr-card-border-width: 1.5px;
+  --checkout-qr-card-border-color: #ff3898;
+  --checkout-qr-card-border-opacity: 0.5;
+  --checkout-qr-card-radius: 16px;
+  --checkout-qr-card-padding: 10px;
+  --checkout-qr-card-height: auto;
+  --checkout-qr-card-content-align: center;
+  --checkout-qr-title-size: 26px;
+  --checkout-qr-subtitle-size: 20px;
+  --checkout-qr-subtitle-width: 300px;
+  --checkout-qr-code-size: 240px;
+  --checkout-qr-code-radius: 16px;
+  --checkout-qr-code-padding: 10px;
+  --checkout-qr-timer-label-size: 18px;
+  --checkout-qr-timer-label-color: #ffffff;
+  --checkout-qr-timer-value-size: 60px;
+  --checkout-qr-timer-value-color: #ffffff;
+  --checkout-qr-timer-box-border-width: 1.5px;
+  --checkout-qr-timer-box-border-color: #721c46;
+  --checkout-qr-timer-box-border-opacity: 0.75;
+  --checkout-qr-timer-box-radius: 16px;
+  --checkout-qr-timer-box-padding-x: 32px;
+  --checkout-qr-timer-box-padding-y: 16px;
+  --checkout-qr-timer-box-gap: 8px;
+  --checkout-qr-timer-box-bg: #310f23;
+  --checkout-qr-note-size: 16px;
+  --checkout-qr-note-width: 280px;
+
+  --checkout-cash-card-bg-direction: to bottom;
+  --checkout-cash-card-bg-start: #041e40;
+  --checkout-cash-card-bg-end: #02060b;
+  --checkout-cash-card-gap: 12px;
+  --checkout-cash-card-border-width: 1.5px;
+  --checkout-cash-card-border-color: #003e8f;
+  --checkout-cash-card-border-opacity: 1;
+  --checkout-cash-card-radius: 16px;
+  --checkout-cash-card-padding: 24px;
+  --checkout-cash-card-height: auto;
+  --checkout-cash-card-content-align: center;
+  --checkout-cash-title-size: 26px;
+  --checkout-cash-subtitle-size: 20px;
+  --checkout-cash-subtitle-width: 300px;
+  --checkout-cash-number-size: 70px;
+  --checkout-cash-number-color: #ffffff;
+  --checkout-cash-number-box-border-width: 1.5px;
+  --checkout-cash-number-box-border-color: #5b6b9a;
+  --checkout-cash-number-box-border-opacity: 0.75;
+  --checkout-cash-number-box-radius: 16px;
+  --checkout-cash-number-box-padding-x: 32px;
+  --checkout-cash-number-box-padding-y: 16px;
+  --checkout-cash-number-box-gap: 8px;
+  --checkout-cash-number-box-bg: rgba(11, 15, 30, 0.55);
+  --checkout-cash-note-size: 18px;
+  --checkout-cash-note-width: 280px;
+  --checkout-cash-icon-size: 40px;
+  --checkout-cash-icon-color: #de366f;
+  --checkout-cash-image-width: 300px;
+  --checkout-cash-image-height: 250px;
+
+  --checkout-steps-block-border-width: 1.5px;
+  --checkout-steps-block-border-color: #242938;
+  --checkout-steps-block-border-opacity: 1;
+  --checkout-steps-block-radius: 16px;
+  --checkout-steps-block-padding: 10px;
+  --checkout-steps-block-height: auto;
+  --checkout-steps-block-content-align: center;
+  --checkout-steps-title-size: 20px;
+  --checkout-steps-title-gap: 24px;
+  --checkout-steps-gap: 20px;
+  --checkout-steps-item-width: 220px;
+  --checkout-steps-item-gap: 10px;
+  --checkout-steps-badge-size: 64px;
+  --checkout-steps-badge-radius: 20px;
+  --checkout-steps-text-size: 20px;
+
+  --checkout-info-bar-border-width: 1.5px;
+  --checkout-info-bar-border-color: #1e1e26;
+  --checkout-info-bar-border-opacity: 1;
+  --checkout-info-bar-radius: 16px;
+  --checkout-info-bar-padding: 14px;
+  --checkout-info-bar-height: auto;
+  --checkout-info-bar-content-align: center;
+  --checkout-info-bar-font-size: 22px;
+
+  --checkout-footer-gap: 10px;
+  --checkout-footer-help-gap: 12px;
+  --checkout-footer-help-bg: #131a2e;
+  --checkout-footer-help-border-width: 1.5px;
+  --checkout-footer-help-border-color: #242938;
+  --checkout-footer-help-border-opacity: 1;
+  --checkout-footer-help-radius: 16px;
+  --checkout-footer-help-padding: 18px;
+  --checkout-footer-help-height: auto;
+  --checkout-footer-help-content-align: center;
+  --checkout-footer-help-icon-size: 60px;
+  --checkout-footer-help-title-size: 24px;
+  --checkout-footer-help-subtitle-size: 20px;
+  --checkout-footer-promo-gap: 12px;
+  --checkout-footer-promo-bg: #020610;
+  --checkout-footer-promo-border-width: 1.5px;
+  --checkout-footer-promo-border-color: #de366f;
+  --checkout-footer-promo-border-opacity: 0.4;
+  --checkout-footer-promo-radius: 16px;
+  --checkout-footer-promo-padding: 18px;
+  --checkout-footer-promo-height: auto;
+  --checkout-footer-promo-content-align: start;
+  --checkout-footer-promo-icon-size: 60px;
+  --checkout-footer-promo-icon-color: #de366f;
+  --checkout-footer-promo-title-size: 24px;
+  --checkout-footer-promo-subtitle-size: 20px;
+  --checkout-footer-promo-qr-radius: 8px;
+
+  --checkout-accepted-gap: 16px;
+  --checkout-accepted-padding: 48px;
+  --checkout-accepted-radius: 28px;
+  --checkout-accepted-bg: #020610;
+  --checkout-accepted-icon-size: 64px;
+  --checkout-accepted-icon-color: #22c55e;
+  --checkout-accepted-title-size: 28px;
+  --checkout-accepted-subtitle-size: 20px;
+
+  --checkout-qr-card-bg: linear-gradient(var(--checkout-qr-card-bg-direction),
+      var(--checkout-qr-card-bg-start),
+      var(--checkout-qr-card-bg-end));
+  --checkout-cash-card-bg: linear-gradient(var(--checkout-cash-card-bg-direction),
+      var(--checkout-cash-card-bg-start),
+      var(--checkout-cash-card-bg-end));
 }
 
 /* Category cards read their whole gradient directly from CSS variables. */
@@ -581,4 +812,89 @@ textarea {
 
 .editor-popular-scroll::-webkit-scrollbar-thumb:hover {
   filter: brightness(1.15);
+}
+/* ==========================================================================
+   Kiosk page transitions (KioskShell.tsx + pageTransitionStore.ts)
+   ========================================================================== */
+
+.kiosk-page {
+  will-change: opacity, transform, filter;
+}
+
+.kiosk-page--fade {
+  animation: kiosk-page-fade 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--slide-left {
+  animation: kiosk-page-slide-left 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--slide-up {
+  animation: kiosk-page-slide-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--scale {
+  animation: kiosk-page-scale 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--blur {
+  animation: kiosk-page-blur 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes kiosk-page-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kiosk-page-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(56px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes kiosk-page-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kiosk-page-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes kiosk-page-blur {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
 }

@@ -1,23 +1,33 @@
 import { useTranslation } from "react-i18next";
 import { TouchButton } from "@tshirt/ui-kit";
+import { calculatePriceTenge } from "@tshirt/shared-pricing";
+import type { GarmentFabric } from "@tshirt/shared-types";
 import { useEditorStore } from "./store.js";
-import { estimatePriceTenge } from "./pricingStub.js";
 import { blockBorderStyle } from "./borderStyle.js";
 
 export interface PriceAndPrintProps {
   onPrint: () => void;
+  isSubmitting?: boolean;
 }
 
 /**
  * Price block + "Печать" button + footer note, matching the right panel of
- * `docs/ui-mockups/editor.png`. The amount is a Stage-2 placeholder
- * (see `pricingStub.ts`) until `shared-pricing` lands in Stage 4.
+ * `docs/ui-mockups/editor.png`. The amount is a live `shared-pricing`
+ * estimate — print size auto-updates as the customer resizes their design
+ * (see `printSize.ts`), so this can shift while editing.
  */
-export function PriceAndPrint({ onPrint }: PriceAndPrintProps) {
+export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
   const { t } = useTranslation();
   const garmentType = useEditorStore((state) => state.garmentType);
   const size = useEditorStore((state) => state.size);
-  const price = estimatePriceTenge(garmentType, size);
+  const fabricName = useEditorStore((state) => state.fabricName);
+  const printSize = useEditorStore((state) => state.printSizeBySide[state.side]);
+  const price = calculatePriceTenge({
+    garmentType,
+    fabric: fabricName as GarmentFabric,
+    size,
+    printSize,
+  });
 
   return (
     <div className="flex flex-col" style={{ gap: "var(--editor-price-section-gap)" }}>
@@ -41,7 +51,8 @@ export function PriceAndPrint({ onPrint }: PriceAndPrintProps) {
 
       <TouchButton
         onClick={onPrint}
-        className="flex w-full items-center justify-center font-bold uppercase tracking-wide text-white shadow-neon-pink transition-transform hover:scale-[1.02]"
+        disabled={isSubmitting}
+        className="flex w-full items-center justify-center font-bold uppercase tracking-wide text-white shadow-neon-pink transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
         style={{
           height: "var(--editor-print-btn-height)",
           borderRadius: "var(--editor-print-btn-radius)",
@@ -49,7 +60,7 @@ export function PriceAndPrint({ onPrint }: PriceAndPrintProps) {
           fontSize: "var(--editor-print-btn-font-size)",
         }}
       >
-        🖶 {t("common.print")}
+        🖶 {isSubmitting ? t("common.loading") : t("common.print")}
       </TouchButton>
 
       <p

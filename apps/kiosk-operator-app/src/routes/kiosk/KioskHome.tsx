@@ -1,17 +1,17 @@
-import { LanguageSwitcher } from "../../components/LanguageSwitcher.js";
 import { Banner } from "../../components/Banner.js";
+import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { CategoryGrid } from "../../components/CategoryGrid.js";
 import { CategorySelectBanner } from "../../components/CategorySelectBanner.js";
 
 export function KioskHome() {
   return (
     <div
-      className="kiosk-theme-root flex h-full w-full flex-col overflow-y-auto px-10 pb-12 pt-12 text-white"
+      className="kiosk-theme-root flex h-full w-full flex-col overflow-hidden px-10 pb-12 pt-12 text-white"
       style={{ backgroundColor: "var(--kiosk-page-bg)" }}
     >
-      <header className="mb-10 flex justify-end">
-        <LanguageSwitcher />
-      </header>
+      <div className="mb-10 flex justify-end" aria-hidden>
+        <LanguageSwitcherSlot />
+      </div>
 
       <Banner />
 

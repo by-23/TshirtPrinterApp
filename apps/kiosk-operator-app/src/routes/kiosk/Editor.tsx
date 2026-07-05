@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
-import { designCategorySchema } from "@tshirt/shared-types";
-import { fetchDesign } from "../../lib/pointServer.js";
+import { designCategorySchema, type GarmentFabric } from "@tshirt/shared-types";
+import { getPriceBreakdown } from "@tshirt/shared-pricing";
+import { createOrder, fetchDesign } from "../../lib/pointServer.js";
 import { useEditorStore } from "../../editor/store.js";
+import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
+import { computePrintSize } from "../../editor/printSize.js";
 import { FabricCanvas } from "../../editor/FabricCanvas.js";
 import { GarmentPicker } from "../../editor/GarmentPicker.js";
 import { PrintSideToggle } from "../../editor/PrintSideToggle.js";
@@ -15,7 +18,7 @@ import { ObjectControls } from "../../editor/toolbar/ObjectControls.js";
 import { CanvasControlStrip } from "../../editor/toolbar/CanvasControlStrip.js";
 import { PopularElementsStrip } from "../../editor/toolbar/PopularElementsStrip.js";
 import { TipsBar } from "../../editor/toolbar/TipsBar.js";
-import { LanguageSwitcher } from "../../components/LanguageSwitcher.js";
+import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { ArrowLeft } from "../../components/icons.js";
 import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
 import { blockBorderStyle, dividerStyle } from "../../editor/borderStyle.js";
@@ -29,12 +32,16 @@ import {
 
 export function Editor() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const garmentType = useEditorStore((state) => state.garmentType);
   const side = useEditorStore((state) => state.side);
   const color = useEditorStore((state) => state.color);
+  const size = useEditorStore((state) => state.size);
+  const fabricName = useEditorStore((state) => state.fabricName);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
-  const [showNextNotice, setShowNextNotice] = useState(false);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [printError, setPrintError] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const appliedDesignIdRef = useRef<string | null>(null);
@@ -81,10 +88,51 @@ export function Editor() {
     }
   }
 
+  async function handlePrint() {
+    if (!canvas || isCreatingOrder) return;
+    setPrintError(false);
+    setIsCreatingOrder(true);
+
+    const printSize = computePrintSize(canvas);
+    const canvasSnapshot = JSON.stringify(canvas.toJSON());
+    const priceBreakdown = getPriceBreakdown({
+      garmentType,
+      fabric: fabricName as GarmentFabric,
+      size,
+      printSize,
+    });
+    const price = priceBreakdown.reduce((sum, line) => sum + line.amountTenge, 0);
+
+    useEditorStore.getState().setPrintSize(side, printSize);
+    useEditorStore.getState().setCanvasSnapshot(side, canvasSnapshot);
+
+    try {
+      const order = await createOrder({
+        garmentType,
+        garmentColor: color,
+        garmentSize: size,
+        garmentFabric: fabricName,
+        side,
+        printSize,
+        price,
+      });
+      useCheckoutStore.getState().setDraft(
+        { type: garmentType, color, size, fabricName, side, canvasSnapshot },
+        priceBreakdown,
+      );
+      useCheckoutStore.getState().setOrder(order);
+      navigate("/kiosk/checkout");
+    } catch {
+      setPrintError(true);
+    } finally {
+      setIsCreatingOrder(false);
+    }
+  }
+
   return (
     <div
       ref={containerRef}
-      className="editor-theme-root flex h-full w-full flex-col overflow-y-auto px-4 py-8 text-white"
+      className="editor-theme-root flex h-full w-full flex-col overflow-hidden px-4 py-8 text-white"
       style={{ backgroundColor: "var(--editor-page-bg)", gap: "var(--editor-page-section-gap)" }}
     >
       <header className="relative flex items-center justify-between gap-4">
@@ -122,7 +170,7 @@ export function Editor() {
             </p>
           )}
         </div>
-        <LanguageSwitcher editor />
+        <LanguageSwitcherSlot />
       </header>
 
       <div aria-hidden style={dividerStyle("header")} />
@@ -226,7 +274,10 @@ export function Editor() {
                   fontSize: "var(--editor-secondary-btn-font-size)",
                 }}
               >
-                👁 {t("editor.preview")}
+                <span aria-hidden style={{ fontSize: "var(--editor-secondary-btn-icon-size)" }}>
+                  👁
+                </span>
+                {t("editor.preview")}
               </button>
               <div aria-hidden style={dividerStyle("secondary")} />
               <button
@@ -240,11 +291,14 @@ export function Editor() {
                   fontSize: "var(--editor-secondary-btn-font-size)",
                 }}
               >
-                ⛶ {t("editor.fullscreen")}
+                <span aria-hidden style={{ fontSize: "var(--editor-secondary-btn-icon-size)" }}>
+                  ⛶
+                </span>
+                {t("editor.fullscreen")}
               </button>
             </div>
 
-            <PriceAndPrint onPrint={() => setShowNextNotice(true)} />
+            <PriceAndPrint onPrint={() => void handlePrint()} isSubmitting={isCreatingOrder} />
           </aside>
         )}
 
@@ -261,9 +315,9 @@ export function Editor() {
 
       {!isPreview && <TipsBar />}
 
-      {showNextNotice && (
+      {printError && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-ink-800 px-5 py-3 text-sm font-semibold text-white shadow-xl">
-          {t("editor.nextPlaceholder")}
+          {t("editor.printError")}
         </div>
       )}
     </div>

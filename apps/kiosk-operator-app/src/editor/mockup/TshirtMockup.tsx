@@ -3,6 +3,8 @@ import type { GarmentMockupProps } from "./garmentShape.js";
 
 const WHITE_HEX = "#ffffff";
 const BLACK_HEX = "#111111";
+/** Native flat-lay asset ratio — keeps the mockup proportional inside the print-area box. */
+const SHIRT_ASPECT_RATIO = "640 / 677";
 
 /**
  * Renders the real client-provided flat-lay garment photo (`tshirt-white.png` /
@@ -22,28 +24,32 @@ export function TshirtMockup({ color, className }: GarmentMockupProps) {
   const baseImage = isBlack ? blackShirt : whiteShirt;
 
   return (
-    <div className={`relative ${className ?? ""}`} aria-hidden>
-      <img
-        src={baseImage}
-        alt=""
-        draggable={false}
-        className="pointer-events-none absolute inset-0 h-full w-full select-none object-fill"
-      />
-      {!isBlack && !isWhite && (
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundColor: color,
-            mixBlendMode: "multiply",
-            WebkitMaskImage: `url(${baseImage})`,
-            maskImage: `url(${baseImage})`,
-            WebkitMaskSize: "100% 100%",
-            maskSize: "100% 100%",
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-          }}
+    <div className={`relative flex h-full w-full items-center justify-center ${className ?? ""}`} aria-hidden>
+      <div className="relative h-full max-h-full w-full max-w-full" style={{ aspectRatio: SHIRT_ASPECT_RATIO }}>
+        <img
+          src={baseImage}
+          alt=""
+          draggable={false}
+          className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
         />
-      )}
+        {!isBlack && !isWhite && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundColor: color,
+              mixBlendMode: "multiply",
+              WebkitMaskImage: `url(${baseImage})`,
+              maskImage: `url(${baseImage})`,
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

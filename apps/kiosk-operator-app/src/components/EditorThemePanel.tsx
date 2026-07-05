@@ -257,29 +257,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "Кнопки языков",
-    tokens: [
-      { key: "--editor-lang-btn-width", label: "Ширина", defaultValue: 74, ...SIZE_RANGE },
-      { key: "--editor-lang-btn-height", label: "Высота", defaultValue: 44, ...SIZE_RANGE },
-      { key: "--editor-lang-btn-radius", label: "Скругление", defaultValue: 999, ...RADIUS_FULL },
-      { key: "--editor-lang-btn-gap", label: "Зазор между кнопками", defaultValue: 10, ...GAP_RANGE },
-      { key: "--editor-lang-btn-font-size", label: "Текст — размер", defaultValue: 15, ...FONT_RANGE },
-      { key: "--editor-lang-btn-active-bg", label: "Активная — фон", type: "color", defaultValue: "#ff2d95" },
-      { key: "--editor-lang-btn-idle-bg", label: "Неактивная — фон", type: "color", defaultValue: "#131a2e" },
-      { key: "--editor-lang-btn-idle-border", label: "Неактивная — обводка", type: "color", defaultValue: "#26325a" },
-      { key: "--editor-lang-btn-idle-text", label: "Неактивная — текст", type: "color", defaultValue: "#a7b0d0" },
-      {
-        key: "--editor-lang-btn-active-scale",
-        label: "Активная — масштаб",
-        defaultValue: 1.1,
-        type: "range",
-        min: 1,
-        max: 1.3,
-        step: 0.05,
-      },
-    ],
-  },
-  {
     title: "Переключатель стороны печати",
     tokens: [
       { key: "--editor-toggle-label-size", label: "Подпись — размер", defaultValue: 14, ...FONT_RANGE },
@@ -412,6 +389,8 @@ const SECTIONS: Section[] = [
       { key: "--editor-strip-btn-width", label: "Кнопки +/− — ширина", defaultValue: 32, ...SIZE_RANGE },
       { key: "--editor-strip-btn-height", label: "Кнопки +/− — высота", defaultValue: 32, ...SIZE_RANGE },
       { key: "--editor-strip-btn-radius", label: "Кнопки +/− — скругление", defaultValue: 999, ...RADIUS_FULL },
+      { key: "--editor-strip-label-font-size", label: "Подпись — размер", defaultValue: 12, ...FONT_RANGE },
+      { key: "--editor-strip-value-font-size", label: "Значение — размер", defaultValue: 16, ...FONT_RANGE },
     ],
   },
   {
@@ -492,6 +471,7 @@ const SECTIONS: Section[] = [
       { key: "--editor-secondary-btn-gap", label: "Зазор между кнопками", defaultValue: 12, ...GAP_RANGE },
       { key: "--editor-secondary-btn-bg", label: "Фон", type: "color", defaultValue: "#131a2e" },
       { key: "--editor-secondary-btn-font-size", label: "Текст — размер", defaultValue: 14, ...FONT_RANGE },
+      { key: "--editor-secondary-btn-icon-size", label: "Иконка — размер", defaultValue: 18, ...FONT_RANGE },
       ...blockBorderTokens("secondary-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 12 }),
       ...dividerTokens("secondary", DIVIDER_DEFAULT_SUBTLE),
     ],
@@ -871,7 +851,7 @@ export function EditorThemePanel() {
       </button>
 
       {open ? (
-        <div className="flex max-h-[80vh] w-[760px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
+        <div className="settings-panel-scroll flex max-h-[80vh] w-[760px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold uppercase tracking-wide text-white/90">
               Настройки редактора

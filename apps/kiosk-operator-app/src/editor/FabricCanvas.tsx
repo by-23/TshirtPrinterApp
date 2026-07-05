@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Canvas } from "fabric";
 import type { GarmentSide } from "@tshirt/shared-types";
 import { useEditorStore } from "./store.js";
+import { computePrintSize } from "./printSize.js";
 import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "./mockup/garmentShape.js";
 
 export interface FabricCanvasProps {
@@ -35,9 +36,19 @@ export function FabricCanvas({ side, printArea, className, onReady }: FabricCanv
     canvas.on("selection:updated", () => setHasSelection(true));
     canvas.on("selection:cleared", () => setHasSelection(false));
 
+    function recomputePrintSize() {
+      useEditorStore.getState().setPrintSize(loadedSideRef.current, computePrintSize(canvas));
+    }
+    canvas.on("object:added", recomputePrintSize);
+    canvas.on("object:removed", recomputePrintSize);
+    canvas.on("object:modified", recomputePrintSize);
+
     const initialSnapshot = useEditorStore.getState().canvasSnapshots[side];
     if (initialSnapshot) {
-      void canvas.loadFromJSON(initialSnapshot).then(() => canvas.requestRenderAll());
+      void canvas.loadFromJSON(initialSnapshot).then(() => {
+        canvas.requestRenderAll();
+        recomputePrintSize();
+      });
     }
 
     return () => {
@@ -69,9 +80,13 @@ export function FabricCanvas({ side, printArea, className, onReady }: FabricCanv
     canvas.clear();
     const snapshot = useEditorStore.getState().canvasSnapshots[side];
     if (snapshot) {
-      void canvas.loadFromJSON(snapshot).then(() => canvas.requestRenderAll());
+      void canvas.loadFromJSON(snapshot).then(() => {
+        canvas.requestRenderAll();
+        useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
+      });
     } else {
       canvas.requestRenderAll();
+      useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
     }
   }, [side]);
 

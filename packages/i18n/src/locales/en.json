@@ -100,8 +100,60 @@
     "preview": "Preview",
     "fullscreen": "Fullscreen",
     "exitPreview": "Exit preview",
-    "next": "Next",
-    "nextPlaceholder": "The payment screen will be added in the next stage"
+    "printError": "Couldn't create the order. Check the connection to the point server."
+  },
+  "checkout": {
+    "backTitle": "Back",
+    "backSubtitle": "to editor",
+    "title": "Checkout",
+    "subtitle": "Choose a payment method",
+    "summary": {
+      "title": "Your order",
+      "designLabel": "Design",
+      "designSource": "Custom",
+      "fabric": {
+        "cotton": "100% cotton",
+        "premium": "Premium fabric"
+      },
+      "total": "Total"
+    },
+    "payment": {
+      "title": "Payment method",
+      "or": "or",
+      "qr": {
+        "title": "Pay by QR",
+        "subtitle": "Scan the QR code in your banking app",
+        "timerLabel": "Time to pay",
+        "note": "Once paid, the order will be sent to print automatically"
+      },
+      "cash": {
+        "title": "Pay at the register",
+        "subtitle": "Show this number to the cashier to pay for the order",
+        "note": "Save your order number"
+      }
+    },
+    "steps": {
+      "title": "How to pay by QR",
+      "items": {
+        "openApp": "Open your banking app",
+        "scanQr": "Scan the QR code",
+        "confirmPayment": "Confirm the payment",
+        "orderToPrint": "The order will be sent to print"
+      }
+    },
+    "infoBar": "Don't close the screen after paying — your order is being processed…",
+    "footer": {
+      "helpTitle": "Need help?",
+      "helpSubtitle": "Call the operator",
+      "helpPlaceholder": "An operator will be with you shortly",
+      "promoTitle": "Share your result",
+      "promoSubtitle": "Tag us in a review and get 10% off your next order",
+      "promoPlaceholder": "Coming soon"
+    },
+    "accepted": {
+      "title": "Order accepted!",
+      "subtitle": "Please wait {{time}}"
+    }
   },
   "gallery": {
     "loading": "Loading designs...",

@@ -2,6 +2,11 @@ import { useEffect, useId, useState } from "react";
 import { Settings } from "./icons.js";
 import { DEFAULT_UI_FONT, THEME_FONT_OPTIONS } from "../lib/fonts.js";
 import {
+  PAGE_TRANSITION_LABELS,
+  PAGE_TRANSITION_TYPES,
+  usePageTransitionStore,
+} from "../lib/pageTransitionStore.js";
+import {
   getKioskImageUrl,
   KIOSK_IMAGE_SECTIONS,
   resetAllKioskImages,
@@ -70,6 +75,114 @@ const SECTIONS: Section[] = [
         type: "select",
         defaultValue: DEFAULT_UI_FONT,
         options: THEME_FONT_SELECT_OPTIONS,
+      },
+    ],
+  },
+  {
+    title: "Переключатель языка",
+    tokens: [
+      {
+        key: "--kiosk-lang-top",
+        label: "Позиция по вертикали",
+        type: "range",
+        defaultValue: 48,
+        min: 0,
+        max: 400,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--kiosk-lang-right",
+        label: "Позиция по горизонтали (от правого края)",
+        type: "range",
+        defaultValue: 40,
+        min: 0,
+        max: 400,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--kiosk-lang-btn-width",
+        label: "Кнопка — ширина",
+        type: "range",
+        defaultValue: 74,
+        min: 16,
+        max: 220,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--kiosk-lang-btn-height",
+        label: "Кнопка — высота",
+        type: "range",
+        defaultValue: 44,
+        min: 16,
+        max: 220,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--kiosk-lang-btn-radius",
+        label: "Кнопка — скругление",
+        type: "range",
+        defaultValue: 999,
+        min: 0,
+        max: 999,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--kiosk-lang-btn-gap",
+        label: "Зазор между кнопками",
+        type: "range",
+        defaultValue: 10,
+        min: 0,
+        max: 32,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--kiosk-lang-btn-font-size",
+        label: "Текст — размер",
+        type: "range",
+        defaultValue: 15,
+        min: 8,
+        max: 48,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--kiosk-lang-btn-active-bg",
+        label: "Активная — фон",
+        type: "color",
+        defaultValue: "#ff2d95",
+      },
+      {
+        key: "--kiosk-lang-btn-idle-bg",
+        label: "Неактивная — фон",
+        type: "color",
+        defaultValue: "#131a2e",
+      },
+      {
+        key: "--kiosk-lang-btn-idle-border",
+        label: "Неактивная — обводка",
+        type: "color",
+        defaultValue: "#26325a",
+      },
+      {
+        key: "--kiosk-lang-btn-idle-text",
+        label: "Неактивная — текст",
+        type: "color",
+        defaultValue: "#a7b0d0",
+      },
+      {
+        key: "--kiosk-lang-btn-active-scale",
+        label: "Активная — масштаб",
+        type: "range",
+        defaultValue: 1.1,
+        min: 1,
+        max: 1.3,
+        step: 0.05,
       },
     ],
   },
@@ -608,6 +721,8 @@ export function ThemePanel() {
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const imageOverrides = useKioskImageOverrides();
+  const pageTransition = usePageTransitionStore((state) => state.type);
+  const setPageTransition = usePageTransitionStore((state) => state.setType);
 
   useEffect(() => {
     function applyAll() {
@@ -766,7 +881,7 @@ export function ThemePanel() {
       </button>
 
       {open ? (
-        <div className="flex max-h-[90vh] w-[720px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
+        <div className="settings-panel-scroll flex max-h-[90vh] w-[720px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold uppercase tracking-wide text-white/90">
               Дизайн-панель
@@ -780,7 +895,7 @@ export function ThemePanel() {
             </button>
           </div>
 
-          {SECTIONS.slice(0, 2).map((section) => (
+          {SECTIONS.slice(0, 3).map((section) => (
             <div key={section.title} className="flex flex-col gap-5">
               <span className="text-base font-bold uppercase tracking-wider text-white/50">
                 {section.title}
@@ -788,6 +903,33 @@ export function ThemePanel() {
               {section.tokens.map((token) => renderToken(token))}
             </div>
           ))}
+
+          <div className="flex flex-col gap-5">
+            <span className="text-base font-bold uppercase tracking-wider text-white/50">
+              Переходы между экранами
+            </span>
+            <div className="flex items-center justify-between gap-6 text-xl">
+              <span className="min-w-[180px] text-white/80">Анимация</span>
+              <select
+                value={pageTransition}
+                onChange={(e) => setPageTransition(e.target.value as typeof pageTransition)}
+                className="min-w-[260px] rounded-xl border-2 border-white/15 bg-[#171a28] px-4 py-3 text-lg text-white outline-none transition-colors hover:border-white/30 focus:border-white/40"
+              >
+                {PAGE_TRANSITION_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {PAGE_TRANSITION_LABELS[type]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setPageTransition("slide-left")}
+                className="shrink-0 rounded-full border-2 border-white/10 px-3 py-1.5 text-sm font-semibold uppercase tracking-wide text-white/50 transition-colors hover:border-white/30 hover:text-white"
+              >
+                Сброс
+              </button>
+            </div>
+          </div>
 
           <div className="flex flex-col gap-8">
             <span className="text-base font-bold uppercase tracking-wider text-white/50">
@@ -837,7 +979,7 @@ export function ThemePanel() {
             ))}
           </div>
 
-          {SECTIONS.slice(2).map((section) => (
+          {SECTIONS.slice(3).map((section) => (
             <div key={section.title} className="flex flex-col gap-5">
               <span className="text-base font-bold uppercase tracking-wider text-white/50">
                 {section.title}

@@ -1,10 +1,12 @@
-import { Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { designCategorySchema } from "@tshirt/shared-types";
 import { KioskFrame } from "./components/KioskFrame.js";
+import { KioskShell } from "./components/KioskShell.js";
 import { KioskHome } from "./routes/kiosk/KioskHome.js";
 import { CategoryStub } from "./routes/kiosk/CategoryStub.js";
 import { CategoryGallery } from "./routes/kiosk/CategoryGallery.js";
 import { Editor } from "./routes/kiosk/Editor.js";
+import { Checkout } from "./routes/kiosk/checkout/Checkout.js";
 import { OperatorHome } from "./routes/operator/OperatorHome.js";
 
 // Memes/anime/games are gallery categories (Stage 3); everything else
@@ -25,7 +27,7 @@ function CategoryRoute() {
 function KioskLayout() {
   return (
     <KioskFrame>
-      <Outlet />
+      <KioskShell />
     </KioskFrame>
   );
 }
@@ -38,6 +40,7 @@ export function App() {
         <Route path="/kiosk" element={<KioskHome />} />
         <Route path="/kiosk/category/:category" element={<CategoryRoute />} />
         <Route path="/kiosk/editor" element={<Editor />} />
+        <Route path="/kiosk/checkout" element={<Checkout />} />
       </Route>
       <Route path="/operator" element={<OperatorHome />} />
     </Routes>

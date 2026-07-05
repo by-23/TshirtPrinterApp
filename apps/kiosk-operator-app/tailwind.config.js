@@ -20,6 +20,7 @@ export default {
           700: "#1b2440",
           600: "#26325a",
           400: "#5b6690",
+          300: "#cac9cb",
           200: "#a7b0d0",
         },
         // NOTE: brand primary/secondary/tertiary + all card corner radii used

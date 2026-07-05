@@ -63,9 +63,47 @@ export const KIOSK_IMAGE_SECTIONS: KioskImageSection[] = [
   { title: "Категории", images: CATEGORY_IMAGES },
 ];
 
-export const KIOSK_IMAGE_DEFINITIONS: KioskImageDefinition[] = KIOSK_IMAGE_SECTIONS.flatMap(
-  (section) => section.images,
-);
+const CHECKOUT_QR_STEP_IMAGES: KioskImageDefinition[] = [
+  {
+    key: "checkout-step-openApp",
+    label: "Шаг 1 — Откройте приложение банка",
+    defaultUrl: "",
+    optional: true,
+  },
+  {
+    key: "checkout-step-scanQr",
+    label: "Шаг 2 — Отсканируйте QR-код",
+    defaultUrl: "",
+    optional: true,
+  },
+  {
+    key: "checkout-step-confirmPayment",
+    label: "Шаг 3 — Подтвердите оплату",
+    defaultUrl: "",
+    optional: true,
+  },
+  {
+    key: "checkout-step-orderToPrint",
+    label: "Шаг 4 — Заказ отправится в печать",
+    defaultUrl: "",
+    optional: true,
+  },
+];
+
+export const CHECKOUT_IMAGE_DEFINITIONS: KioskImageDefinition[] = [
+  {
+    key: "checkout-cash-illustration",
+    label: "Карточка «Оплата в кассу» — картинка",
+    defaultUrl: "",
+    optional: true,
+  },
+  ...CHECKOUT_QR_STEP_IMAGES,
+];
+
+export const KIOSK_IMAGE_DEFINITIONS: KioskImageDefinition[] = [
+  ...KIOSK_IMAGE_SECTIONS.flatMap((section) => section.images),
+  ...CHECKOUT_IMAGE_DEFINITIONS,
+];
 
 const IMAGE_BY_KEY = new Map(KIOSK_IMAGE_DEFINITIONS.map((item) => [item.key, item]));
 const ALLOWED_IMAGE_KEYS = new Set(IMAGE_BY_KEY.keys());
@@ -160,6 +198,20 @@ export function useKioskImageOverrides(): ReadonlySet<string> {
 
 export function categoryImageKey(category: CategoryImageId): string {
   return `category-${category}`;
+}
+
+export function checkoutCashIllustrationKey(): string {
+  return "checkout-cash-illustration";
+}
+
+export type CheckoutQrStepId =
+  | "openApp"
+  | "scanQr"
+  | "confirmPayment"
+  | "orderToPrint";
+
+export function checkoutStepImageKey(step: CheckoutQrStepId): string {
+  return `checkout-step-${step}`;
 }
 
 export function popularPrintImageKey(id: PopularPrintId): string {

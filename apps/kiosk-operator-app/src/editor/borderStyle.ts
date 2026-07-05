@@ -20,7 +20,7 @@ export function blockBorderStyle(prefix: string): CSSProperties {
     boxSizing: "border-box",
     overflowX: "visible",
     overflowY: "visible",
-    textAlign: `var(--editor-${prefix}-content-align, start)`,
+    textAlign: `var(--editor-${prefix}-content-align, start)` as CSSProperties["textAlign"],
   };
 }
 

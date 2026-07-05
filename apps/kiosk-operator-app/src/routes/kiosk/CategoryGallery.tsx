@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { designCategorySchema, type Design, type DesignCategory } from "@tshirt/shared-types";
 import { fetchDesigns } from "../../lib/pointServer.js";
-import { LanguageSwitcher } from "../../components/LanguageSwitcher.js";
+import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
 import { FilmIcon, GamepadIcon, PhotoIcon } from "../../components/icons.js";
 
@@ -81,7 +81,7 @@ export function CategoryGallery() {
   const title = t(CATEGORY_LABEL_KEYS[parsedCategory.data]);
 
   return (
-    <div className="flex h-full w-full flex-col gap-5 overflow-y-auto bg-ink-950 p-4 text-white">
+    <div className="flex h-full w-full flex-col gap-5 overflow-hidden bg-ink-950 p-4 text-white">
       <header className="flex items-center justify-between gap-4">
         <Link
           to="/kiosk"
@@ -91,7 +91,7 @@ export function CategoryGallery() {
           ←
         </Link>
         <h1 className="text-center text-lg font-bold uppercase tracking-wide sm:text-xl">{title}</h1>
-        <LanguageSwitcher />
+        <LanguageSwitcherSlot />
       </header>
 
       {state === "loading" && (

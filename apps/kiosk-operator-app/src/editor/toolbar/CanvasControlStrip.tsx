@@ -145,12 +145,17 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
         padding: "var(--editor-strip-padding)",
         height: "var(--editor-strip-height, auto)",
         boxSizing: "border-box",
-        overflow: "auto",
+        overflow: "hidden",
       }}
     >
       {steppers.map((stepper) => (
         <div key={stepper.id} className="flex flex-col items-center gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-200">{stepper.label}</span>
+          <span
+            className="font-semibold uppercase tracking-wide text-ink-200"
+            style={{ fontSize: "var(--editor-strip-label-font-size)" }}
+          >
+            {stepper.label}
+          </span>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -161,7 +166,12 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
             >
               −
             </button>
-            <span className="w-14 text-center text-base font-semibold text-white">{stepper.value}</span>
+            <span
+              className="w-14 text-center font-semibold text-white"
+              style={{ fontSize: "var(--editor-strip-value-font-size)" }}
+            >
+              {stepper.value}
+            </span>
             <button
               type="button"
               onClick={stepper.onIncrease}
