@@ -26,14 +26,16 @@ export function StickerPicker({ canvas }: StickerPickerProps) {
 
   return (
     <div>
-      <h4 className="mb-1 text-xs font-semibold text-gray-500">{t("editor.toolbar.stickers")}</h4>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-200">
+        {t("editor.toolbar.stickers")}
+      </h4>
       <div className="flex flex-wrap gap-1">
         {STICKERS.map((sticker) => (
           <button
             key={sticker.id}
             type="button"
             onClick={() => addSticker(sticker.emoji)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-2xl hover:bg-gray-200"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink-800 text-2xl transition-colors hover:bg-ink-700"
           >
             {sticker.emoji}
           </button>

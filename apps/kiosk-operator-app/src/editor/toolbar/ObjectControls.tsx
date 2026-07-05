@@ -1,15 +1,16 @@
 import { useTranslation } from "react-i18next";
 import type { Canvas } from "fabric";
-import { TouchButton } from "@tshirt/ui-kit";
 import { useEditorStore } from "../store.js";
 
 export interface ObjectControlsProps {
   canvas: Canvas | null;
 }
 
-const SCALE_STEP = 1.15;
-const ROTATE_STEP = 15;
-
+/**
+ * Small floating circle buttons shown above the selected object
+ * (`docs/ui-mockups/editor.png`: delete / flip-h / flip-v). Scale, rotation,
+ * opacity and layer order live in `CanvasControlStrip` below the canvas.
+ */
 export function ObjectControls({ canvas }: ObjectControlsProps) {
   const { t } = useTranslation();
   const hasSelection = useEditorStore((state) => state.hasSelection);
@@ -23,67 +24,6 @@ export function ObjectControls({ canvas }: ObjectControlsProps) {
     canvas.requestRenderAll();
   }
 
-  const controls: Array<{ id: string; label: string; onClick: () => void }> = [
-    {
-      id: "flipH",
-      label: t("editor.toolbar.flipHorizontal"),
-      onClick: () => withActiveObject((active) => active.set("flipX", !active.flipX)),
-    },
-    {
-      id: "flipV",
-      label: t("editor.toolbar.flipVertical"),
-      onClick: () => withActiveObject((active) => active.set("flipY", !active.flipY)),
-    },
-    {
-      id: "scaleUp",
-      label: t("editor.toolbar.scaleUp"),
-      onClick: () =>
-        withActiveObject((active) =>
-          active.set({ scaleX: active.scaleX * SCALE_STEP, scaleY: active.scaleY * SCALE_STEP }),
-        ),
-    },
-    {
-      id: "scaleDown",
-      label: t("editor.toolbar.scaleDown"),
-      onClick: () =>
-        withActiveObject((active) =>
-          active.set({ scaleX: active.scaleX / SCALE_STEP, scaleY: active.scaleY / SCALE_STEP }),
-        ),
-    },
-    {
-      id: "rotateLeft",
-      label: t("editor.toolbar.rotateLeft"),
-      onClick: () => withActiveObject((active) => active.set("angle", (active.angle ?? 0) - ROTATE_STEP)),
-    },
-    {
-      id: "rotateRight",
-      label: t("editor.toolbar.rotateRight"),
-      onClick: () => withActiveObject((active) => active.set("angle", (active.angle ?? 0) + ROTATE_STEP)),
-    },
-    {
-      id: "bringForward",
-      label: t("editor.toolbar.bringForward"),
-      onClick: () => {
-        if (!canvas) return;
-        const active = canvas.getActiveObject();
-        if (!active) return;
-        canvas.bringObjectForward(active);
-        canvas.requestRenderAll();
-      },
-    },
-    {
-      id: "sendBackward",
-      label: t("editor.toolbar.sendBackward"),
-      onClick: () => {
-        if (!canvas) return;
-        const active = canvas.getActiveObject();
-        if (!active) return;
-        canvas.sendObjectBackwards(active);
-        canvas.requestRenderAll();
-      },
-    },
-  ];
-
   function handleDelete() {
     if (!canvas) return;
     const active = canvas.getActiveObject();
@@ -93,25 +33,34 @@ export function ObjectControls({ canvas }: ObjectControlsProps) {
     canvas.requestRenderAll();
   }
 
+  if (!hasSelection) return null;
+
   return (
-    <div className="flex flex-wrap gap-2">
-      {controls.map((control) => (
-        <TouchButton
-          key={control.id}
-          onClick={control.onClick}
-          disabled={!hasSelection}
-          className="rounded-full bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {control.label}
-        </TouchButton>
-      ))}
-      <TouchButton
+    <div className="flex items-center gap-2 rounded-full border border-ink-600 bg-ink-950/90 px-2 py-1.5 shadow-lg backdrop-blur">
+      <button
+        type="button"
         onClick={handleDelete}
-        disabled={!hasSelection}
-        className="rounded-full bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-40"
+        title={t("editor.toolbar.delete")}
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white transition-transform hover:scale-110"
       >
-        {t("editor.toolbar.delete")}
-      </TouchButton>
+        ✕
+      </button>
+      <button
+        type="button"
+        onClick={() => withActiveObject((active) => active.set("flipX", !active.flipX))}
+        title={t("editor.toolbar.flipHorizontal")}
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-800 text-sm text-white transition-transform hover:scale-110 hover:bg-ink-700"
+      >
+        ⇋
+      </button>
+      <button
+        type="button"
+        onClick={() => withActiveObject((active) => active.set("flipY", !active.flipY))}
+        title={t("editor.toolbar.flipVertical")}
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-800 text-sm text-white transition-transform hover:scale-110 hover:bg-ink-700"
+      >
+        ⇅
+      </button>
     </div>
   );
 }

@@ -43,7 +43,10 @@ export function UploadTool({ canvas }: UploadToolProps) {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-200">
+        {t("editor.toolbar.uploadPhoto")}
+      </h4>
       <input
         ref={inputRef}
         type="file"
@@ -53,7 +56,7 @@ export function UploadTool({ canvas }: UploadToolProps) {
       />
       <TouchButton
         onClick={() => inputRef.current?.click()}
-        className="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200"
+        className="rounded-full bg-neon-pink px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition-transform hover:scale-105"
       >
         {t("editor.toolbar.uploadPhoto")}
       </TouchButton>

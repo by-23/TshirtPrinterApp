@@ -16,10 +16,9 @@
       "aiStyle": "AI Style"
     },
     "banner": {
-      "newTitle": "New this season",
-      "popularTitle": "Popular designs",
-      "promoTitle": "10% off your first order"
-    }
+      "title": "Popular prints"
+    },
+    "categorySelect": "Choose a category"
   },
   "language": {
     "ru": "RU",
@@ -29,17 +28,16 @@
   },
   "editor": {
     "title": "Design Editor",
-    "garmentType": "Garment type",
+    "printSide": "Print side",
     "garmentTypes": {
       "tshirt": "T-Shirt",
       "hoodie": "Hoodie"
     },
-    "side": "Side",
     "sides": {
       "front": "Front",
       "back": "Back"
     },
-    "color": "Color",
+    "color": "Garment color",
     "colors": {
       "white": "White",
       "black": "Black",
@@ -49,29 +47,53 @@
       "yellow": "Yellow"
     },
     "size": "Size",
-    "fabric": "Fabric",
+    "fabric": "Material",
     "fabrics": {
       "cotton": "Cotton",
       "polyester": "Polyester",
       "blend": "Blend"
     },
     "toolbar": {
+      "select": "Select",
       "text": "Text",
       "addText": "Add text",
       "textPlaceholder": "Text",
+      "image": "Image",
       "stickers": "Stickers",
-      "uploadPhoto": "Upload photo",
-      "object": "Object",
+      "uploadPhoto": "Upload",
+      "filters": "Filters",
+      "effects": "Effects",
+      "shapes": "Shapes",
+      "crop": "Crop",
+      "undo": "Undo",
+      "redo": "Redo",
       "flipHorizontal": "Flip horiz.",
       "flipVertical": "Flip vert.",
-      "scaleUp": "Bigger",
-      "scaleDown": "Smaller",
-      "rotateLeft": "Rotate left",
-      "rotateRight": "Rotate right",
-      "bringForward": "Bring forward",
-      "sendBackward": "Send backward",
       "delete": "Delete"
     },
+    "controls": {
+      "size": "Size",
+      "rotate": "Rotate",
+      "opacity": "Opacity",
+      "layer": "Layer"
+    },
+    "popularElements": "Popular elements",
+    "addOwn": "Add your own",
+    "tips": [
+      "Use high-quality images",
+      "Don't place important elements too close to the edges",
+      "High-contrast designs look best on light garments",
+      "Check the preview before printing"
+    ],
+    "price": {
+      "label": "Price",
+      "leadTime": "Ready in: {{time}}",
+      "leadTimeValue": "5-10 minutes"
+    },
+    "orderSavedNote": "Your order is saved after payment",
+    "preview": "Preview",
+    "fullscreen": "Fullscreen",
+    "exitPreview": "Exit preview",
     "next": "Next",
     "nextPlaceholder": "The payment screen will be added in the next stage"
   }

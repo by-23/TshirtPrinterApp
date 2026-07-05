@@ -11,8 +11,14 @@ function readStoredLanguage(): SupportedLanguage | undefined {
     : undefined;
 }
 
+// i18next expects resources keyed by namespace (default: "translation"), but
+// `@tshirt/i18n` exports flat per-language dictionaries, so they're wrapped here.
+const namespacedResources = Object.fromEntries(
+  supportedLanguages.map((lang) => [lang, { translation: resources[lang] }]),
+);
+
 void i18next.use(initReactI18next).init({
-  resources,
+  resources: namespacedResources,
   lng: readStoredLanguage() ?? "ru",
   fallbackLng: "ru",
   interpolation: { escapeValue: false },

@@ -37,7 +37,7 @@ export function PointServerStatus() {
         : "point-server: проверка...";
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-600">
+    <div className="flex items-center gap-2 text-sm text-ink-200">
       <span className={`h-2 w-2 rounded-full ${color}`} />
       {label}
     </div>

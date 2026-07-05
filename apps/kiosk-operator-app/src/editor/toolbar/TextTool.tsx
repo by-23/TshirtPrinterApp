@@ -49,10 +49,13 @@ export function TextTool({ canvas }: TextToolProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-200">
+        {t("editor.toolbar.text")}
+      </h4>
       <TouchButton
         onClick={addText}
-        className="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200"
+        className="rounded-full bg-neon-pink px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition-transform hover:scale-105"
       >
         {t("editor.toolbar.addText")}
       </TouchButton>
@@ -65,7 +68,9 @@ export function TextTool({ canvas }: TextToolProps) {
             aria-pressed={fontFamily === font.family}
             style={{ fontFamily: font.family }}
             className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-              fontFamily === font.family ? "bg-black text-white" : "bg-white text-gray-700 hover:bg-gray-200"
+              fontFamily === font.family
+                ? "bg-neon-pink text-white"
+                : "bg-ink-800 text-ink-200 hover:bg-ink-700 hover:text-white"
             }`}
           >
             {font.label}
@@ -79,7 +84,7 @@ export function TextTool({ canvas }: TextToolProps) {
             type="button"
             onClick={() => handleColorChange(option)}
             aria-pressed={color === option}
-            className={`h-7 w-7 rounded-full border-2 ${color === option ? "border-black" : "border-gray-200"}`}
+            className={`h-7 w-7 rounded-full border-2 ${color === option ? "border-neon-pink" : "border-ink-600"}`}
             style={{ backgroundColor: option }}
           />
         ))}

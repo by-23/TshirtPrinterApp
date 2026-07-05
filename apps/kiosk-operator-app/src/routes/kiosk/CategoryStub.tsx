@@ -1,15 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { designCategorySchema, type DesignCategory } from "@tshirt/shared-types";
-
-const CATEGORY_LABEL_KEYS: Record<DesignCategory, string> = {
-  memes: "home.categories.memes",
-  anime_movies: "home.categories.animeMovies",
-  games: "home.categories.games",
-  text: "home.categories.text",
-  custom: "home.categories.custom",
-  ai_style: "home.categories.aiStyle",
-};
+import { designCategorySchema } from "@tshirt/shared-types";
+import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
 
 export function CategoryStub() {
   const { t } = useTranslation();
@@ -18,12 +10,12 @@ export function CategoryStub() {
   const title = parsed.success ? t(CATEGORY_LABEL_KEYS[parsed.data]) : category;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ink-950 text-white">
       <h1 className="text-4xl font-bold">{title} (заглушка)</h1>
-      <p className="text-gray-500">Раздел будет реализован в следующих этапах.</p>
+      <p className="text-ink-200">Раздел будет реализован в следующих этапах.</p>
       <Link
         to="/kiosk"
-        className="rounded-full bg-black px-6 py-3 text-white transition-colors hover:bg-gray-800"
+        className="rounded-full bg-neon-pink px-6 py-3 font-semibold text-white shadow-neon-pink transition-transform hover:scale-105"
       >
         {t("common.back")}
       </Link>
