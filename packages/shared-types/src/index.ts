@@ -2,3 +2,6 @@ export * from "./garment.js";
 export * from "./design.js";
 export * from "./order.js";
 export * from "./point.js";
+export * from "./admin.js";
+export * from "./pricing.js";
+export * from "./stats.js";

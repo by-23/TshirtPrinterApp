@@ -13,5 +13,9 @@ build/
 
 # Generated per-order design/mockup PNGs (point-server, Stage 5)
 apps/point-server/data/orders/
+
+# Uploaded catalog master images (central-relay, Stage 6)
+apps/central-relay/data/
+
 .vscode/*
 !.vscode/extensions.json

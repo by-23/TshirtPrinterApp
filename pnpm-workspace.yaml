@@ -3,6 +3,7 @@ packages:
   - "packages/*"
 
 allowBuilds:
+  bcrypt: true
   better-sqlite3: true
   # fabric's optional Node.js canvas backend; not needed for browser-only usage in kiosk-operator-app
   canvas: false
