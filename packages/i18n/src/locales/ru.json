@@ -153,6 +153,10 @@
     "accepted": {
       "title": "Заказ принят!",
       "subtitle": "Ждите {{time}}"
+    },
+    "cancelled": {
+      "title": "Заказ отменён",
+      "subtitle": "Обратитесь к оператору"
     }
   },
   "gallery": {

@@ -4,7 +4,8 @@ import {
   POPULAR_SCROLL_CSS_VARS,
   syncAllPopularScrollElements,
 } from "../editor/popularScrollTheme.js";
-import { SlidersVertical } from "./icons.js";
+import { GripVertical, SlidersVertical } from "./icons.js";
+import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
@@ -696,6 +697,7 @@ function clearToken(key: string) {
 export function EditorThemePanel() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { containerRef, style: dragStyle, dragHandleProps } = useDraggablePanel("editor-theme-panel-position");
   const [values, setValues] = useState<Record<string, string>>(() => ({
     ...getBaselineValues(),
     ...loadStoredValues(),
@@ -839,7 +841,7 @@ export function EditorThemePanel() {
   }
 
   return (
-    <div className="fixed right-6 top-32 z-50 flex flex-col items-end gap-5">
+    <div ref={containerRef} className="fixed right-6 top-32 z-50 flex flex-col items-end gap-5" style={dragStyle}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -852,10 +854,21 @@ export function EditorThemePanel() {
 
       {open ? (
         <div className="settings-panel-scroll flex max-h-[80vh] w-[760px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
-          <div className="flex items-center justify-between">
-            <span className="text-2xl font-bold uppercase tracking-wide text-white/90">
-              Настройки редактора
-            </span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span
+                {...dragHandleProps}
+                role="button"
+                aria-label="Перетащить панель"
+                tabIndex={-1}
+                className="flex h-9 w-9 flex-shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80 active:cursor-grabbing"
+              >
+                <GripVertical aria-hidden className="h-5 w-5" />
+              </span>
+              <span className="text-2xl font-bold uppercase tracking-wide text-white/90">
+                Настройки редактора
+              </span>
+            </div>
             <button
               type="button"
               onClick={handleReset}

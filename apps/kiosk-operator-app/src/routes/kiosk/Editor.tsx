@@ -95,6 +95,9 @@ export function Editor() {
 
     const printSize = computePrintSize(canvas);
     const canvasSnapshot = JSON.stringify(canvas.toJSON());
+    // Transparent-background PNG of just the design (no garment) — point-server
+    // composites it onto the garment mockup via sharp (see Stage 5).
+    const designImageBase64 = canvas.toDataURL({ format: "png", multiplier: 2 });
     const priceBreakdown = getPriceBreakdown({
       garmentType,
       fabric: fabricName as GarmentFabric,
@@ -115,6 +118,7 @@ export function Editor() {
         side,
         printSize,
         price,
+        designImageBase64,
       });
       useCheckoutStore.getState().setDraft(
         { type: garmentType, color, size, fabricName, side, canvasSnapshot },

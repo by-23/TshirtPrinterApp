@@ -3,6 +3,7 @@ import { PointServerStatus } from "./PointServerStatus.js";
 import { ThemePanel } from "./ThemePanel.js";
 import { EditorThemePanel } from "./EditorThemePanel.js";
 import { CheckoutThemePanel } from "./CheckoutThemePanel.js";
+import { DevViewSwitcher } from "./DevViewSwitcher.js";
 
 /** Real kiosk touchscreen resolution — every kiosk route is designed pixel-for-pixel at this size. */
 export const KIOSK_WIDTH = 1080;
@@ -83,6 +84,7 @@ export function KioskFrame({ children }: { children: ReactNode }) {
       <EditorThemePanel />
       {/* Same idea again, scoped to /kiosk/checkout (see CheckoutThemePanel.tsx). */}
       <CheckoutThemePanel />
+      <DevViewSwitcher />
     </div>
   );
 }

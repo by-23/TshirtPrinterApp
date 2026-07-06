@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { designCategorySchema } from "@tshirt/shared-types";
 import { KioskFrame } from "./components/KioskFrame.js";
+import { OperatorFrame } from "./components/OperatorFrame.js";
 import { KioskShell } from "./components/KioskShell.js";
 import { KioskHome } from "./routes/kiosk/KioskHome.js";
 import { CategoryStub } from "./routes/kiosk/CategoryStub.js";
@@ -42,7 +43,14 @@ export function App() {
         <Route path="/kiosk/editor" element={<Editor />} />
         <Route path="/kiosk/checkout" element={<Checkout />} />
       </Route>
-      <Route path="/operator" element={<OperatorHome />} />
+      <Route
+        path="/operator"
+        element={
+          <OperatorFrame>
+            <OperatorHome />
+          </OperatorFrame>
+        }
+      />
     </Routes>
   );
 }

@@ -153,6 +153,10 @@
     "accepted": {
       "title": "Order accepted!",
       "subtitle": "Please wait {{time}}"
+    },
+    "cancelled": {
+      "title": "Order cancelled",
+      "subtitle": "Please talk to the operator"
     }
   },
   "gallery": {

@@ -1,12 +1,18 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { eq } from "drizzle-orm";
 import { createOrderSchema, updateOrderStatusSchema } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { orders } from "../../db/schema.js";
+import { emitOrderEvent } from "../../realtime/socket.js";
+import { generateOrderImages } from "./mockup.js";
 
 type OrderRow = typeof orders.$inferSelect;
 
-function serializeOrder(row: OrderRow) {
+function fileUrl(request: FastifyRequest, relativePath: string): string {
+  return `${request.protocol}://${request.headers.host}/files/${relativePath}`;
+}
+
+function serializeOrder(row: OrderRow, request: FastifyRequest) {
   return {
     id: String(row.id),
     garment: {
@@ -20,8 +26,8 @@ function serializeOrder(row: OrderRow) {
     printSize: row.printSize,
     price: row.price,
     status: row.status,
-    mockupImageUrl: row.mockupImagePath,
-    designImageUrl: row.designImagePath,
+    mockupImageUrl: row.mockupImagePath ? fileUrl(request, row.mockupImagePath) : null,
+    designImageUrl: row.designImagePath ? fileUrl(request, row.designImagePath) : null,
     createdAt: row.createdAt,
   };
 }
@@ -32,9 +38,9 @@ function parseId(raw: string): number | null {
 }
 
 export async function ordersRoutes(app: FastifyInstance) {
-  app.get("/orders", async () => {
+  app.get("/orders", async (request) => {
     const rows = await db.select().from(orders);
-    return rows.map(serializeOrder);
+    return rows.map((row) => serializeOrder(row, request));
   });
 
   app.get<{ Params: { id: string } }>("/orders/:id", async (request, reply) => {
@@ -47,7 +53,7 @@ export async function ordersRoutes(app: FastifyInstance) {
     if (!row) {
       return reply.status(404).send({ error: "Order not found" });
     }
-    return serializeOrder(row);
+    return serializeOrder(row, request);
   });
 
   app.post("/orders", async (request, reply) => {
@@ -56,12 +62,39 @@ export async function ordersRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
 
-    const [row] = await db.insert(orders).values(parsed.data).returning();
-    return reply.status(201).send(serializeOrder(row!));
+    const { designImageBase64, ...orderFields } = parsed.data;
+    const [row] = await db.insert(orders).values(orderFields).returning();
+    let finalRow = row!;
+
+    if (designImageBase64) {
+      try {
+        const { designImagePath, mockupImagePath } = await generateOrderImages({
+          orderId: String(finalRow.id),
+          garmentType: finalRow.garmentType,
+          garmentColor: finalRow.garmentColor,
+          side: finalRow.side,
+          designImageBase64,
+        });
+        const [updated] = await db
+          .update(orders)
+          .set({ designImagePath, mockupImagePath })
+          .where(eq(orders.id, finalRow.id))
+          .returning();
+        finalRow = updated!;
+      } catch (err) {
+        // Order is still valid without the generated PNGs — operator can still
+        // see/accept it, just without a preview. Fail-open rather than 500.
+        app.log.error(err, "Failed to generate order images");
+      }
+    }
+
+    const serialized = serializeOrder(finalRow, request);
+    emitOrderEvent("created", serialized);
+    return reply.status(201).send(serialized);
   });
 
-  // Generic status transition — used by Stage 5's operator "Принять заказ",
-  // not called anywhere in the kiosk checkout flow itself.
+  // Status transitions used by Stage 5's operator actions ("Отправить на
+  // печать" -> accepted, "Готово" -> done, "Отменить заказ" -> cancelled).
   app.patch<{ Params: { id: string } }>("/orders/:id", async (request, reply) => {
     const id = parseId(request.params.id);
     if (id === null) {
@@ -77,6 +110,8 @@ export async function ordersRoutes(app: FastifyInstance) {
     if (!row) {
       return reply.status(404).send({ error: "Order not found" });
     }
-    return serializeOrder(row);
+    const serialized = serializeOrder(row, request);
+    emitOrderEvent("updated", serialized);
+    return serialized;
   });
 }

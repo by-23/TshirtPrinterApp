@@ -38,7 +38,7 @@ export const designs = sqliteTable("designs", {
 
 export const orders = sqliteTable("orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  status: text("status", { enum: ["new", "accepted", "printing", "done"] })
+  status: text("status", { enum: ["new", "accepted", "printing", "done", "cancelled"] })
     .notNull()
     .default("new"),
   garmentType: text("garment_type", { enum: ["tshirt", "hoodie"] }).notNull(),

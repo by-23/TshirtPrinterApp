@@ -16,6 +16,11 @@ body {
   touch-action: manipulation;
 }
 
+@property --operator-scroll-size {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 4px;
+}
 button,
 input,
 select,
@@ -32,6 +37,9 @@ textarea {
 }
 .checkout-theme-root {
   font-family: var(--checkout-font-family, var(--font-family));
+}
+.operator-theme-root {
+  font-family: var(--operator-font-family, var(--font-family));
 }
 /* ==========================================================================
    Live theme tokens
@@ -608,6 +616,214 @@ textarea {
   --checkout-cash-card-bg: linear-gradient(var(--checkout-cash-card-bg-direction),
       var(--checkout-cash-card-bg-start),
       var(--checkout-cash-card-bg-end));
+/* Operator screen (Этап 5, docs/ui-mockups/operator.png). A normal desktop
+     monitor rendered on a fixed-height virtual canvas (see OperatorFrame.tsx)
+     and calibrated live via OperatorThemePanel.tsx — same mechanics as
+     ThemePanel/EditorThemePanel/CheckoutThemePanel. */
+  --operator-page-bg: #05060a;
+  --operator-sidebar-bg: #0b0d16;
+  --operator-card-bg: #12141f;
+  --operator-card-border: #232538;
+  --operator-accent: #ff2d78;
+  --operator-accent-soft: rgba(255, 45, 120, 0.16);
+  --operator-text-muted: #8b8fa3;
+
+  /* Sidebar */
+  --operator-sidebar-width: 256px;
+  --operator-sidebar-header-padding-x: 28px;
+  --operator-sidebar-header-padding-y: 28px;
+  --operator-sidebar-header-gap: 4px;
+  --operator-sidebar-logo-size: 24px;
+  --operator-sidebar-logo-color: #ffffff;
+  --operator-sidebar-subtitle-size: 14px;
+  --operator-sidebar-subtitle-color: #ff2d78;
+  --operator-sidebar-nav-padding-x: 16px;
+  --operator-sidebar-nav-item-gap: 6px;
+  --operator-sidebar-nav-item-padding-x: 16px;
+  --operator-sidebar-nav-item-padding-y: 14px;
+  --operator-sidebar-nav-item-radius: 12px;
+  --operator-sidebar-nav-icon-gap: 14px;
+  --operator-sidebar-nav-font-size: 16px;
+  --operator-sidebar-nav-icon-size: 24px;
+  --operator-sidebar-nav-active-bg: rgba(255, 45, 120, 0.16);
+  --operator-sidebar-nav-active-color: #ff2d78;
+  --operator-sidebar-nav-idle-color: #8b8fa3;
+  --operator-sidebar-footer-padding-x: 20px;
+  --operator-sidebar-footer-padding-y: 20px;
+  --operator-sidebar-footer-gap: 12px;
+  --operator-sidebar-avatar-size: 44px;
+  --operator-sidebar-avatar-font-size: 16px;
+  --operator-sidebar-avatar-bg: rgba(255, 45, 120, 0.16);
+  --operator-sidebar-avatar-color: #ff2d78;
+  --operator-sidebar-name-size: 16px;
+  --operator-sidebar-role-size: 14px;
+
+  /* Status bar (order counters + printer-ready pill) */
+  --operator-statsbar-padding-x: 32px;
+  --operator-statsbar-padding-y: 20px;
+  --operator-statsbar-gap: 16px;
+  --operator-statsbar-pill-font-size: 16px;
+  --operator-statsbar-pill-padding-x: 16px;
+  --operator-statsbar-pill-padding-y: 8px;
+  --operator-statsbar-badge-size: 24px;
+  --operator-statsbar-badge-font-size: 14px;
+  --operator-statsbar-card-padding-x: 20px;
+  --operator-statsbar-card-padding-y: 10px;
+  --operator-statsbar-card-value-size: 24px;
+  --operator-statsbar-card-label-size: 12px;
+  --operator-statsbar-printer-font-size: 14px;
+  --operator-statsbar-printer-icon-size: 20px;
+  --operator-statsbar-printer-padding-x: 16px;
+  --operator-statsbar-printer-padding-y: 8px;
+  --operator-statsbar-printer-bg: rgba(46, 204, 113, 0.12);
+  --operator-statsbar-printer-color: #2ecc71;
+
+  /* Order list (left column) */
+  --operator-list-width: 384px;
+  --operator-list-header-padding-x: 20px;
+  --operator-list-header-padding-top: 20px;
+  --operator-list-header-padding-bottom: 16px;
+  --operator-list-title-size: 14px;
+  --operator-list-search-height: 44px;
+  --operator-list-search-font-size: 16px;
+  --operator-list-search-radius: 8px;
+  --operator-list-items-padding-x: 12px;
+  --operator-list-item-gap: 6px;
+  --operator-list-footer-font-size: 14px;
+  --operator-list-footer-padding-x: 20px;
+  --operator-list-footer-padding-y: 12px;
+  /* Order list item */
+  --operator-item-padding-x: 14px;
+  --operator-item-padding-y: 12px;
+  --operator-item-radius: 12px;
+  --operator-item-content-gap: 14px;
+  --operator-item-thumb-size: 64px;
+  --operator-item-thumb-radius: 8px;
+  --operator-item-thumb-icon-size: 28px;
+  --operator-item-number-size: 16px;
+  --operator-item-time-size: 14px;
+  --operator-item-detail-size: 14px;
+  --operator-item-price-size: 16px;
+  --operator-badge-font-size: 12px;
+  --operator-badge-padding-x: 12px;
+  --operator-badge-padding-y: 6px;
+  --operator-badge-radius: 999px;
+
+  /* Order details (center column) */
+  --operator-details-padding-x: 32px;
+  --operator-details-padding-y: 20px;
+  --operator-details-columns: 1.2fr 1fr;
+  --operator-details-columns-gap: 20px;
+  --operator-details-title-size: 24px;
+  --operator-details-meta-size: 14px;
+  --operator-details-side-font-size: 14px;
+  --operator-details-side-padding-x: 20px;
+  --operator-details-side-padding-y: 8px;
+  --operator-details-preview-radius: 16px;
+  --operator-details-preview-padding-y: 24px;
+  --operator-details-preview-max-height: 320px;
+  --operator-details-card-padding: 20px;
+  --operator-details-card-radius: 16px;
+  --operator-details-card-heading-size: 14px;
+  --operator-details-row-font-size: 16px;
+  --operator-details-design-thumb-size: 80px;
+  --operator-details-design-thumb-radius: 8px;
+  --operator-details-button-font-size: 16px;
+  --operator-details-button-padding-y: 16px;
+  --operator-details-button-radius: 12px;
+  --operator-details-buttons-gap: 12px;
+  --operator-details-accept-bg: #ff2d78;
+  --operator-details-done-bg: #2ecc71;
+  --operator-details-cancel-color: #ff6b6b;
+
+  /* Printer panel (right column) */
+  --operator-printer-width: 320px;
+  --operator-printer-padding-x: 16px;
+  --operator-printer-padding-y: 12px;
+  --operator-printer-padding-bottom: 24px;
+  --operator-printer-section-gap: 6px;
+  --operator-printer-section-padding: 12px;
+  --operator-printer-inner-gap: 7px;
+  --operator-printer-section-radius: 16px;
+  --operator-printer-heading-size: 14px;
+  --operator-printer-status-size: 13px;
+  --operator-printer-icon-box-size: 48px;
+  --operator-printer-icon-size: 26px;
+  --operator-printer-name-size: 15px;
+  --operator-printer-ink-label-size: 13px;
+  --operator-printer-ink-circle-size: 32px;
+  --operator-printer-ink-icon-size: 14px;
+  --operator-printer-ink-value-size: 11px;
+  --operator-printer-row-font-size: 13px;
+  --operator-printer-button-font-size: 13px;
+  --operator-printer-button-padding-y: 6px;
+  --operator-printer-button-radius: 10px;
+  --operator-printer-select-font-size: 14px;
+  --operator-printer-select-padding-x: 10px;
+  --operator-printer-select-padding-y: 5px;
+  --operator-printer-toggle-width: 44px;
+  --operator-printer-toggle-height: 24px;
+  --operator-printer-footer-font-size: 12px;
+  --operator-printer-ready-color: #2ecc71;
+
+  /* Designs catalog panel */
+  --operator-designs-padding-x: 32px;
+  --operator-designs-padding-y: 20px;
+  --operator-designs-title-size: 24px;
+  --operator-designs-columns: 5;
+  --operator-designs-gap: 16px;
+  --operator-designs-card-radius: 12px;
+  --operator-designs-card-padding: 12px;
+  --operator-designs-card-title-size: 14px;
+  --operator-designs-card-category-size: 12px;
+  --operator-designs-icon-size: 36px;
+
+  /* Operator scrollbars (order list, sidebar, details, designs) */
+  --operator-scroll-size: 4px;
+  --operator-scroll-track-color: #232538;
+  --operator-scroll-track-opacity: 0.5;
+  --operator-scroll-thumb-color: #5b6690;
+  --operator-scroll-thumb-opacity: 0.85;
+}
+
+.operator-theme-root .app-scroll {
+  --operator-scroll-size: 4px;
+  --operator-scroll-track-color: #232538;
+  --operator-scroll-track-opacity: 0.5;
+  --operator-scroll-thumb-color: #5b6690;
+  --operator-scroll-thumb-opacity: 0.85;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--operator-scroll-thumb-color) calc(var(--operator-scroll-thumb-opacity) * 100%), transparent) color-mix(in srgb, var(--operator-scroll-track-color) calc(var(--operator-scroll-track-opacity) * 100%), transparent);
+}
+
+.operator-theme-root .app-scroll::-webkit-scrollbar {
+  width: var(--operator-scroll-size);
+}
+
+.operator-theme-root .app-scroll::-webkit-scrollbar-button,
+.operator-theme-root .app-scroll::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.operator-theme-root .app-scroll::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--operator-scroll-track-color) calc(var(--operator-scroll-track-opacity) * 100%), transparent);
+  border-radius: 9999px;
+}
+
+.operator-theme-root .app-scroll::-webkit-scrollbar-thumb {
+  min-width: var(--operator-scroll-size);
+  background: color-mix(in srgb, var(--operator-scroll-thumb-color) calc(var(--operator-scroll-thumb-opacity) * 100%), transparent);
+  border-radius: 9999px;
+}
+
+.operator-theme-root .app-scroll::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.15);
 }
 
 /* Category cards read their whole gradient directly from CSS variables. */

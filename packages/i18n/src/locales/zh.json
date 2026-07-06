@@ -153,6 +153,10 @@
     "accepted": {
       "title": "订单已接受！",
       "subtitle": "请等待{{time}}"
+    },
+    "cancelled": {
+      "title": "订单已取消",
+      "subtitle": "请联系操作员"
     }
   },
   "gallery": {

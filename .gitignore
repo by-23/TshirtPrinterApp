@@ -10,5 +10,8 @@ build/
 .env.local
 .DS_Store
 *.log
+
+# Generated per-order design/mockup PNGs (point-server, Stage 5)
+apps/point-server/data/orders/
 .vscode/*
 !.vscode/extensions.json

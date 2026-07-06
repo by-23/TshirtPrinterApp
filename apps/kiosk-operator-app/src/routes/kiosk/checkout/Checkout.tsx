@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { OrderStatus } from "@tshirt/shared-types";
-import { fetchOrder } from "../../../lib/pointServer.js";
+import { fetchOrder, subscribeOrderEvents } from "../../../lib/pointServer.js";
 import { useCheckoutStore } from "../../../lib/checkoutStore.js";
 import { LanguageSwitcherSlot } from "../../../components/KioskShell.js";
 import { ArrowLeft } from "../../../components/icons.js";
@@ -14,6 +14,7 @@ import { PaymentCashCard } from "./PaymentCashCard.js";
 import { PaymentSteps } from "./PaymentSteps.js";
 import { CheckoutFooter } from "./CheckoutFooter.js";
 import { AcceptedNotice } from "./AcceptedNotice.js";
+import { CancelledNotice } from "./CancelledNotice.js";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -46,6 +47,17 @@ export function Checkout() {
       if (pollingRef.current !== null) window.clearInterval(pollingRef.current);
     };
   }, [order, status]);
+
+  // Instant status updates from the operator (Stage 5) — the poll above stays
+  // as a fail-open fallback in case the socket connection drops.
+  useEffect(() => {
+    if (!order) return;
+    return subscribeOrderEvents((event) => {
+      if (event.type === "updated" && event.order.id === order.id) {
+        setStatus(event.order.status);
+      }
+    });
+  }, [order]);
 
   if (!garment || !order) {
     return <Navigate to="/kiosk/editor" replace />;
@@ -138,7 +150,7 @@ export function Checkout() {
 
       <CheckoutFooter />
 
-      {status && status !== "new" && <AcceptedNotice />}
+      {status === "cancelled" ? <CancelledNotice /> : status && status !== "new" && <AcceptedNotice />}
     </div>
   );
 }
