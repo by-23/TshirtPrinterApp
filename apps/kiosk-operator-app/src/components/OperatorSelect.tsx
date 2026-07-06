@@ -29,15 +29,21 @@ export function OperatorSelect({ value, onChange, options }: OperatorSelectProps
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
+    // OperatorFrame scales the UI with CSS transform; the menu is portaled to
+    // body (outside that transform), so we re-apply the same scale here.
+    const scale = trigger.offsetHeight > 0 ? rect.height / trigger.offsetHeight : 1;
     const computed = getComputedStyle(trigger);
     setMenuStyle({
       position: "fixed",
-      top: rect.bottom + 4,
+      top: rect.bottom + 4 * scale,
       left: rect.left,
-      width: rect.width,
+      width: rect.width / scale,
+      transform: `scale(${scale})`,
+      transformOrigin: "top left",
       zIndex: 10000,
       fontFamily: computed.fontFamily,
       fontSize: computed.fontSize,
+      fontWeight: computed.fontWeight,
     });
   }, []);
 
@@ -83,8 +89,9 @@ export function OperatorSelect({ value, onChange, options }: OperatorSelectProps
                     onChange(option);
                     setOpen(false);
                   }}
-                  className="w-full text-left text-white transition-colors hover:bg-white/10"
+                  className="flex w-full items-center text-left text-white transition-colors hover:bg-white/10"
                   style={{
+                    minHeight: triggerRef.current?.offsetHeight,
                     padding: "var(--operator-printer-select-padding-y) var(--operator-printer-select-padding-x)",
                     fontSize: "inherit",
                     fontWeight: selected ? 600 : 400,
