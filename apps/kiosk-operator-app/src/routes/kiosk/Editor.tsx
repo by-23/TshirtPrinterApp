@@ -30,6 +30,7 @@ import {
   MOCKUP_DISPLAY_SCALE,
   MOCKUP_HEIGHT,
   MOCKUP_WIDTH,
+  useFabricShadingOverlayStyle,
   useTshirtSilhouetteUrl,
 } from "../../editor/mockup/index.js";
 
@@ -121,7 +122,8 @@ export function Editor() {
 
   const printAreas = usePrintAreaStore((state) => state.areas);
   const printArea = printAreas[garmentType][side];
-  const tshirtImageUrl = useTshirtSilhouetteUrl(color);
+  const tshirtImageUrl = useTshirtSilhouetteUrl(color, side);
+  const fabricShadingOverlayStyle = useFabricShadingOverlayStyle(garmentType, side, color, printArea);
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const mockupPixelHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
 
@@ -298,6 +300,7 @@ export function Editor() {
                       className="h-full w-full"
                       onReady={setCanvas}
                     />
+                    <div className="absolute inset-0" style={fabricShadingOverlayStyle} />
                   </div>
 
                   <ObjectControls canvas={canvas} printArea={printArea} />

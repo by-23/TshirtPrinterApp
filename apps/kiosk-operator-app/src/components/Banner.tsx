@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { getBannerTitle } from "../lib/homeLabels.js";
 import { useKioskImagesRevision } from "../lib/kioskImages.js";
 import { usePopularPrintSlides } from "../lib/popularPrints.js";
+import { useCssNumberVar } from "../lib/popularPrintScale.js";
 import { ChevronLeft, ChevronRight, Sparkles } from "./icons.js";
 import { PopularPrintSlideContent } from "./PopularPrintSlide.js";
 
@@ -15,6 +16,7 @@ export function Banner() {
   const bannerTitle = getBannerTitle(i18n.language);
   const imageRevision = useKioskImagesRevision();
   const slides = usePopularPrintSlides();
+  const slidesPerView = Math.max(1, Math.round(useCssNumberVar("--popular-slides-per-view", 5)));
 
   if (slides.length === 0) {
     return (
@@ -61,7 +63,7 @@ export function Banner() {
 
         <div className="popular-frame overflow-hidden px-5 py-0">
           <Swiper
-            key={`popular-prints-${imageRevision}`}
+            key={`popular-prints-${imageRevision}-${slidesPerView}`}
             modules={[Autoplay, Navigation, Pagination]}
             autoplay={{ delay: 4000, disableOnInteraction: false }}
             navigation={{
@@ -69,13 +71,13 @@ export function Banner() {
               nextEl: ".popular-swiper-next",
             }}
             pagination={{ clickable: true, el: ".popular-swiper-pagination" }}
-            slidesPerView={5}
+            slidesPerView={slidesPerView}
             spaceBetween={10}
-            loop={slides.length > 5}
+            loop={slides.length > slidesPerView}
             observer
             observeParents
             observeSlideChildren
-            className="popular-swiper h-[310px] w-full"
+            className="popular-swiper w-full"
           >
             {slides.map((slide) => (
               <SwiperSlide key={slide.id}>

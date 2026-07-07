@@ -10,7 +10,7 @@ export interface GarmentClipMaskInput {
   garmentType: GarmentType;
   side: GarmentSide;
   printArea: PrintAreaRect;
-  /** Alpha silhouette source for t-shirt clipping (white or black flat-lay PNG). */
+  /** Alpha silhouette source for t-shirt clipping (white flat-lay PNG). */
   tshirtImageUrl?: string;
 }
 
@@ -103,5 +103,42 @@ export function getGarmentClipMaskStyle(input: GarmentClipMaskInput): CSSPropert
     maskPosition: `${layout.left}px ${layout.top}px`,
     WebkitMaskRepeat: "no-repeat",
     maskRepeat: "no-repeat",
+  };
+}
+
+/**
+ * Multiply-blend overlay that reuses the flat-lay photo itself (desaturated)
+ * as a lighting/shadow map on top of the printed design, so a flat design
+ * picks up the garment's real folds/shadows instead of looking pasted on
+ * flat fabric. Self-contained (bundles its own garment-silhouette mask using
+ * the same alignment math as `getGarmentClipMaskStyle`), so it can be
+ * dropped in as a standalone absolutely-positioned overlay `div` above the
+ * design layer. Only meaningful for the photographed t-shirt garment — the
+ * hoodie mockup is a flat vector shape with no real shading to borrow.
+ */
+export function getFabricShadingOverlayStyle(input: GarmentClipMaskInput): CSSProperties {
+  if (input.garmentType !== "tshirt" || !input.tshirtImageUrl) return {};
+  const layout = resolveGarmentClipLayout(input);
+  if (!layout) return {};
+
+  return {
+    backgroundImage: `url("${layout.maskUrl}")`,
+    backgroundSize: `${layout.width}px ${layout.height}px`,
+    backgroundPosition: `${layout.left}px ${layout.top}px`,
+    backgroundRepeat: "no-repeat",
+    WebkitMaskImage: `url("${layout.maskUrl}")`,
+    maskImage: `url("${layout.maskUrl}")`,
+    WebkitMaskSize: `${layout.width}px ${layout.height}px`,
+    maskSize: `${layout.width}px ${layout.height}px`,
+    WebkitMaskPosition: `${layout.left}px ${layout.top}px`,
+    maskPosition: `${layout.left}px ${layout.top}px`,
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    // Brightness/contrast tuned so the photo's near-white lit areas wash out
+    // to ~white (no darkening) while its fold shadows stay visible — tweak
+    // here if real garment photos need more/less punch.
+    filter: "grayscale(1) brightness(1.12) contrast(0.9)",
+    mixBlendMode: "multiply",
+    pointerEvents: "none",
   };
 }

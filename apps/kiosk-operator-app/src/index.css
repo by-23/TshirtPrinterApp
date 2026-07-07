@@ -51,16 +51,16 @@ textarea {
    ========================================================================== */
 :root {
   /* Global UI typeface — every screen, panel and component inherits this. */
-    --font-family: 'Roboto', sans-serif;
+    --font-family: 'Inter', system-ui, sans-serif;
   /* Main kiosk home screen page background — tuned from ThemePanel.tsx. */
     --kiosk-page-bg: #05060f;
   /* Fixed position of the global language switcher (KioskShell.tsx, ThemePanel). */
-    --kiosk-lang-top: 48px;
+    --kiosk-lang-top: 35px;
     /* Distance from the right edge of the kiosk screen. */
     --kiosk-lang-right: 40px;
-    --kiosk-lang-btn-width: 74px;
-    --kiosk-lang-btn-height: 44px;
-    --kiosk-lang-btn-radius: 999px;
+    --kiosk-lang-btn-width: 60px;
+    --kiosk-lang-btn-height: 40px;
+    --kiosk-lang-btn-radius: 11px;
     --kiosk-lang-btn-gap: 10px;
     --kiosk-lang-btn-font-size: 15px;
     --kiosk-lang-btn-active-bg: #ff2d95;
@@ -97,7 +97,7 @@ textarea {
   --category-text-gap: 6px;
 
   /* Bottom «Выберите категорию» callout bar. */
-  --category-select-border-width: 0.5px;
+  --category-select-border-width: 3.5px;
   --category-select-radius: 32px;
   --category-select-bg-start: #0b0f1e;
   --category-select-bg-end: #070a14;
@@ -120,16 +120,19 @@ textarea {
      dark fill without changing the outer neon border. */
   --popular-border-width: 4px;
   --popular-glow-strength: 3;
-  --popular-shirt-scale: 0.85;
-  --popular-print-scale: 1.3;
-  --popular-likes-heart-size: 14px;
-  --popular-likes-font-size: 13px;
-  --popular-likes-text-stroke-width: 0px;
-  --popular-likes-text-stroke-color: #05060f;
-  --popular-bg-direction: to right;
-  --popular-bg-start: #131a2e;
-  --popular-bg-middle: #3c084c;
-  --popular-bg-end: #0d0f50;
+  --popular-shirt-scale: 1.05;
+  --popular-slide-height: 330px;
+  --popular-slides-per-view: 3;
+  --popular-print-scale-min: 0.6;
+  --popular-print-scale-max: 0.9;
+  --popular-likes-heart-size: 40px;
+  --popular-likes-font-size: 32px;
+  --popular-likes-text-stroke-width: 2px;
+  --popular-likes-text-stroke-color: #ff0080;
+  --popular-bg-direction: to left;
+  --popular-bg-start: #2a1094;
+  --popular-bg-middle: #0c2346;
+  --popular-bg-end: #731146;
 
   /* Direct gradient stops per category card. The panel exposes these as
      gradient controls (top / middle / bottom / border), not a single accent. */
@@ -1525,11 +1528,6 @@ textarea {
   transform-origin: bottom center;
 }
 
-.popular-print-art {
-  width: calc(4rem * var(--popular-print-scale, 1));
-  height: calc(4rem * var(--popular-print-scale, 1));
-}
-
 .popular-likes-badge {
   font-size: var(--popular-likes-font-size, 13px);
   font-weight: 700;
@@ -1542,6 +1540,14 @@ textarea {
   width: var(--popular-likes-heart-size, 14px);
   height: var(--popular-likes-heart-size, 14px);
   flex-shrink: 0;
+}
+
+.popular-swiper {
+  height: var(--popular-slide-height, 310px);
+}
+
+.popular-slide {
+  height: var(--popular-slide-height, 310px);
 }
 
 .popular-swiper .swiper-slide {

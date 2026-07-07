@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import tshirtBlack from "../assets/tshirt-black.png";
 import tshirtWhite from "../assets/tshirt-white.png";
+import tshirtWhiteBack from "../assets/tshirt-white-back.png";
 import { getCategoryHomeLabel } from "./homeLabels.js";
 import {
   clearAllImageOverrides,
@@ -42,8 +42,8 @@ export interface KioskImageSection {
 }
 
 const POPULAR_IMAGES: KioskImageDefinition[] = [
-  { key: "tshirt-white", label: "Футболка белая", defaultUrl: tshirtWhite },
-  { key: "tshirt-black", label: "Футболка чёрная", defaultUrl: tshirtBlack },
+  { key: "tshirt-white", label: "Футболка белая (перед)", defaultUrl: tshirtWhite },
+  { key: "tshirt-white-back", label: "Футболка белая (спина)", defaultUrl: tshirtWhiteBack },
   ...PRINT_CATALOG.map((print, index) => ({
     key: printImageKey(print.id),
     label: `Принт ${index + 1} — ${print.label}`,
@@ -135,7 +135,7 @@ export function getKioskImageUrl(key: string): string {
 
 /** Built-in shirt mockups — use as fallback if override/storage returns empty. */
 export const DEFAULT_TSHIRT_WHITE = tshirtWhite;
-export const DEFAULT_TSHIRT_BLACK = tshirtBlack;
+export const DEFAULT_TSHIRT_WHITE_BACK = tshirtWhiteBack;
 
 export function hasKioskImageOverride(key: string): boolean {
   return hasCachedOverride(key);

@@ -580,21 +580,49 @@ const SECTIONS: Section[] = [
 /** Popular carousel image scale — rendered inside the «Изображения» block. */
 const IMAGE_SIZE_TOKENS: RangeToken[] = [
   {
+    key: "--popular-slide-height",
+    label: "Высота блока",
+    type: "range",
+    defaultValue: 310,
+    min: 180,
+    max: 600,
+    step: 10,
+    unit: "px",
+  },
+  {
+    key: "--popular-slides-per-view",
+    label: "Футболок в ряд",
+    type: "range",
+    defaultValue: 5,
+    min: 1,
+    max: 10,
+    step: 1,
+  },
+  {
     key: "--popular-shirt-scale",
     label: "Футболки",
     type: "range",
-    defaultValue: 1.32,
+    defaultValue: 0.85,
     min: 0.5,
-    max: 2.5,
+    max: 4,
     step: 0.05,
   },
   {
-    key: "--popular-print-scale",
-    label: "Принты на футболках",
+    key: "--popular-print-scale-min",
+    label: "Принты — мин. масштаб",
     type: "range",
-    defaultValue: 1,
+    defaultValue: 0.8,
     min: 0.3,
-    max: 2.5,
+    max: 4,
+    step: 0.05,
+  },
+  {
+    key: "--popular-print-scale-max",
+    label: "Принты — макс. масштаб",
+    type: "range",
+    defaultValue: 1.3,
+    min: 0.3,
+    max: 4,
     step: 0.05,
   },
 ];
@@ -989,6 +1017,9 @@ export function ThemePanel() {
               <span className="text-sm font-bold uppercase tracking-wider text-white/40">
                 Популярные принты — размеры
               </span>
+              <p className="text-sm text-white/45">
+                Масштаб принта на каждом слайде выбирается случайно между мин. и макс.
+              </p>
               {IMAGE_SIZE_TOKENS.map((token) => renderToken(token))}
             </div>
 

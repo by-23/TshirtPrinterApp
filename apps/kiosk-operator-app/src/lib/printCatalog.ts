@@ -19,7 +19,6 @@ export interface PrintDefinition {
   id: string;
   url: string;
   label: string;
-  shirt: "white" | "black";
   likes: string;
 }
 
@@ -46,7 +45,6 @@ function buildCatalog(): PrintDefinition[] {
       id: entry.id,
       url: entry.url,
       label: formatLabel(entry.id) || entry.id,
-      shirt: index % 2 === 0 ? "white" : "black",
       likes: LIKES_PLACEHOLDERS[index % LIKES_PLACEHOLDERS.length] ?? "1k",
     }));
 }

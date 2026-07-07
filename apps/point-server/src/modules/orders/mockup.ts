@@ -10,7 +10,7 @@ const ORDERS_DIR = path.join(DATA_DIR, "orders");
 const ASSETS_DIR = path.resolve("assets", "garments");
 
 const TSHIRT_WHITE_PATH = path.join(ASSETS_DIR, "tshirt-white.png");
-const TSHIRT_BLACK_PATH = path.join(ASSETS_DIR, "tshirt-black.png");
+const TSHIRT_WHITE_BACK_PATH = path.join(ASSETS_DIR, "tshirt-white-back.png");
 
 /** Matches the client's `MOCKUP_DISPLAY_SCALE` — arbitrary (cancels out in the math below) but kept for readability/parity. */
 const RENDER_SCALE = 2;
@@ -73,18 +73,19 @@ function clampRect(rect: Rect, maxWidth: number, maxHeight: number): Rect {
   return { left, top, width, height };
 }
 
-async function tintedTshirtBase(color: string): Promise<{ buffer: Buffer; width: number; height: number }> {
-  const normalized = color.toLowerCase();
-  const isBlack = normalized === "#111111";
-  const isWhite = normalized === "#ffffff";
-  const basePath = isBlack ? TSHIRT_BLACK_PATH : TSHIRT_WHITE_PATH;
+async function tintedTshirtBase(
+  color: string,
+  side: GarmentSide,
+): Promise<{ buffer: Buffer; width: number; height: number }> {
+  const isWhite = color.toLowerCase() === "#ffffff";
+  const basePath = side === "back" ? TSHIRT_WHITE_BACK_PATH : TSHIRT_WHITE_PATH;
 
   const base = sharp(basePath).ensureAlpha();
   const metadata = await base.metadata();
   const width = metadata.width!;
   const height = metadata.height!;
 
-  if (isBlack || isWhite) {
+  if (isWhite) {
     return { buffer: await base.png().toBuffer(), width, height };
   }
 
@@ -117,7 +118,7 @@ async function garmentBase(
   side: GarmentSide,
 ): Promise<{ buffer: Buffer; width: number; height: number }> {
   if (type === "tshirt") {
-    return tintedTshirtBase(color);
+    return tintedTshirtBase(color, side);
   }
 
   const width = MOCKUP_WIDTH * RENDER_SCALE;
@@ -149,6 +150,36 @@ async function designRect(
     baseWidth,
     baseHeight,
   );
+}
+
+/**
+ * Multiply-blends the garment photo's own (desaturated) folds/shadows onto
+ * the flat design so the print looks like it sits in the fabric rather than
+ * being pasted on top of it. `linear(1, SHADING_BRIGHTEN)` pushes the
+ * photo's near-white lit areas to true white first, so the highlight zones
+ * of the design aren't darkened — only the real shadow creases are.
+ * Skipped for the hoodie, which is a flat vector render with no real photo
+ * shading to borrow.
+ */
+const SHADING_BRIGHTEN = 25;
+
+async function applyFabricShading(baseBuffer: Buffer, designBuffer: Buffer, rect: Rect): Promise<Buffer> {
+  const shadingMap = await sharp(baseBuffer)
+    .extract(rect)
+    .greyscale()
+    .linear(1, SHADING_BRIGHTEN)
+    .toBuffer();
+
+  return sharp(designBuffer)
+    .composite([
+      { input: shadingMap, blend: "multiply" },
+      // Multiplying an opaque shading layer over the design can flatten its
+      // alpha to fully opaque; re-mask with the design's own alpha so
+      // transparent areas around the artwork stay transparent.
+      { input: designBuffer, blend: "dest-in" },
+    ])
+    .png()
+    .toBuffer();
 }
 
 function decodeDataUrl(dataUrl: string): Buffer {
@@ -187,10 +218,12 @@ export async function generateOrderImages(input: GenerateOrderImagesInput): Prom
   const { buffer: baseBuffer, width, height } = await garmentBase(input.garmentType, input.garmentColor, input.side);
   const rect = await designRect(input.garmentType, input.side, width, height);
   const resizedDesign = await sharp(designBuffer).resize(rect.width, rect.height, { fit: "fill" }).png().toBuffer();
+  const finalDesignLayer =
+    input.garmentType === "tshirt" ? await applyFabricShading(baseBuffer, resizedDesign, rect) : resizedDesign;
 
   const mockupPngPath = path.join(orderDir, "mockup.png");
   await sharp(baseBuffer)
-    .composite([{ input: resizedDesign, left: rect.left, top: rect.top }])
+    .composite([{ input: finalDesignLayer, left: rect.left, top: rect.top }])
     .png()
     .toFile(mockupPngPath);
 
