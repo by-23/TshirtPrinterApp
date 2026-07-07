@@ -13,6 +13,8 @@ export {
 export type { PrintAreaRect, GarmentMockupProps } from "./garmentShape.js";
 export { TshirtMockup } from "./TshirtMockup.js";
 export { HoodieMockup } from "./HoodieMockup.js";
+export { getGarmentClipMaskStyle } from "./garmentClipMask.js";
+export { useGarmentClipMaskStyle, useTshirtSilhouetteUrl } from "./useGarmentClipMaskStyle.js";
 
 const MOCKUP_BY_TYPE: Record<GarmentType, (props: GarmentMockupProps) => JSX.Element> = {
   tshirt: TshirtMockup,

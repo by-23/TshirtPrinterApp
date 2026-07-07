@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
-import { MOCKUP_HEIGHT, MOCKUP_WIDTH, PRINT_AREAS, hoodieSvg } from "./garmentGeometry.js";
+import { MOCKUP_HEIGHT, MOCKUP_WIDTH, getPrintAreas, hoodieSvg } from "./garmentGeometry.js";
 
 /** Everything generated at runtime (per-order PNGs) lives under this dir, relative to cwd (same convention as `env.DATABASE_PATH`). */
 const DATA_DIR = path.resolve("data");
@@ -36,8 +36,14 @@ interface Rect {
  * `TshirtMockup.tsx` does visually, so the composited design lands in the
  * same place the customer saw on the kiosk screen.
  */
-function printAreaToPhotoPixels(photoWidth: number, photoHeight: number, side: GarmentSide, type: GarmentType): Rect {
-  const printArea = PRINT_AREAS[type][side];
+function printAreaToPhotoPixels(
+  photoWidth: number,
+  photoHeight: number,
+  side: GarmentSide,
+  type: GarmentType,
+  printAreas: Awaited<ReturnType<typeof getPrintAreas>>,
+): Rect {
+  const printArea = printAreas[type][side];
   const boxWidth = MOCKUP_WIDTH * RENDER_SCALE;
   const boxHeight = MOCKUP_HEIGHT * RENDER_SCALE;
   const containScale = Math.min(boxWidth / photoWidth, boxHeight / photoHeight);
@@ -121,12 +127,18 @@ async function garmentBase(
   return { buffer, width, height };
 }
 
-function designRect(type: GarmentType, side: GarmentSide, baseWidth: number, baseHeight: number): Rect {
+async function designRect(
+  type: GarmentType,
+  side: GarmentSide,
+  baseWidth: number,
+  baseHeight: number,
+): Promise<Rect> {
+  const printAreas = await getPrintAreas();
   if (type === "tshirt") {
-    return printAreaToPhotoPixels(baseWidth, baseHeight, side, type);
+    return printAreaToPhotoPixels(baseWidth, baseHeight, side, type, printAreas);
   }
   // Hoodie base is rendered 1:1 in the same coordinate space as PRINT_AREAS — no object-contain offset needed.
-  const printArea = PRINT_AREAS[type][side];
+  const printArea = printAreas[type][side];
   return clampRect(
     {
       left: Math.round(printArea.x * RENDER_SCALE),
@@ -173,7 +185,7 @@ export async function generateOrderImages(input: GenerateOrderImagesInput): Prom
   await writeFile(designPngPath, designBuffer);
 
   const { buffer: baseBuffer, width, height } = await garmentBase(input.garmentType, input.garmentColor, input.side);
-  const rect = designRect(input.garmentType, input.side, width, height);
+  const rect = await designRect(input.garmentType, input.side, width, height);
   const resizedDesign = await sharp(designBuffer).resize(rect.width, rect.height, { fit: "fill" }).png().toBuffer();
 
   const mockupPngPath = path.join(orderDir, "mockup.png");

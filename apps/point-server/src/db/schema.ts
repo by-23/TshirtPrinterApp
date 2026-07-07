@@ -205,3 +205,17 @@ export const syncQueue = sqliteTable("sync_queue", {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });
+
+/**
+ * Singleton (single row, id=1) of operator-tuned printable-zone rectangles
+ * per garment type/side — edited from «Настройки печати» in the operator
+ * panel. `areasJson` mirrors `DEFAULT_PRINT_AREAS` from shared-types until
+ * the operator saves custom bounds.
+ */
+export const printAreaConfig = sqliteTable("print_area_config", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  areasJson: text("areas_json", { mode: "json" }).$type<import("@tshirt/shared-types").PrintAreaConfig>().notNull(),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});

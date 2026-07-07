@@ -1,26 +1,60 @@
 import { useEffect, useRef } from "react";
 import { Canvas } from "fabric";
-import type { GarmentSide } from "@tshirt/shared-types";
+import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
+import {
+  applyGarmentClipMaskToLowerCanvas,
+  clearGarmentClipFromCanvas,
+  installUnmaskedControlsRenderer,
+  snapshotCanvasJson,
+} from "./applyGarmentClipToCanvas.js";
+import {
+  applySelectionStyleToAllObjects,
+  applySelectionStyleToObject,
+  configureCanvasSelectionStyle,
+} from "./canvasSelectionStyle.js";
+import { getGarmentClipMaskStyle } from "./mockup/garmentClipMask.js";
+import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "./mockup/garmentShape.js";
 import { useEditorStore } from "./store.js";
 import { computePrintSize } from "./printSize.js";
-import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "./mockup/garmentShape.js";
 
 export interface FabricCanvasProps {
   side: GarmentSide;
   printArea: PrintAreaRect;
+  garmentType: GarmentType;
+  tshirtImageUrl?: string;
   className?: string;
   onReady: (canvas: Canvas | null) => void;
 }
 
-export function FabricCanvas({ side, printArea, className, onReady }: FabricCanvasProps) {
+export function FabricCanvas({
+  side,
+  printArea,
+  garmentType,
+  tshirtImageUrl,
+  className,
+  onReady,
+}: FabricCanvasProps) {
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<Canvas | null>(null);
   const setHasSelection = useEditorStore((state) => state.setHasSelection);
   /** Tracks which side is currently loaded into the live canvas instance. */
   const loadedSideRef = useRef<GarmentSide>(side);
 
+  function syncGarmentClip(canvas: Canvas) {
+    const maskStyle = getGarmentClipMaskStyle({
+      garmentType,
+      side: loadedSideRef.current,
+      printArea,
+      tshirtImageUrl,
+    });
+    applyGarmentClipMaskToLowerCanvas(canvas, maskStyle);
+    canvas.requestRenderAll();
+  }
+
   useEffect(() => {
     if (!canvasElRef.current) return;
+
+    configureCanvasSelectionStyle();
 
     const canvas = new Canvas(canvasElRef.current, {
       width: printArea.width * MOCKUP_DISPLAY_SCALE,
@@ -28,6 +62,8 @@ export function FabricCanvas({ side, printArea, className, onReady }: FabricCanv
       backgroundColor: "transparent",
       preserveObjectStacking: true,
     });
+    configureCanvasSelectionStyle(canvas);
+    const uninstallControlsRenderer = installUnmaskedControlsRenderer(canvas);
     canvasRef.current = canvas;
     loadedSideRef.current = side;
     onReady(canvas);
@@ -39,20 +75,31 @@ export function FabricCanvas({ side, printArea, className, onReady }: FabricCanv
     function recomputePrintSize() {
       useEditorStore.getState().setPrintSize(loadedSideRef.current, computePrintSize(canvas));
     }
-    canvas.on("object:added", recomputePrintSize);
+
+    canvas.on("object:added", (event) => {
+      if (event.target) {
+        applySelectionStyleToObject(event.target);
+      }
+      recomputePrintSize();
+    });
     canvas.on("object:removed", recomputePrintSize);
     canvas.on("object:modified", recomputePrintSize);
 
     const initialSnapshot = useEditorStore.getState().canvasSnapshots[side];
     if (initialSnapshot) {
       void canvas.loadFromJSON(initialSnapshot).then(() => {
-        canvas.requestRenderAll();
+        applySelectionStyleToAllObjects(canvas);
+        syncGarmentClip(canvas);
         recomputePrintSize();
       });
+    } else {
+      syncGarmentClip(canvas);
     }
 
     return () => {
-      useEditorStore.getState().setCanvasSnapshot(loadedSideRef.current, JSON.stringify(canvas.toJSON()));
+      uninstallControlsRenderer();
+      clearGarmentClipFromCanvas(canvas);
+      useEditorStore.getState().setCanvasSnapshot(loadedSideRef.current, snapshotCanvasJson(canvas));
       canvasRef.current = null;
       onReady(null);
       void canvas.dispose();
@@ -67,25 +114,27 @@ export function FabricCanvas({ side, printArea, className, onReady }: FabricCanv
       width: printArea.width * MOCKUP_DISPLAY_SCALE,
       height: printArea.height * MOCKUP_DISPLAY_SCALE,
     });
-  }, [printArea.width, printArea.height]);
+    syncGarmentClip(canvas);
+  }, [printArea.width, printArea.height, printArea.x, printArea.y, garmentType, tshirtImageUrl, side]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || loadedSideRef.current === side) return;
 
     const previousSide = loadedSideRef.current;
-    useEditorStore.getState().setCanvasSnapshot(previousSide, JSON.stringify(canvas.toJSON()));
+    useEditorStore.getState().setCanvasSnapshot(previousSide, snapshotCanvasJson(canvas));
     loadedSideRef.current = side;
 
     canvas.clear();
     const snapshot = useEditorStore.getState().canvasSnapshots[side];
     if (snapshot) {
       void canvas.loadFromJSON(snapshot).then(() => {
-        canvas.requestRenderAll();
+        applySelectionStyleToAllObjects(canvas);
+        syncGarmentClip(canvas);
         useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
       });
     } else {
-      canvas.requestRenderAll();
+      syncGarmentClip(canvas);
       useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
     }
   }, [side]);

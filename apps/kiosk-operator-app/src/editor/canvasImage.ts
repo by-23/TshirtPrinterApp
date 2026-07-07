@@ -1,4 +1,5 @@
 import { FabricImage, type Canvas } from "fabric";
+import { applySelectionStyleToObject } from "./canvasSelectionStyle.js";
 
 /** Fraction of the print-area canvas an inserted image may occupy on its longest side. */
 export const MAX_IMAGE_FRACTION = 0.85;
@@ -16,6 +17,7 @@ export function placeImageCentered(canvas: Canvas, image: FabricImage) {
     scaleX: scale,
     scaleY: scale,
   });
+  applySelectionStyleToObject(image);
   canvas.add(image);
   canvas.setActiveObject(image);
   canvas.requestRenderAll();

@@ -8,6 +8,7 @@ import { catalogRoutes } from "./modules/catalog/routes.js";
 import { catalogScrapeRoutes } from "./modules/catalog-scraper/routes.js";
 import { ordersRoutes } from "./modules/orders/routes.js";
 import { configRoutes } from "./modules/config/routes.js";
+import { printAreaRoutes } from "./modules/print-area/routes.js";
 import { aiRoutes } from "./modules/ai/routes.js";
 import { initRealtime } from "./realtime/socket.js";
 
@@ -44,6 +45,7 @@ export async function buildServer() {
   await app.register(catalogScrapeRoutes);
   await app.register(ordersRoutes);
   await app.register(configRoutes);
+  await app.register(printAreaRoutes);
   await app.register(aiRoutes);
 
   return app;

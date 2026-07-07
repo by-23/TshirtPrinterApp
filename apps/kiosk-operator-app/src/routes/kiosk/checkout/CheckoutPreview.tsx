@@ -6,12 +6,13 @@ import { PillButton } from "@tshirt/ui-kit";
 import { RAIL_ICON_CLASS, TshirtIcon } from "../../../components/icons.js";
 import { useEditorStore } from "../../../editor/store.js";
 import type { CheckoutGarment } from "../../../lib/checkoutStore.js";
+import { initPrintAreaConfig, usePrintAreaStore } from "../../../lib/printAreaStore.js";
 import {
   GarmentMockup,
   MOCKUP_DISPLAY_SCALE,
   MOCKUP_HEIGHT,
   MOCKUP_WIDTH,
-  PRINT_AREAS,
+  useGarmentClipMaskStyle,
 } from "../../../editor/mockup/index.js";
 import { blockBorderStyle } from "./borderStyle.js";
 
@@ -67,13 +68,19 @@ export function CheckoutPreview({ garment }: CheckoutPreviewProps) {
   const { t } = useTranslation();
   const [previewSide, setPreviewSide] = useState<GarmentSide>(garment.side);
   const otherSideSnapshot = useEditorStore((state) => state.canvasSnapshots[garment.side === "front" ? "back" : "front"]);
+  const printAreas = usePrintAreaStore((state) => state.areas);
+
+  useEffect(() => {
+    initPrintAreaConfig();
+  }, []);
 
   const snapshotBySide: Record<GarmentSide, string | null> = {
     [garment.side]: garment.canvasSnapshot,
     [garment.side === "front" ? "back" : "front"]: otherSideSnapshot,
   } as Record<GarmentSide, string | null>;
 
-  const printArea = PRINT_AREAS[garment.type][previewSide];
+  const printArea = printAreas[garment.type][previewSide];
+  const garmentClipMaskStyle = useGarmentClipMaskStyle(garment.type, previewSide, garment.color, printArea);
   const canvasWidthPx = printArea.width * MOCKUP_DISPLAY_SCALE;
   const canvasHeightPx = printArea.height * MOCKUP_DISPLAY_SCALE;
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
@@ -122,6 +129,7 @@ export function CheckoutPreview({ garment }: CheckoutPreviewProps) {
                 top: printArea.y * MOCKUP_DISPLAY_SCALE,
                 width: canvasWidthPx,
                 height: canvasHeightPx,
+                ...garmentClipMaskStyle,
               }}
             >
               <ReadOnlyCanvas

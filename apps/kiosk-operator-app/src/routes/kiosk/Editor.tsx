@@ -6,6 +6,7 @@ import { designCategorySchema, type GarmentFabric } from "@tshirt/shared-types";
 import { getPriceBreakdown } from "@tshirt/shared-pricing";
 import { createOrder, fetchDesign, markDesignUsed, resolveDesignImageUrl } from "../../lib/pointServer.js";
 import { initPricingConfig, usePricingConfigStore } from "../../lib/pricingConfigStore.js";
+import { initPrintAreaConfig, usePrintAreaStore } from "../../lib/printAreaStore.js";
 import { useEditorStore } from "../../editor/store.js";
 import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
@@ -29,7 +30,7 @@ import {
   MOCKUP_DISPLAY_SCALE,
   MOCKUP_HEIGHT,
   MOCKUP_WIDTH,
-  PRINT_AREAS,
+  useTshirtSilhouetteUrl,
 } from "../../editor/mockup/index.js";
 
 export function Editor() {
@@ -52,6 +53,7 @@ export function Editor() {
 
   useEffect(() => {
     initPricingConfig();
+    initPrintAreaConfig();
   }, []);
 
   const categoryParam = designCategorySchema.safeParse(searchParams.get("category"));
@@ -117,7 +119,9 @@ export function Editor() {
     };
   }, [canvas, category]);
 
-  const printArea = PRINT_AREAS[garmentType][side];
+  const printAreas = usePrintAreaStore((state) => state.areas);
+  const printArea = printAreas[garmentType][side];
+  const tshirtImageUrl = useTshirtSilhouetteUrl(color);
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const mockupPixelHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
 
@@ -278,7 +282,7 @@ export function Editor() {
                     className="absolute inset-0 h-full w-full"
                   />
                   <div
-                    className="absolute overflow-hidden"
+                    className="absolute overflow-visible"
                     style={{
                       left: printArea.x * MOCKUP_DISPLAY_SCALE,
                       top: printArea.y * MOCKUP_DISPLAY_SCALE,
@@ -286,21 +290,17 @@ export function Editor() {
                       height: printArea.height * MOCKUP_DISPLAY_SCALE,
                     }}
                   >
-                    <FabricCanvas side={side} printArea={printArea} className="h-full w-full" onReady={setCanvas} />
+                    <FabricCanvas
+                      side={side}
+                      printArea={printArea}
+                      garmentType={garmentType}
+                      tshirtImageUrl={garmentType === "tshirt" ? tshirtImageUrl : undefined}
+                      className="h-full w-full"
+                      onReady={setCanvas}
+                    />
                   </div>
 
-                  <div
-                    className="pointer-events-none absolute flex justify-end"
-                    style={{
-                      left: printArea.x * MOCKUP_DISPLAY_SCALE,
-                      top: printArea.y * MOCKUP_DISPLAY_SCALE - 40,
-                      width: printArea.width * MOCKUP_DISPLAY_SCALE,
-                    }}
-                  >
-                    <div className="pointer-events-auto">
-                      <ObjectControls canvas={canvas} />
-                    </div>
-                  </div>
+                  <ObjectControls canvas={canvas} printArea={printArea} />
                 </div>
               </div>
 

@@ -92,6 +92,13 @@
       "when": 1783456148253,
       "tag": "0012_far_secret_warriors",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1783460000000,
+      "tag": "0013_print_area_config",
+      "breakpoints": true
     }
   ]
 }

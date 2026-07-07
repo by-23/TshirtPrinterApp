@@ -23,9 +23,11 @@ import {
   type OrderStatus,
   type PointConfigSnapshot,
   type PriceConfig,
+  type PrintAreaConfig,
   type SetDesignIsolatedInput,
   type StylizeResponse,
   type UpdateCatalogScrapeConfigInput,
+  type UpdatePrintAreaConfigInput,
   orderEventSchema,
 } from "@tshirt/shared-types";
 
@@ -337,6 +339,31 @@ export function subscribePricingEvents(callback: (config: PriceConfig) => void):
 }
 
 // --- Pinterest catalog scraper (Этап 3) — settings tab in the operator panel ---
+
+export interface PrintAreaConfigResponse {
+  areas: PrintAreaConfig;
+  updatedAt: string;
+}
+
+export async function fetchPrintAreaConfig(): Promise<PrintAreaConfigResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/print-area-config`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch print area config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updatePrintAreaConfig(input: UpdatePrintAreaConfigInput): Promise<PrintAreaConfigResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/print-area-config`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update print area config: ${res.status}`);
+  }
+  return res.json();
+}
 
 export async function fetchScrapeConfig(): Promise<CatalogScrapeConfig> {
   const res = await fetch(`${POINT_SERVER_URL}/catalog/scrape-config`);

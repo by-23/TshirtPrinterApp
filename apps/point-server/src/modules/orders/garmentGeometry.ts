@@ -1,32 +1,17 @@
-import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
+import type { GarmentSide, GarmentType, PrintAreaRect } from "@tshirt/shared-types";
+import { DEFAULT_PRINT_AREAS, MOCKUP_HEIGHT, MOCKUP_WIDTH } from "@tshirt/shared-types";
+import { getPrintAreaConfig } from "../print-area/config.js";
 
-/**
- * Server-side mirror of the mockup geometry used by the kiosk editor
- * (`apps/kiosk-operator-app/src/editor/mockup/garmentShape.ts`). Kept in
- * sync manually — there is no shared package between the two apps for this
- * yet — so that the operator's mockup PNG lines up with what the customer
- * saw while designing.
- */
-export const MOCKUP_WIDTH = 300;
-export const MOCKUP_HEIGHT = 340;
+export { MOCKUP_WIDTH, MOCKUP_HEIGHT };
+export type { PrintAreaRect };
 
-export interface PrintAreaRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+/** @deprecated Use `getPrintAreas()` — kept for type re-exports only. */
+export const PRINT_AREAS = DEFAULT_PRINT_AREAS;
+
+export async function getPrintAreas() {
+  const { areas } = await getPrintAreaConfig();
+  return areas;
 }
-
-export const PRINT_AREAS: Record<GarmentType, Record<GarmentSide, PrintAreaRect>> = {
-  tshirt: {
-    front: { x: 110, y: 115, width: 90, height: 150 },
-    back: { x: 100, y: 105, width: 110, height: 175 },
-  },
-  hoodie: {
-    front: { x: 110, y: 118, width: 90, height: 105 },
-    back: { x: 100, y: 105, width: 110, height: 175 },
-  },
-};
 
 const NECKLINE_FRONT = "125,48 150,62 175,48";
 const NECKLINE_BACK = "125,46 150,42 175,46";
