@@ -1,7 +1,13 @@
 import { io as ioClient, type Socket } from "socket.io-client";
 import type { FastifyBaseLogger } from "fastify";
-import { SYNC_SNAPSHOT_EVENT, type SyncSnapshotPayload } from "@tshirt/shared-types";
+import {
+  SYNC_SNAPSHOT_EVENT,
+  UPLOAD_PHOTO_READY_EVENT,
+  type SyncSnapshotPayload,
+  type UploadPhotoReadyPayload,
+} from "@tshirt/shared-types";
 import { env } from "../../env.js";
+import { emitAiPhotoReceivedEvent } from "../../realtime/socket.js";
 import { applySnapshot } from "./handlers.js";
 import { drainSyncQueue } from "./queue.js";
 
@@ -44,6 +50,15 @@ export function connectToCentralRelay(log: FastifyBaseLogger): Socket | null {
 
   socket.on(SYNC_SNAPSHOT_EVENT, (payload: SyncSnapshotPayload) => {
     void applySnapshot(payload, log);
+  });
+
+  // ИИ-раздел (Этап 9), `uploadMode: "relay"` — central-relay pushes this
+  // once a phone posts a photo to `POST /upload/:token/photo`. Re-emitted
+  // locally as the same `AI_PHOTO_RECEIVED_EVENT` the kiosk listens for in
+  // `uploadMode: "wifi"` too (see `modules/ai/routes.ts`), so the frontend
+  // doesn't need to care which mode is active.
+  socket.on(UPLOAD_PHOTO_READY_EVENT, (payload: UploadPhotoReadyPayload) => {
+    emitAiPhotoReceivedEvent({ sessionId: payload.token, imageBase64: payload.imageBase64 });
   });
 
   socket.on("disconnect", (reason) => {

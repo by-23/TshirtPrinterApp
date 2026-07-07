@@ -2,11 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App.js";
-import { injectGoogleFonts } from "./lib/fonts.js";
+import { applyStoredUiFont, injectGoogleFonts } from "./lib/fonts.js";
 import "./lib/i18n.js";
 import "./index.css";
 
 injectGoogleFonts();
+applyStoredUiFont();
 
 function isScrollableAxis(element: HTMLElement, axis: "x" | "y"): boolean {
   const style = getComputedStyle(element);

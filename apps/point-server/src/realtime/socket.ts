@@ -1,7 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { Server } from "socket.io";
 import {
+  AI_PHOTO_RECEIVED_EVENT,
   ORDER_EVENT_CHANNEL,
+  type AiPhotoReceivedPayload,
   type Order,
   type OrderEvent,
   type PointConfigSnapshot,
@@ -47,4 +49,17 @@ export function emitPointConfigEvent(config: PointConfigSnapshot): void {
 export function emitPricingEvent(config: PriceConfig): void {
   if (!io) return;
   io.emit(PRICING_EVENT_CHANNEL, config);
+}
+
+/**
+ * ИИ-раздел (Этап 9) — tells the kiosk's "Загрузка фото" screen a phone
+ * photo has arrived, regardless of `uploadMode`: fired directly from
+ * `modules/ai/routes.ts` (wifi, phone posted straight to this server) or
+ * relayed from `modules/sync/client.ts` (relay, central-relay pushed it
+ * down over `/relay-socket`). The kiosk matches on `sessionId` against the
+ * session it's currently waiting on.
+ */
+export function emitAiPhotoReceivedEvent(payload: AiPhotoReceivedPayload): void {
+  if (!io) return;
+  io.emit(AI_PHOTO_RECEIVED_EVENT, payload);
 }

@@ -169,5 +169,71 @@
   "closed": {
     "title": "该门店暂时关闭",
     "subtitle": "目前暂停接单，请联系工作人员或稍后再来。"
+  },
+  "ai": {
+    "backHome": "返回首页",
+    "steps": {
+      "photo": "照片",
+      "style": "风格",
+      "processing": "处理中",
+      "result": "结果"
+    },
+    "source": {
+      "title": "AI风格",
+      "subtitle": "用你的照片创建独特印花",
+      "cameraTitle": "拍照",
+      "cameraSubtitle": "使用打印亭摄像头",
+      "phoneTitle": "从手机上传",
+      "phoneSubtitle": "扫描二维码并上传照片",
+      "infoBar": "风格化需要联网，背景移除可离线完成。"
+    },
+    "camera": {
+      "title": "拍摄照片",
+      "subtitle": "请将自己置于画面中央",
+      "capture": "拍照",
+      "error": "无法访问摄像头，请检查浏览器权限。"
+    },
+    "qr": {
+      "title": "上传照片",
+      "subtitle": "用手机摄像头扫描二维码",
+      "scanTitle": "扫描二维码",
+      "scanSubtitle": "打开手机摄像头并对准二维码",
+      "timerLabel": "剩余时间",
+      "sessionNote": "会话有效期为15分钟",
+      "waiting": "正在等待手机上传照片…",
+      "steps": {
+        "1": "打开摄像头",
+        "2": "扫描二维码",
+        "3": "选择照片"
+      },
+      "useCameraInstead": "或使用打印亭摄像头拍照",
+      "error": "无法创建上传链接，请检查与门店服务器的连接。"
+    },
+    "style": {
+      "title": "选择风格",
+      "subtitle": "我们将对您的照片应用AI风格化",
+      "photoLoaded": "照片已加载",
+      "stylize": "风格化",
+      "loadError": "无法加载风格列表。"
+    },
+    "processing": {
+      "stylizing": "正在生成风格…",
+      "removingBackground": "正在移除背景…",
+      "hint": "通常需要10到40秒",
+      "error": "无法处理照片，请检查网络连接。",
+      "backToStyles": "返回风格选择",
+      "retry": "重试"
+    },
+    "result": {
+      "title": "您的设计已完成",
+      "subtitle": "背景已自动移除——可以直接打印",
+      "before": "之前",
+      "after": "之后",
+      "bgRemovedTitle": "背景已自动移除",
+      "bgRemovedSubtitle": "可打印在T恤上",
+      "editOnShirt": "在T恤上编辑",
+      "pickAnotherStyle": "选择其他风格",
+      "infoBar": "结果已保存到编辑器——您可以添加文字或调整大小"
+    }
   }
 }

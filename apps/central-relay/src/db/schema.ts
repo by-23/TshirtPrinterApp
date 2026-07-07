@@ -10,6 +10,11 @@ export const orderStatusEnum = pgEnum("order_status", [
   "done",
   "cancelled",
 ]);
+export const uploadSessionStatusEnum = pgEnum("upload_session_status", [
+  "pending",
+  "uploaded",
+  "expired",
+]);
 
 export const admins = pgTable("admins", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -71,4 +76,23 @@ export const pointPriceOverrides = pgTable("point_price_overrides", {
     .references(() => points.id, { onDelete: "cascade" }),
   config: jsonb("config").notNull().$type<PartialPriceConfig>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * ИИ-раздел (Этап 9), `uploadMode: "relay"` — one-shot QR photo-upload
+ * session minted over `/relay-socket` (`UPLOAD_CREATE_SESSION_EVENT`, see
+ * `realtime/socket.ts`) when a point can't accept the upload directly
+ * (kiosk and phone aren't on the same local network). The row's own `id` is
+ * the token embedded in the QR's `uploadUrl` (`GET/POST /upload/:token`,
+ * see `modules/upload-relay/routes.ts`); no separate token column needed.
+ * `expiresAt` mirrors the 15-minute countdown shown on the kiosk.
+ */
+export const uploadSessions = pgTable("upload_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pointId: uuid("point_id")
+    .notNull()
+    .references(() => points.id, { onDelete: "cascade" }),
+  status: uploadSessionStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });

@@ -6,3 +6,4 @@ export * from "./admin.js";
 export * from "./pricing.js";
 export * from "./stats.js";
 export * from "./sync.js";
+export * from "./ai.js";

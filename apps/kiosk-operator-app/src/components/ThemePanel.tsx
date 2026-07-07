@@ -907,7 +907,7 @@ export function ThemePanel() {
   }
 
   return (
-    <div ref={containerRef} className="fixed right-6 top-6 z-50 flex flex-col items-end gap-5 font-sans" style={dragStyle}>
+    <div ref={containerRef} className="fixed right-6 top-6 z-50 flex flex-col items-end gap-5" style={dragStyle}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

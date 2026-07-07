@@ -7,6 +7,7 @@ import { getPriceBreakdown } from "@tshirt/shared-pricing";
 import { createOrder, fetchDesign, markDesignUsed, resolveDesignImageUrl } from "../../lib/pointServer.js";
 import { initPricingConfig, usePricingConfigStore } from "../../lib/pricingConfigStore.js";
 import { useEditorStore } from "../../editor/store.js";
+import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
 import { computePrintSize } from "../../editor/printSize.js";
@@ -47,6 +48,7 @@ export function Editor() {
   const [isPreview, setIsPreview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const appliedDesignIdRef = useRef<string | null>(null);
+  const appliedAiImageRef = useRef<string | null>(null);
 
   useEffect(() => {
     initPricingConfig();
@@ -89,6 +91,31 @@ export function Editor() {
       cancelled = true;
     };
   }, [canvas, designId]);
+
+  // ИИ-раздел (Этап 9) — picks up the print-ready `finalImage` (stylized +
+  // background-removed) left in `aiFlowStore` by `AiResult.tsx`'s
+  // "Редактировать на футболке" button. No `crossOrigin` needed — it's a
+  // local data URL, not a cross-origin point-server URL like `designId`
+  // above. Guarded by a ref (same pattern as `appliedDesignIdRef`) so a
+  // canvas remount doesn't re-add the same image twice; resets the AI flow
+  // store once applied so a later fresh visit to `/kiosk/ai` starts clean.
+  useEffect(() => {
+    if (!canvas || category !== "ai_style") return;
+    const finalImage = useAiFlowStore.getState().finalImage;
+    if (!finalImage || appliedAiImageRef.current === finalImage) return;
+    appliedAiImageRef.current = finalImage;
+
+    let cancelled = false;
+    void FabricImage.fromURL(finalImage).then((image) => {
+      if (cancelled) return;
+      placeImageCentered(canvas, image);
+      useAiFlowStore.getState().reset();
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canvas, category]);
 
   const printArea = PRINT_AREAS[garmentType][side];
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;

@@ -32,17 +32,12 @@ textarea {
   font-family: var(--font-family);
 }
 
-.editor-theme-root {
-  font-family: var(--editor-font-family, var(--font-family));
-}
-.checkout-theme-root {
-  font-family: var(--checkout-font-family, var(--font-family));
-}
-.operator-theme-root {
-  font-family: var(--operator-font-family, var(--font-family));
-}
-.gallery-theme-root {
-  font-family: var(--gallery-font-family, var(--font-family));
+.editor-theme-root,
+.checkout-theme-root,
+.operator-theme-root,
+.gallery-theme-root,
+.ai-theme-root {
+  font-family: var(--font-family);
 }
 /* ==========================================================================
    Live theme tokens
@@ -692,6 +687,112 @@ textarea {
   --gallery-card-accent-5: #2563eb;
   --gallery-card-accent-6: #eab308;
   --gallery-card-accent-7: #22c55e;
+/* AI source select screen ("/kiosk/ai", step "source") — tuned from AiThemePanel.tsx. */
+  --ai-page-bg: #000000;
+
+  --ai-header-padding-x: 20px;
+  --ai-header-padding-y: 16px;
+
+  --ai-back-btn-radius: 26px;
+  --ai-back-btn-border-width: 3px;
+  --ai-back-btn-border-color: #ffffff;
+  --ai-back-btn-border-opacity: 0.35;
+  --ai-back-btn-bg: transparent;
+  --ai-back-btn-padding-x: 24px;
+  --ai-back-btn-padding-y: 20px;
+  --ai-back-btn-gap: 24px;
+  --ai-back-btn-icon-size: 45px;
+  --ai-back-btn-title-size: 22px;
+  --ai-back-btn-title-color: #ffffff;
+  --ai-back-btn-subtitle-size: 18px;
+  --ai-back-btn-subtitle-color: #cac9cb;
+
+  --ai-source-screen-padding-x: 20px;
+  --ai-source-screen-padding-top: 18px;
+  --ai-source-screen-padding-bottom: 20px;
+
+  --ai-source-header-padding-top: 4px;
+  --ai-source-header-title-size: 38px;
+  --ai-source-header-title-color: #ffffff;
+  --ai-source-header-subtitle-size: 24px;
+  --ai-source-header-subtitle-color: #a7b0d0;
+  --ai-source-header-subtitle-margin-top: 6px;
+
+  --ai-source-cards-gap: 64px;
+  --ai-source-cards-padding-y: 24px;
+
+  --ai-source-card-width: 900px;
+  --ai-source-card-height: 700px;
+  --ai-source-card-gap: 10px;
+  --ai-source-card-padding-x: 28px;
+  --ai-source-card-padding-top: 80px;
+  --ai-source-card-padding-bottom: 80px;
+  --ai-source-card-radius: 60px;
+  --ai-source-card-border-width: 3.5px;
+  --ai-source-card-active-scale: 0.98;
+
+  --ai-source-card-title-size: 32px;
+  --ai-source-card-subtitle-size: 28px;
+  --ai-source-card-subtitle-color: #a7b0d0;
+
+  --ai-source-icon-size: 250px;
+  --ai-source-icon-wrap-min-height: 120px;
+
+  --ai-source-camera-bg-direction: to bottom;
+  --ai-source-camera-bg-start: #1a0828;
+  --ai-source-camera-bg-middle: #0d0418;
+  --ai-source-camera-bg-end: #08030f;
+  --ai-source-camera-border-direction: to bottom right;
+  --ai-source-camera-border-start: #b50ac7;
+  --ai-source-camera-border-middle: #ad0dbb;
+  --ai-source-camera-border-end: #9a04b6;
+  --ai-source-camera-glow-size: 80px;
+  --ai-source-camera-glow-spread: 0px;
+  --ai-source-camera-glow-color: #ec5ee9;
+  --ai-source-camera-glow-opacity: 0.5;
+  --ai-source-camera-title-color: #eb5fe9;
+  --ai-source-camera-icon-color: #f379eb;
+
+  --ai-source-phone-bg-direction: to bottom;
+  --ai-source-phone-bg-start: #081828;
+  --ai-source-phone-bg-middle: #040d18;
+  --ai-source-phone-bg-end: #030810;
+  --ai-source-phone-border-direction: to bottom right;
+  --ai-source-phone-border-start: #1d4ed8;
+  --ai-source-phone-border-middle: #0891b2;
+  --ai-source-phone-border-end: #22d3f5;
+  --ai-source-phone-glow-size: 80px;
+  --ai-source-phone-glow-spread: 0px;
+  --ai-source-phone-glow-color: #22d3f5;
+  --ai-source-phone-glow-opacity: 0.5;
+  --ai-source-phone-title-color: #22d3f5;
+  --ai-source-phone-icon-color: #22d3f5;
+
+  --ai-source-badge-top: 12px;
+  --ai-source-badge-right: 12px;
+  --ai-source-badge-size: 24px;
+  --ai-source-badge-bg: #e11d48;
+  --ai-source-badge-font-size: 8px;
+  --ai-source-badge-color: #ffffff;
+
+  --ai-source-info-gap: 25px;
+  --ai-source-info-padding-x: 50px;
+  --ai-source-info-padding-y: 40px;
+  --ai-source-info-radius: 16px;
+  --ai-source-info-border-width: 1px;
+  --ai-source-info-border-color: #ffffff;
+  --ai-source-info-border-opacity: 0.1;
+  --ai-source-info-bg-color: #0b0f1e;
+  --ai-source-info-bg-opacity: 0.65;
+  --ai-source-info-font-size: 26px;
+  --ai-source-info-text-color: #a7b0d0;
+  --ai-source-info-icon-size: 38px;
+  --ai-source-info-icon-font-size: 28px;
+  --ai-source-info-icon-border-width: 1px;
+  --ai-source-info-icon-border-color: #ffffff;
+  --ai-source-info-icon-border-opacity: 0.35;
+  --ai-source-info-icon-color: #ffffff;
+  --ai-source-info-icon-color-opacity: 0.75;
 /* Operator screen (Этап 5, docs/ui-mockups/operator.png). A normal desktop
      monitor rendered on a fixed-height virtual canvas (see OperatorFrame.tsx)
      and calibrated live via OperatorThemePanel.tsx — same mechanics as
@@ -1280,4 +1381,262 @@ textarea {
     opacity: 1;
     filter: blur(0);
   }
+}
+
+/* AI source select (/kiosk/ai, step "source") — gradient-border action cards. */
+.ai-flow-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ai-header-padding-y) var(--ai-header-padding-x);
+}
+
+.ai-flow-back-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--ai-back-btn-gap);
+  padding: var(--ai-back-btn-padding-y) var(--ai-back-btn-padding-x);
+  border: var(--ai-back-btn-border-width) solid color-mix(in srgb,
+      var(--ai-back-btn-border-color) calc(var(--ai-back-btn-border-opacity) * 100%),
+      transparent);
+  border-radius: var(--ai-back-btn-radius);
+  background: var(--ai-back-btn-bg);
+  color: var(--ai-back-btn-title-color);
+  transition: filter 0.15s ease;
+}
+
+.ai-flow-back-btn:hover {
+  filter: brightness(1.25);
+}
+
+.ai-flow-back-btn-icon {
+  width: var(--ai-back-btn-icon-size);
+  height: var(--ai-back-btn-icon-size);
+  flex-shrink: 0;
+}
+
+.ai-flow-back-btn-title {
+  font-size: var(--ai-back-btn-title-size);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ai-back-btn-title-color);
+}
+
+.ai-flow-back-btn-subtitle {
+  font-size: var(--ai-back-btn-subtitle-size);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ai-back-btn-subtitle-color);
+}
+
+.ai-source-screen {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  padding: var(--ai-source-screen-padding-top) var(--ai-source-screen-padding-x) var(--ai-source-screen-padding-bottom);
+}
+
+.ai-source-header {
+  flex-shrink: 0;
+  padding-top: var(--ai-source-header-padding-top);
+  text-align: center;
+}
+
+.ai-source-header-title {
+  font-size: var(--ai-source-header-title-size);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ai-source-header-title-color);
+}
+
+.ai-source-header-subtitle {
+  margin-top: var(--ai-source-header-subtitle-margin-top);
+  font-size: var(--ai-source-header-subtitle-size);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ai-source-header-subtitle-color);
+}
+
+.ai-source-cards {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--ai-source-cards-gap);
+  padding-block: var(--ai-source-cards-padding-y);
+}
+
+.ai-source-card {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ai-source-card-gap);
+  width: var(--ai-source-card-width);
+  max-width: 100%;
+  height: var(--ai-source-card-height);
+  padding: var(--ai-source-card-padding-top) var(--ai-source-card-padding-x) var(--ai-source-card-padding-bottom);
+  border: var(--ai-source-card-border-width) solid transparent;
+  border-radius: var(--ai-source-card-radius);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  transition: transform 0.15s ease;
+}
+
+.ai-source-card:active {
+  transform: scale(var(--ai-source-card-active-scale));
+}
+
+.ai-source-card--camera {
+  background-image:
+    linear-gradient(var(--ai-source-camera-bg-direction),
+      var(--ai-source-camera-bg-start) 0%,
+      var(--ai-source-camera-bg-middle) 52%,
+      var(--ai-source-camera-bg-end) 100%),
+    linear-gradient(var(--ai-source-camera-border-direction),
+      var(--ai-source-camera-border-start) 0%,
+      var(--ai-source-camera-border-middle) 42%,
+      var(--ai-source-camera-border-end) 100%);
+  box-shadow: 0 0 var(--ai-source-camera-glow-size) var(--ai-source-camera-glow-spread) color-mix(in srgb,
+      var(--ai-source-camera-glow-color) calc(var(--ai-source-camera-glow-opacity) * 100%),
+      transparent);
+}
+
+.ai-source-card--phone {
+  background-image:
+    linear-gradient(var(--ai-source-phone-bg-direction),
+      var(--ai-source-phone-bg-start) 0%,
+      var(--ai-source-phone-bg-middle) 52%,
+      var(--ai-source-phone-bg-end) 100%),
+    linear-gradient(var(--ai-source-phone-border-direction),
+      var(--ai-source-phone-border-start) 0%,
+      var(--ai-source-phone-border-middle) 50%,
+      var(--ai-source-phone-border-end) 100%);
+  box-shadow: 0 0 var(--ai-source-phone-glow-size) var(--ai-source-phone-glow-spread) color-mix(in srgb,
+      var(--ai-source-phone-glow-color) calc(var(--ai-source-phone-glow-opacity) * 100%),
+      transparent);
+}
+
+.ai-source-card-title {
+  flex-shrink: 0;
+  font-size: var(--ai-source-card-title-size);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ai-source-card--camera .ai-source-card-title {
+  color: var(--ai-source-camera-title-color);
+}
+
+.ai-source-card--phone .ai-source-card-title {
+  color: var(--ai-source-phone-title-color);
+}
+
+.ai-source-card-icon-wrap {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ai-source-icon-wrap-min-height);
+}
+
+.ai-source-card-icon {
+  width: var(--ai-source-icon-size);
+  height: var(--ai-source-icon-size);
+  flex-shrink: 0;
+}
+
+.ai-source-card-icon-mask {
+  display: block;
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.ai-source-card--camera .ai-source-card-icon {
+  color: var(--ai-source-camera-icon-color);
+}
+
+.ai-source-card--phone .ai-source-card-icon {
+  color: var(--ai-source-phone-icon-color);
+}
+
+.ai-source-card-subtitle {
+  flex-shrink: 0;
+  font-size: var(--ai-source-card-subtitle-size);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ai-source-card-subtitle-color);
+  text-align: center;
+}
+
+.ai-source-badge {
+  position: absolute;
+  top: var(--ai-source-badge-top);
+  right: var(--ai-source-badge-right);
+  display: flex;
+  width: var(--ai-source-badge-size);
+  height: var(--ai-source-badge-size);
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--ai-source-badge-bg);
+  font-size: var(--ai-source-badge-font-size);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--ai-source-badge-color);
+}
+
+.ai-source-info-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: var(--ai-source-info-gap);
+  width: 100%;
+  padding: var(--ai-source-info-padding-y) var(--ai-source-info-padding-x);
+  border-radius: var(--ai-source-info-radius);
+  border: var(--ai-source-info-border-width) solid color-mix(in srgb,
+      var(--ai-source-info-border-color) calc(var(--ai-source-info-border-opacity) * 100%),
+      transparent);
+  background: color-mix(in srgb,
+      var(--ai-source-info-bg-color) calc(var(--ai-source-info-bg-opacity) * 100%),
+      transparent);
+  font-size: var(--ai-source-info-font-size);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ai-source-info-text-color);
+}
+
+.ai-source-info-icon {
+  flex-shrink: 0;
+  display: flex;
+  width: var(--ai-source-info-icon-size);
+  height: var(--ai-source-info-icon-size);
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: var(--ai-source-info-icon-border-width) solid color-mix(in srgb,
+      var(--ai-source-info-icon-border-color) calc(var(--ai-source-info-icon-border-opacity) * 100%),
+      transparent);
+  font-size: var(--ai-source-info-icon-font-size);
+  font-weight: 700;
+  font-style: normal;
+  color: color-mix(in srgb,
+      var(--ai-source-info-icon-color) calc(var(--ai-source-info-icon-color-opacity) * 100%),
+      transparent);
 }

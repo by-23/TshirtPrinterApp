@@ -7,11 +7,13 @@ import { KioskHome } from "./routes/kiosk/KioskHome.js";
 import { CategoryStub } from "./routes/kiosk/CategoryStub.js";
 import { CategoryGallery } from "./routes/kiosk/CategoryGallery.js";
 import { Editor } from "./routes/kiosk/Editor.js";
+import { AiFlow } from "./routes/kiosk/ai/AiFlow.js";
 import { Checkout } from "./routes/kiosk/checkout/Checkout.js";
 import { OperatorHome } from "./routes/operator/OperatorHome.js";
 
-// Memes/anime/games are gallery categories (Stage 3); everything else
-// (currently only ai_style, until Stage 9) stays on the placeholder stub.
+// Memes/anime/games are gallery categories (Stage 3); ai_style has its own
+// wizard (`/kiosk/ai`, Этап 9, see `getCategoryRoute`); everything else
+// still stays on the placeholder stub.
 const GALLERY_CATEGORIES = new Set(["memes", "anime_movies", "games"]);
 
 function CategoryRoute() {
@@ -40,6 +42,7 @@ export function App() {
       <Route element={<KioskLayout />}>
         <Route path="/kiosk" element={<KioskHome />} />
         <Route path="/kiosk/category/:category" element={<CategoryRoute />} />
+        <Route path="/kiosk/ai" element={<AiFlow />} />
         <Route path="/kiosk/editor" element={<Editor />} />
         <Route path="/kiosk/checkout" element={<Checkout />} />
       </Route>

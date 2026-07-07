@@ -6,4 +6,10 @@ export const env = {
   // Dev-only fallback credentials for `db:seed` — override via env before any real deployment.
   DEFAULT_ADMIN_LOGIN: process.env.DEFAULT_ADMIN_LOGIN ?? "admin",
   DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD ?? "admin123",
+  // ИИ-раздел (Этап 9), `uploadMode: "relay"` — base URL embedded in the QR
+  // upload link (`GET /upload/:token`). Unlike point-server's own
+  // `POST /ai/upload-session` (which can read `request.headers.host`), this
+  // is minted over a Socket.IO event with no HTTP request to read a Host
+  // header from, so it needs an explicit public URL.
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL ?? "http://localhost:4100",
 };

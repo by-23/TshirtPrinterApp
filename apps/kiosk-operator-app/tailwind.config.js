@@ -8,8 +8,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Roboto", "sans-serif"],
-        display: ["Roboto", "sans-serif"],
+        sans: "var(--font-family)",
+        display: "var(--font-family)",
       },
       colors: {
         // Dark navy/near-black surfaces used across all kiosk mockups.

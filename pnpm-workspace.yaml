@@ -10,3 +10,7 @@ allowBuilds:
   canvas: false
   esbuild: true
   msgpackr-extract: true
+  # onnxruntime-web's transitive dep, pulled in by @imgly/background-removal
+  # (Этап 9, ИИ-раздел) — same rationale as the other native/build-script
+  # deps above (esbuild, better-sqlite3, etc.): trusted, needed to build.
+  protobufjs: true

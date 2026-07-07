@@ -13,12 +13,19 @@ export const CATEGORY_LABEL_KEYS: Record<DesignCategory, string> = {
 export const EDITOR_DIRECT_CATEGORIES = new Set<DesignCategory>(["text", "custom"]);
 
 export function getCategoryRoute(category: DesignCategory): string {
+  // ИИ-раздел (Этап 9) — its own wizard (`/kiosk/ai`), not the plain gallery/stub route.
+  if (category === "ai_style") {
+    return "/kiosk/ai";
+  }
   return EDITOR_DIRECT_CATEGORIES.has(category)
     ? `/kiosk/editor?category=${category}`
     : `/kiosk/category/${category}`;
 }
 
 export function getEditorBackRoute(category: DesignCategory | null | undefined): string {
+  if (category === "ai_style") {
+    return "/kiosk/ai";
+  }
   if (category && !EDITOR_DIRECT_CATEGORIES.has(category)) {
     return `/kiosk/category/${category}`;
   }

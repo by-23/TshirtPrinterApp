@@ -169,5 +169,71 @@
   "closed": {
     "title": "This point is temporarily closed",
     "subtitle": "Orders are paused right now. Please ask the operator or come back later."
+  },
+  "ai": {
+    "backHome": "To home",
+    "steps": {
+      "photo": "Photo",
+      "style": "Style",
+      "processing": "Processing",
+      "result": "Result"
+    },
+    "source": {
+      "title": "AI Style",
+      "subtitle": "Create a unique print from your photo",
+      "cameraTitle": "Take a photo",
+      "cameraSubtitle": "Use the kiosk's camera",
+      "phoneTitle": "Upload from phone",
+      "phoneSubtitle": "Scan the QR code and upload a photo",
+      "infoBar": "Stylization needs internet. Background removal works offline."
+    },
+    "camera": {
+      "title": "Take a photo",
+      "subtitle": "Center yourself in the frame",
+      "capture": "Take photo",
+      "error": "Couldn't access the camera. Check the browser permissions."
+    },
+    "qr": {
+      "title": "Photo upload",
+      "subtitle": "Scan the QR code with your phone's camera",
+      "scanTitle": "Scan the QR",
+      "scanSubtitle": "Open your phone's camera and point it at the code",
+      "timerLabel": "Time left",
+      "sessionNote": "The session is valid for 15 minutes",
+      "waiting": "Waiting for a photo from your phone…",
+      "steps": {
+        "1": "Open the camera",
+        "2": "Scan the QR",
+        "3": "Choose a photo"
+      },
+      "useCameraInstead": "Or take a photo with the kiosk's camera",
+      "error": "Couldn't create the upload link. Check the connection to the point server."
+    },
+    "style": {
+      "title": "Choose a style",
+      "subtitle": "We'll apply AI stylization to your photo",
+      "photoLoaded": "Photo loaded",
+      "stylize": "Stylize",
+      "loadError": "Couldn't load the style list."
+    },
+    "processing": {
+      "stylizing": "Generating the style…",
+      "removingBackground": "Removing the background…",
+      "hint": "This usually takes 10 to 40 seconds",
+      "error": "Couldn't process the photo. Check your internet connection.",
+      "backToStyles": "Back to styles",
+      "retry": "Retry"
+    },
+    "result": {
+      "title": "Your design is ready",
+      "subtitle": "The background was removed automatically — ready to print",
+      "before": "Before",
+      "after": "After",
+      "bgRemovedTitle": "Background removed automatically",
+      "bgRemovedSubtitle": "Ready to print on a t-shirt",
+      "editOnShirt": "Edit on a t-shirt",
+      "pickAnotherStyle": "Pick another style",
+      "infoBar": "The result is saved in the editor — you can add text or resize it"
+    }
   }
 }

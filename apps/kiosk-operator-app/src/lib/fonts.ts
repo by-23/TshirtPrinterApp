@@ -154,3 +154,21 @@ export function injectGoogleFonts(): void {
   link.href = buildGoogleFontsHref();
   document.head.appendChild(link);
 }
+
+const KIOSK_THEME_STORAGE_KEY = "kiosk-theme-overrides";
+
+/** Applies the UI font saved in ThemePanel localStorage before any route mounts. */
+export function applyStoredUiFont(): void {
+  try {
+    const raw = window.localStorage.getItem(KIOSK_THEME_STORAGE_KEY);
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    const fontFamily = parsed["--font-family"]?.trim();
+    if (fontFamily) {
+      document.documentElement.style.setProperty("--font-family", fontFamily);
+    }
+  } catch {
+    // Ignore malformed localStorage payloads.
+  }
+}

@@ -158,6 +158,25 @@ export const orders = sqliteTable("orders", {
 });
 
 /**
+ * ИИ-раздел (Этап 9) — style presets offered on the "Выберите стиль" screen
+ * (ГТА/АНИМЕ/НУАР). Seeded lazily from `DEFAULT_AI_STYLES` on first `GET
+ * /ai/styles` (same pattern as `catalogScrapeQueryTags` — see
+ * `modules/catalog-scraper/queryTags.ts`), so an admin/operator could later
+ * edit `promptTemplate`/`label` without a migration. `key` is what the
+ * kiosk sends back in `POST /ai/stylize` and what it uses to pick a bundled
+ * thumbnail image client-side (no image storage here).
+ */
+export const aiStyles = sqliteTable("ai_styles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  description: text("description").notNull(),
+  promptTemplate: text("prompt_template").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+});
+
+/**
  * Offline/retry queue for `sync:order-push` (Stage 7, docs/PLAN.md
  * "Офлайн-очередь с ретраями"). Every order create/status-change enqueues a
  * row here; `modules/sync/queue.ts` drains it whenever the central-relay

@@ -1,11 +1,14 @@
 import { io, type Socket } from "socket.io-client";
 import {
+  AI_PHOTO_RECEIVED_EVENT,
   ORDER_EVENT_CHANNEL,
-  orderEventSchema,
+  type AiPhotoReceivedPayload,
+  type AiStyle,
   type CatalogCacheUsage,
   type CatalogScrapeConfig,
   type CatalogScrapeStatus,
   type CategoryQueryTags,
+  type CreateAiUploadSessionResponse,
   type CreateOrderInput,
   type Design,
   type DesignCategory,
@@ -18,7 +21,9 @@ import {
   type PointConfigSnapshot,
   type PriceConfig,
   type SetDesignIsolatedInput,
+  type StylizeResponse,
   type UpdateCatalogScrapeConfigInput,
+  orderEventSchema,
 } from "@tshirt/shared-types";
 
 // Mirrors `POINT_CONFIG_EVENT_CHANNEL`/`PRICING_EVENT_CHANNEL` in
@@ -405,4 +410,48 @@ export async function updateQueryTags(category: GalleryCategory, tags: string[])
     throw new Error(`Failed to update query tags: ${res.status}`);
   }
   return res.json();
+}
+
+// --- ИИ-раздел (Этап 9) ---
+
+export async function fetchAiStyles(): Promise<AiStyle[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/styles`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI styles: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Mints a QR photo-upload session — point-server picks `relay`/`wifi` based on the synced `uploadMode` (see `modules/ai/routes.ts`). */
+export async function createAiUploadSession(): Promise<CreateAiUploadSessionResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/upload-session`, { method: "POST" });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Failed to create upload session: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Sends the raw photo + chosen style to point-server, which calls Pollinations (requires internet, see docs/PLAN.md). */
+export async function stylizeAiPhoto(imageBase64: string, styleKey: string): Promise<StylizeResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/stylize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageBase64, styleKey }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Failed to stylize photo: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Fires once a phone photo arrives for the currently-displayed QR session, regardless of `relay`/`wifi` mode (see `AiQrUpload.tsx`). */
+export function subscribeAiPhotoReceived(callback: (payload: AiPhotoReceivedPayload) => void): () => void {
+  const socket = getSocket();
+  const handler = (payload: AiPhotoReceivedPayload) => callback(payload);
+  socket.on(AI_PHOTO_RECEIVED_EVENT, handler);
+  return () => {
+    socket.off(AI_PHOTO_RECEIVED_EVENT, handler);
+  };
 }

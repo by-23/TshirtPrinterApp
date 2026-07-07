@@ -22,4 +22,9 @@ export const env = {
   // (docs/PLAN.md Этап 3, "Несколько источников"). Unset = that source is
   // silently skipped unless the panel stores a key, same fail-open principle.
   GIPHY_API_KEY: process.env.GIPHY_API_KEY,
+  // ИИ-раздел (Этап 9) — Pollinations' current image-edit API expects a
+  // bearer token (`gen.pollinations.ai/v1/images/edits`), unlike the fully
+  // anonymous API docs/PLAN.md originally assumed. Optional/fail-open: unset
+  // means `POST /ai/stylize` just answers 503 (see modules/ai/pollinations.ts).
+  POLLINATIONS_API_TOKEN: process.env.POLLINATIONS_API_TOKEN,
 };

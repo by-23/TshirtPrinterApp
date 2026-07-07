@@ -4,6 +4,7 @@ import { ThemePanel } from "./ThemePanel.js";
 import { EditorThemePanel } from "./EditorThemePanel.js";
 import { CheckoutThemePanel } from "./CheckoutThemePanel.js";
 import { GalleryThemePanel } from "./GalleryThemePanel.js";
+import { AiThemePanel } from "./AiThemePanel.js";
 import { DevViewSwitcher } from "./DevViewSwitcher.js";
 
 /** Real kiosk touchscreen resolution — every kiosk route is designed pixel-for-pixel at this size. */
@@ -58,7 +59,7 @@ export function KioskFrame({ children }: { children: ReactNode }) {
   return (
     <div
       ref={containerRef}
-      className="flex h-full w-full items-center justify-center overflow-hidden bg-[#000] font-sans"
+      className="flex h-full w-full items-center justify-center overflow-hidden bg-[#000]"
       style={{ minHeight: "100vh" }}
     >
       <div className="flex flex-col items-center gap-2">
@@ -97,6 +98,7 @@ export function KioskFrame({ children }: { children: ReactNode }) {
       <CheckoutThemePanel />
       {/* Same idea again, scoped to /kiosk/category/:category (see GalleryThemePanel.tsx). */}
       <GalleryThemePanel />
+      <AiThemePanel />
       <DevViewSwitcher />
     </div>
   );

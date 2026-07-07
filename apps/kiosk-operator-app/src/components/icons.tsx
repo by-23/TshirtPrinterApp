@@ -34,6 +34,7 @@ import {
   LockOpen,
   Paintbrush,
   Palette,
+  Pencil,
   Plus,
   Printer,
   QrCode,
@@ -47,6 +48,7 @@ import {
   ShoppingCart,
   SlidersHorizontal,
   SlidersVertical,
+  Smartphone,
   Smile,
   Sparkles,
   Star,
@@ -87,6 +89,7 @@ export const UploadIcon = createIcon(Upload, { strokeWidth: 2 });
 export const RobotIcon = createIcon(Bot);
 export const CartIcon = createIcon(ShoppingCart, { strokeWidth: 1.8 });
 export const StarIcon = createFilledIcon(Star);
+export const StarOutlineIcon = createIcon(Star);
 export const FlameIcon = createFilledIcon(Flame);
 export const BoltIcon = createFilledIcon(Zap);
 export const CrownIcon = createFilledIcon(Crown);
@@ -125,6 +128,7 @@ export {
   Lock,
   LockOpen,
   Palette,
+  Pencil,
   Plus,
   Printer,
   QrCode,
@@ -135,6 +139,7 @@ export {
   Share2,
   SlidersHorizontal,
   SlidersVertical,
+  Smartphone,
   Smile,
   Sparkles,
   Tag,

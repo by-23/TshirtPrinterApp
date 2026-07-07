@@ -4,12 +4,17 @@ import { eq, and } from "drizzle-orm";
 import {
   SYNC_ORDER_PUSH_EVENT,
   SYNC_SNAPSHOT_EVENT,
+  UPLOAD_CREATE_SESSION_EVENT,
+  UPLOAD_PHOTO_READY_EVENT,
   syncOrderPushSchema,
   type SyncOrderPushAck,
+  type UploadCreateSessionAck,
+  type UploadPhotoReadyPayload,
 } from "@tshirt/shared-types";
 import { db } from "../db/client.js";
 import { ordersArchive, points } from "../db/schema.js";
 import { buildSnapshotForPoint, getAllPointIds } from "./buildSnapshot.js";
+import { createUploadSession } from "../modules/upload-relay/service.js";
 
 let io: Server | null = null;
 
@@ -66,6 +71,19 @@ export function initRealtime(app: FastifyInstance): Server {
           });
       },
     );
+
+    // ИИ-раздел (Этап 9), `uploadMode: "relay"` — point asks for a fresh
+    // QR photo-upload session; the resulting token/URL round-trips back to
+    // the kiosk over the ack (see `apps/point-server/src/modules/ai/routes.ts`).
+    socket.on(UPLOAD_CREATE_SESSION_EVENT, (_payload: unknown, ack?: (response: UploadCreateSessionAck) => void) => {
+      void createUploadSession(pointId)
+        .then((session) => ack?.({ ok: true, ...session }))
+        .catch((err: unknown) => {
+          const error = err instanceof Error ? err.message : "Unknown error";
+          app.log.error({ pointId, err }, "Failed to create upload session");
+          ack?.({ ok: false, error });
+        });
+    });
 
     socket.on("disconnect", () => {
       app.log.info({ pointId }, "Point disconnected from central-relay");
@@ -127,4 +145,16 @@ export async function pushSnapshotToAllPoints(): Promise<void> {
   if (!io) return;
   const pointIds = await getAllPointIds();
   await Promise.all(pointIds.map((id) => pushSnapshotToPoint(id)));
+}
+
+/**
+ * ИИ-раздел (Этап 9) — pushes a just-uploaded phone photo into a point's
+ * room once `POST /upload/:token/photo` accepts it (see
+ * `modules/upload-relay/routes.ts`). No-op if the point is offline (the
+ * photo is simply lost — same fail-open posture as the rest of the AI flow,
+ * which already requires internet).
+ */
+export function emitPhotoReadyToPoint(pointId: string, payload: UploadPhotoReadyPayload): void {
+  if (!io) return;
+  io.to(pointId).emit(UPLOAD_PHOTO_READY_EVENT, payload);
 }
