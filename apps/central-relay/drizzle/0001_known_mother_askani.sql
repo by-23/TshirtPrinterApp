@@ -1,0 +1,2 @@
+ALTER TABLE "orders_archive" ADD COLUMN "point_order_id" integer;--> statement-breakpoint
+ALTER TABLE "orders_archive" ADD CONSTRAINT "orders_archive_point_order_unique" UNIQUE("point_id","point_order_id");

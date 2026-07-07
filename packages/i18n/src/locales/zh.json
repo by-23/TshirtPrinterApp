@@ -165,5 +165,9 @@
     "error": "无法加载设计，请检查与门店服务器的连接。",
     "searchPlaceholder": "按名称搜索",
     "noResults": "未找到结果"
+  },
+  "closed": {
+    "title": "该门店暂时关闭",
+    "subtitle": "目前暂停接单，请联系工作人员或稍后再来。"
   }
 }

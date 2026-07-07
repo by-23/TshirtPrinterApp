@@ -5,6 +5,7 @@ import { FabricImage, type Canvas } from "fabric";
 import { designCategorySchema, type GarmentFabric } from "@tshirt/shared-types";
 import { getPriceBreakdown } from "@tshirt/shared-pricing";
 import { createOrder, fetchDesign, markDesignUsed, resolveDesignImageUrl } from "../../lib/pointServer.js";
+import { initPricingConfig, usePricingConfigStore } from "../../lib/pricingConfigStore.js";
 import { useEditorStore } from "../../editor/store.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
@@ -20,7 +21,7 @@ import { PopularElementsStrip } from "../../editor/toolbar/PopularElementsStrip.
 import { TipsBar } from "../../editor/toolbar/TipsBar.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { ArrowLeft } from "../../components/icons.js";
-import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
+import { CATEGORY_LABEL_KEYS, getEditorBackRoute } from "../../lib/categoryLabels.js";
 import { blockBorderStyle, dividerStyle } from "../../editor/borderStyle.js";
 import {
   GarmentMockup,
@@ -39,6 +40,7 @@ export function Editor() {
   const color = useEditorStore((state) => state.color);
   const size = useEditorStore((state) => state.size);
   const fabricName = useEditorStore((state) => state.fabricName);
+  const priceConfig = usePricingConfigStore((state) => state.config);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [printError, setPrintError] = useState(false);
@@ -46,8 +48,14 @@ export function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const appliedDesignIdRef = useRef<string | null>(null);
 
+  useEffect(() => {
+    initPricingConfig();
+  }, []);
+
   const categoryParam = designCategorySchema.safeParse(searchParams.get("category"));
-  const categoryLabel = categoryParam.success ? t(CATEGORY_LABEL_KEYS[categoryParam.data]) : null;
+  const category = categoryParam.success ? categoryParam.data : null;
+  const categoryLabel = category ? t(CATEGORY_LABEL_KEYS[category]) : null;
+  const backRoute = getEditorBackRoute(category);
   const designId = searchParams.get("designId");
 
   // Preload the design picked in the category gallery (Stage 3) onto the
@@ -62,7 +70,13 @@ export function Editor() {
     fetchDesign(designId)
       .then((design) => {
         if (cancelled || !design.imageUrl) return;
-        return FabricImage.fromURL(resolveDesignImageUrl(design.imageUrl)).then((image) => {
+        // `crossOrigin: "anonymous"` is required here — point-server runs on a
+        // different origin than the kiosk app, and without it the browser
+        // marks the whole Fabric canvas as "tainted". That doesn't break the
+        // on-screen preview, but `canvas.toDataURL()` in `handlePrint` then
+        // throws a SecurityError for *any* subsequent export, so the order
+        // (and therefore printing) silently never goes through.
+        return FabricImage.fromURL(resolveDesignImageUrl(design.imageUrl), { crossOrigin: "anonymous" }).then((image) => {
           if (cancelled) return;
           placeImageCentered(canvas, image);
         });
@@ -93,23 +107,29 @@ export function Editor() {
     setPrintError(false);
     setIsCreatingOrder(true);
 
-    const printSize = computePrintSize(canvas);
-    const canvasSnapshot = JSON.stringify(canvas.toJSON());
-    // Transparent-background PNG of just the design (no garment) — point-server
-    // composites it onto the garment mockup via sharp (see Stage 5).
-    const designImageBase64 = canvas.toDataURL({ format: "png", multiplier: 2 });
-    const priceBreakdown = getPriceBreakdown({
-      garmentType,
-      fabric: fabricName as GarmentFabric,
-      size,
-      printSize,
-    });
-    const price = priceBreakdown.reduce((sum, line) => sum + line.amountTenge, 0);
-
-    useEditorStore.getState().setPrintSize(side, printSize);
-    useEditorStore.getState().setCanvasSnapshot(side, canvasSnapshot);
-
     try {
+      const printSize = computePrintSize(canvas);
+      const canvasSnapshot = JSON.stringify(canvas.toJSON());
+      // Transparent-background PNG of just the design (no garment) — point-server
+      // composites it onto the garment mockup via sharp (see Stage 5).
+      // Kept inside this try/catch — a tainted canvas (e.g. a cross-origin
+      // image loaded without `crossOrigin`) makes this throw a SecurityError,
+      // which must not skip the error handling/`finally` below.
+      const designImageBase64 = canvas.toDataURL({ format: "png", multiplier: 2 });
+      const priceBreakdown = getPriceBreakdown(
+        {
+          garmentType,
+          fabric: fabricName as GarmentFabric,
+          size,
+          printSize,
+        },
+        priceConfig,
+      );
+      const price = priceBreakdown.reduce((sum, line) => sum + line.amountTenge, 0);
+
+      useEditorStore.getState().setPrintSize(side, printSize);
+      useEditorStore.getState().setCanvasSnapshot(side, canvasSnapshot);
+
       const order = await createOrder({
         garmentType,
         garmentColor: color,
@@ -149,7 +169,7 @@ export function Editor() {
     >
       <header className="relative flex items-center justify-between gap-4">
         <Link
-          to="/kiosk"
+          to={backRoute}
           aria-label={t("common.back")}
           className="flex flex-shrink-0 items-center justify-center gap-2 px-3 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:brightness-125"
           style={{
@@ -260,8 +280,6 @@ export function Editor() {
               {!isPreview && <CanvasControlStrip canvas={canvas} />}
             </div>
           </div>
-
-          {!isPreview && <PopularElementsStrip canvas={canvas} />}
         </div>
 
         {!isPreview && (
@@ -325,6 +343,7 @@ export function Editor() {
         )}
       </div>
 
+      {!isPreview && <PopularElementsStrip canvas={canvas} />}
       {!isPreview && <TipsBar />}
 
       {printError && (

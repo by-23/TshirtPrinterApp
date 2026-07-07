@@ -17,8 +17,8 @@ declare module "@fastify/jwt" {
 
 /**
  * Registers `@fastify/jwt` and an `authenticate` preHandler used by every
- * protected admin route (points/catalog-master/pricing/stats). Must run
- * before those modules are registered.
+ * protected admin route (points/pricing/stats). Must run before those
+ * modules are registered.
  */
 export async function registerAuth(app: FastifyInstance) {
   await app.register(fastifyJwt, { secret: env.JWT_SECRET });

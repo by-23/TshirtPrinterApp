@@ -12,6 +12,7 @@ export interface BannerSlide {
   imageUrl: string;
   shirt: "white" | "black";
   heartLabel: string;
+  label: string;
   /** Only set for local fallback prints — lets the slide pick up an operator image override via `kioskImages`. */
   overrideKey?: string;
 }
@@ -22,6 +23,7 @@ function fromDesign(design: Design, index: number): BannerSlide {
     imageUrl: resolveDesignImageUrl(design.imageUrl),
     shirt: index % 2 === 0 ? "white" : "black",
     heartLabel: String(design.useCount),
+    label: design.title,
   };
 }
 
@@ -31,6 +33,7 @@ function fromStaticCatalog(): BannerSlide[] {
     imageUrl: print.url,
     shirt: print.shirt,
     heartLabel: print.likes,
+    label: print.label,
     overrideKey: printImageKey(print.id),
   }));
 }

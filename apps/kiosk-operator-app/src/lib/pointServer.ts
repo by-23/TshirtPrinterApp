@@ -15,9 +15,18 @@ import {
   type Order,
   type OrderEvent,
   type OrderStatus,
+  type PointConfigSnapshot,
+  type PriceConfig,
   type SetDesignIsolatedInput,
   type UpdateCatalogScrapeConfigInput,
 } from "@tshirt/shared-types";
+
+// Mirrors `POINT_CONFIG_EVENT_CHANNEL`/`PRICING_EVENT_CHANNEL` in
+// `apps/point-server/src/realtime/socket.ts` — point-server is a separate
+// app (not a shared package), so the literals are duplicated here rather
+// than imported.
+const POINT_CONFIG_EVENT_CHANNEL = "point-config:event";
+const PRICING_EVENT_CHANNEL = "pricing:event";
 
 export const POINT_SERVER_URL = "http://localhost:4000";
 
@@ -182,16 +191,47 @@ export async function deleteDesignsByCategory(category: DesignCategory): Promise
   return body.deleted;
 }
 
+/** Brief backoff before retrying — covers the ~1-2s window where point-server is mid-restart (e.g. `tsx watch` reloading after a code change) rather than genuinely down. */
+const CREATE_ORDER_RETRY_DELAYS_MS = [300, 900];
+
+/**
+ * `fetch` rejecting outright (network error/connection refused) means the
+ * point-server process itself isn't reachable yet — worth a couple of quick
+ * retries, since on a kiosk that's overwhelmingly a brief restart window
+ * rather than a real outage. An HTTP error *response* (4xx/5xx) means the
+ * server answered fine and the request itself was bad, so that's surfaced
+ * immediately instead.
+ */
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
-  const res = await fetch(`${POINT_SERVER_URL}/orders`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to create order: ${res.status}`);
+  const body = JSON.stringify(input);
+  let lastNetworkError: unknown;
+
+  for (let attempt = 0; attempt <= CREATE_ORDER_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const res = await fetch(`${POINT_SERVER_URL}/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to create order: ${res.status}`);
+      }
+      return res.json();
+    } catch (err) {
+      // `TypeError` here is fetch's generic "network error" (DNS/refused/reset) —
+      // anything else (including our own `Error` above for non-2xx responses)
+      // means the server responded, so don't retry those.
+      if (!(err instanceof TypeError) || attempt === CREATE_ORDER_RETRY_DELAYS_MS.length) {
+        throw err;
+      }
+      lastNetworkError = err;
+      await new Promise((resolve) => setTimeout(resolve, CREATE_ORDER_RETRY_DELAYS_MS[attempt]));
+    }
   }
-  return res.json();
+
+  // Unreachable in practice — the loop above always returns or throws — but
+  // keeps TypeScript happy about every code path returning/throwing.
+  throw lastNetworkError instanceof Error ? lastNetworkError : new Error("Failed to create order");
 }
 
 export async function fetchOrder(id: string): Promise<Order> {
@@ -245,6 +285,46 @@ export function subscribeOrderEvents(callback: (event: OrderEvent) => void): () 
   socket.on(ORDER_EVENT_CHANNEL, handler);
   return () => {
     socket.off(ORDER_EVENT_CHANNEL, handler);
+  };
+}
+
+// --- Point config + pricing (Этап 7: cached from central-relay's `sync:snapshot`) ---
+
+/** Cached name/status/uploadMode — kiosk gates checkout on `status` (see `pointStatusStore.ts`). */
+export async function fetchPointConfig(): Promise<PointConfigSnapshot> {
+  const res = await fetch(`${POINT_SERVER_URL}/point-config`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch point config: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Effective (global + point override) price config, cached on point-server from the last sync. */
+export async function fetchPriceConfig(): Promise<PriceConfig> {
+  const res = await fetch(`${POINT_SERVER_URL}/pricing`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch price config: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Realtime push whenever point-server applies a fresh `sync:snapshot` — lets the kiosk react to "closed" without polling. */
+export function subscribePointConfigEvents(callback: (config: PointConfigSnapshot) => void): () => void {
+  const socket = getSocket();
+  const handler = (payload: PointConfigSnapshot) => callback(payload);
+  socket.on(POINT_CONFIG_EVENT_CHANNEL, handler);
+  return () => {
+    socket.off(POINT_CONFIG_EVENT_CHANNEL, handler);
+  };
+}
+
+/** Realtime push whenever point-server applies a fresh price config — lets the editor's live price update without a reload. */
+export function subscribePricingEvents(callback: (config: PriceConfig) => void): () => void {
+  const socket = getSocket();
+  const handler = (payload: PriceConfig) => callback(payload);
+  socket.on(PRICING_EVENT_CHANNEL, handler);
+  return () => {
+    socket.off(PRICING_EVENT_CHANNEL, handler);
   };
 }
 

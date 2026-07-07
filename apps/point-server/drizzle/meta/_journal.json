@@ -64,6 +64,20 @@
       "when": 1783392737108,
       "tag": "0008_dark_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1783394643157,
+      "tag": "0009_real_fallen_one",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1783396403480,
+      "tag": "0010_sweet_black_bolt",
+      "breakpoints": true
     }
   ]
 }

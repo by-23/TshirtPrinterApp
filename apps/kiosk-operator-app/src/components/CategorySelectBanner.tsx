@@ -1,9 +1,11 @@
-import { HOME_STATIC_LABELS } from "../lib/homeLabels.js";
+import { useTranslation } from "react-i18next";
+import { getCategorySelectLabel } from "../lib/homeLabels.js";
 import { TshirtIcon } from "./icons.js";
 
 /** Bottom callout bar on the kiosk home screen — matches the category-select mockup. */
 export function CategorySelectBanner() {
-  const { main, sub } = HOME_STATIC_LABELS.categorySelect;
+  const { i18n } = useTranslation();
+  const { main, sub } = getCategorySelectLabel(i18n.language);
 
   return (
     <div className="category-select-banner">

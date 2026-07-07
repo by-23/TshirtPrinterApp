@@ -1,7 +1,9 @@
 import type { CSSProperties, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { designCategorySchema, type DesignCategory } from "@tshirt/shared-types";
-import { CATEGORY_HOME_LABELS } from "../lib/homeLabels.js";
+import { getCategoryRoute } from "../lib/categoryLabels.js";
+import { getCategoryHomeLabel } from "../lib/homeLabels.js";
 import { categoryImageKey, useKioskImage } from "../lib/kioskImages.js";
 import { BrushIcon, FilmIcon, GamepadIcon, PhotoIcon, RobotIcon, UploadIcon } from "./icons.js";
 
@@ -100,11 +102,6 @@ const CATEGORY_ACCENT_TEXT: Record<DesignCategory, string> = {
   ai_style: "text-purple-100",
 };
 
-// "text" and "custom" open straight into the editor with a blank garment
-// (per ТЗ: "чистая одежда + полный редактор"). The other categories still
-// point to the gallery stub until Stage 3 (catalog) and Stage 9 (AI) land.
-const EDITOR_CATEGORIES = new Set<DesignCategory>(["text", "custom"]);
-
 function CategoryArt({ category, accent }: { category: DesignCategory; accent: string }) {
   const imageUrl = useKioskImage(categoryImageKey(category));
 
@@ -180,12 +177,13 @@ function CategoryArt({ category, accent }: { category: DesignCategory; accent: s
 }
 
 export function CategoryGrid() {
+  const { i18n } = useTranslation();
   const categories = designCategorySchema.options;
 
   return (
     <div className="grid grid-cols-3 gap-6">
       {categories.map((category) => {
-        const label = CATEGORY_HOME_LABELS[category];
+        const label = getCategoryHomeLabel(category, i18n.language);
         const accent = CATEGORY_ACCENT_TEXT[category];
         const gradient = CATEGORY_GRADIENT_VAR[category];
         const imageLayout = CATEGORY_IMAGE_VAR[category];
@@ -202,11 +200,7 @@ export function CategoryGrid() {
         return (
           <Link
             key={category}
-            to={
-              EDITOR_CATEGORIES.has(category)
-                ? `/kiosk/editor?category=${category}`
-                : `/kiosk/category/${category}`
-            }
+            to={getCategoryRoute(category)}
             style={cardStyle}
             className="category-card flex h-[460px] flex-col items-center gap-4 overflow-hidden rounded-[var(--radius-card)] border-2 px-4 py-7 transition-transform active:scale-[0.98]"
           >

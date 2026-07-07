@@ -1,5 +1,14 @@
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import type { PriceConfig } from "@tshirt/shared-types";
 
+/**
+ * Singleton (single row, id=1) cache of what central-relay last pushed down
+ * over `sync:snapshot` (Stage 7) — name/status/uploadMode plus the effective
+ * (global + point override) price config. Fail-open: if this table has no
+ * row yet (point never connected to central-relay, or `.env` sync vars are
+ * unset), `GET /point-config` reports `status: "open"` and `GET /pricing`
+ * falls back to `DEFAULT_PRICE_CONFIG` — see `modules/sync/handlers.ts`.
+ */
 export const pointConfig = sqliteTable("point_config", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
@@ -9,6 +18,7 @@ export const pointConfig = sqliteTable("point_config", {
   uploadMode: text("upload_mode", { enum: ["relay", "wifi"] })
     .notNull()
     .default("relay"),
+  priceConfigJson: text("price_config_json", { mode: "json" }).$type<PriceConfig>(),
   updatedAt: text("updated_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -143,6 +153,30 @@ export const orders = sqliteTable("orders", {
   mockupImagePath: text("mockup_image_path"),
   designImagePath: text("design_image_path"),
   createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+/**
+ * Offline/retry queue for `sync:order-push` (Stage 7, docs/PLAN.md
+ * "Офлайн-очередь с ретраями"). Every order create/status-change enqueues a
+ * row here; `modules/sync/queue.ts` drains it whenever the central-relay
+ * socket is connected and deletes a row once central acks it. Fail-open:
+ * while offline, rows simply accumulate — nothing here blocks local order
+ * flow (kiosk/operator) at all.
+ */
+export const syncQueue = sqliteTable("sync_queue", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  payloadJson: text("payload_json", { mode: "json" }).notNull(),
+  status: text("status", { enum: ["pending", "failed"] })
+    .notNull()
+    .default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  lastError: text("last_error"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });

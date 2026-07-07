@@ -165,5 +165,9 @@
     "error": "Couldn't load designs. Check the connection to the point server.",
     "searchPlaceholder": "Search by name",
     "noResults": "Nothing found"
+  },
+  "closed": {
+    "title": "This point is temporarily closed",
+    "subtitle": "Orders are paused right now. Please ask the operator or come back later."
   }
 }

@@ -20,7 +20,7 @@
 | Киоск + оператор | `apps/kiosk-operator-app` | 5173 | React-app, роуты `/kiosk` и `/operator` |
 | Point-server | `apps/point-server` | 4000 | Fastify + SQLite, работает на мини-ПК точки |
 | Central-relay | `apps/central-relay` | 4100 | Fastify + PostgreSQL, облачный сервис |
-| Admin-panel | `apps/admin-panel` | 5174 | React + Ant Design, управление точками/каталогом/ценами/статистикой |
+| Admin-panel | `apps/admin-panel` | 5174 | React + Ant Design, управление точками/ценами/статистикой |
 
 ## Быстрый старт
 

@@ -1,8 +1,13 @@
 import { runMigrations } from "./db/migrate.js";
 import { buildServer } from "./server.js";
 import { connectToCentralRelay } from "./modules/sync/client.js";
+import { drainSyncQueue } from "./modules/sync/queue.js";
 import { ensureAllCategoriesStocked, startCacheFiller } from "./modules/catalog-scraper/job.js";
+import { ensurePortAvailable } from "./lib/ensurePort.js";
 import { env } from "./env.js";
+
+/** Safety-net interval for `sync_queue` retries — connect/order-create already nudge a drain, this just catches anything left behind after a failed attempt. */
+const SYNC_QUEUE_DRAIN_INTERVAL_MS = 30_000;
 
 // Applies any pending migrations before anything else touches the DB, so a
 // point never needs a manual `db:migrate` step after pulling new code —
@@ -12,12 +17,61 @@ runMigrations();
 
 const app = await buildServer();
 
+// Dev restarts (tsx watch reloads, crashed terminals, killed processes) can
+// leave port `env.PORT` either still bound by a stale copy of this same
+// process or held by something else entirely. Both used to surface as a
+// raw EADDRINUSE crash — or worse, no crash at all on *this* side while the
+// kiosk app just failed every order with a generic "can't reach the point
+// server" toast. Resolve/report that explicitly before even trying to bind.
+const portGuard = await ensurePortAvailable(env.PORT);
+switch (portGuard.action) {
+  case "already-healthy":
+    app.log.warn(portGuard.message);
+    process.exit(0);
+    break;
+  case "killed-stale":
+    app.log.warn(portGuard.message);
+    break;
+  case "occupied-by-other":
+    app.log.error(portGuard.message);
+    process.exit(1);
+    break;
+  case "free":
+    break;
+}
+
+// Ensures the port is actually released on every restart/shutdown — without
+// this, Node's default SIGTERM/SIGINT handling can leave the listening
+// socket (and open socket.io connections) lingering just long enough for
+// the *next* `tsx watch` reload to hit EADDRINUSE, which is what the guard
+// above exists to recover from in the first place.
+let shuttingDown = false;
+async function shutdown(signal: NodeJS.Signals) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  app.log.warn(`Received ${signal}, closing point-server gracefully…`);
+  try {
+    await app.close();
+  } finally {
+    process.exit(0);
+  }
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
 app
   .listen({ port: env.PORT, host: "0.0.0.0" })
   .then(() => {
     // Started after the HTTP server is up, but never blocks kiosk/operator
     // traffic — see the fail-open note in `modules/sync/client.ts`.
-    connectToCentralRelay(app.log);
+    const syncSocket = connectToCentralRelay(app.log);
+    if (syncSocket) {
+      setInterval(() => {
+        if (syncSocket.connected) {
+          void drainSyncQueue(syncSocket, app.log);
+        }
+      }, SYNC_QUEUE_DRAIN_INTERVAL_MS);
+    }
     // Eagerly top up the gallery categories from Pinterest, in the
     // background — docs/PLAN.md Этап 3 "Наполнение и подгрузка".
     ensureAllCategoriesStocked(app.log);

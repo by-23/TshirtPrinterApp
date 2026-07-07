@@ -41,6 +41,19 @@ export function bottomStripLayoutStyle(prefix: string): CSSProperties {
   };
 }
 
+/** Border + rounding + padding + background for a tile/chip inside a block (e.g. popular print thumbnails). */
+export function tileBorderStyle(prefix: string): CSSProperties {
+  return {
+    borderStyle: "solid",
+    borderWidth: `var(--editor-${prefix}-border-width)`,
+    borderColor: `color-mix(in srgb, var(--editor-${prefix}-border-color) calc(var(--editor-${prefix}-border-opacity) * 100%), transparent)`,
+    borderRadius: `var(--editor-${prefix}-radius)`,
+    backgroundColor: `var(--editor-${prefix}-bg)`,
+    padding: `var(--editor-${prefix}-padding)`,
+    boxSizing: "border-box",
+  };
+}
+
 /** Thin rule between elements inside a block, using the same opacity trick as `blockBorderStyle`. */
 export function dividerStyle(prefix: string, orientation: "horizontal" | "vertical" = "horizontal"): CSSProperties {
   const color = `color-mix(in srgb, var(--editor-${prefix}-divider-color) calc(var(--editor-${prefix}-divider-opacity) * 100%), transparent)`;

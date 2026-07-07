@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import tshirtBlack from "../assets/tshirt-black.png";
 import tshirtWhite from "../assets/tshirt-white.png";
-import { CATEGORY_HOME_LABELS } from "./homeLabels.js";
+import { getCategoryHomeLabel } from "./homeLabels.js";
 import {
   clearAllImageOverrides,
   deleteImageOverride,
@@ -53,7 +53,7 @@ const POPULAR_IMAGES: KioskImageDefinition[] = [
 
 const CATEGORY_IMAGES: KioskImageDefinition[] = CATEGORY_IMAGE_IDS.map((id) => ({
   key: `category-${id}`,
-  label: CATEGORY_HOME_LABELS[id].main,
+  label: getCategoryHomeLabel(id, "ru").main,
   defaultUrl: "",
   optional: true,
 }));

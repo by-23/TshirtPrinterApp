@@ -1,12 +1,6 @@
 import { Layout, Menu, Button, Typography } from "antd";
 import type { MenuProps } from "antd";
-import {
-  ShopOutlined,
-  PictureOutlined,
-  DollarOutlined,
-  BarChartOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
+import { ShopOutlined, DollarOutlined, BarChartOutlined, LogoutOutlined } from "@ant-design/icons";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../lib/authStore.js";
 
@@ -14,12 +8,11 @@ const { Header, Sider, Content } = Layout;
 
 const NAV_ITEMS: MenuProps["items"] = [
   { key: "/points", icon: <ShopOutlined />, label: "Точки" },
-  { key: "/catalog", icon: <PictureOutlined />, label: "Каталог" },
   { key: "/pricing", icon: <DollarOutlined />, label: "Цены" },
   { key: "/stats", icon: <BarChartOutlined />, label: "Статистика" },
 ];
 
-const NAV_KEYS = ["/points", "/catalog", "/pricing", "/stats"];
+const NAV_KEYS = ["/points", "/pricing", "/stats"];
 
 export function AdminLayout() {
   const token = useAuthStore((s) => s.token);

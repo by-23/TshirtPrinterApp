@@ -8,6 +8,20 @@
       "when": 1783376385778,
       "tag": "0000_flat_blue_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783394380615,
+      "tag": "0001_known_mother_askani",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783396403330,
+      "tag": "0002_strong_molten_man",
+      "breakpoints": true
     }
   ]
 }

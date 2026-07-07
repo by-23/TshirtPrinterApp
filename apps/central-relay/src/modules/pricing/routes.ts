@@ -8,6 +8,7 @@ import {
 } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { globalPriceConfig, pointPriceOverrides, points } from "../../db/schema.js";
+import { pushSnapshotToAllPoints, pushSnapshotToPoint } from "../../realtime/socket.js";
 
 const GLOBAL_ROW_ID = "global";
 
@@ -36,6 +37,7 @@ export async function pricingRoutes(app: FastifyInstance) {
         set: { config: parsed.data, updatedAt: new Date() },
       })
       .returning();
+    void pushSnapshotToAllPoints();
     return row!.config;
   });
 
@@ -77,6 +79,7 @@ export async function pricingRoutes(app: FastifyInstance) {
         set: { config: parsed.data, updatedAt: new Date() },
       })
       .returning();
+    void pushSnapshotToPoint(request.params.pointId);
     const result: PointPriceOverride = { pointId: row!.pointId, config: row!.config };
     return result;
   });
@@ -91,6 +94,7 @@ export async function pricingRoutes(app: FastifyInstance) {
       if (!row) {
         return reply.status(404).send({ error: "No override for this point" });
       }
+      void pushSnapshotToPoint(request.params.pointId);
       return reply.status(204).send();
     },
   );

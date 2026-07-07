@@ -187,6 +187,48 @@ function dividerTokens(prefix: string, defaults: DividerDefaults): Token[] {
   ];
 }
 
+/** Border + rounding + padding row set for a tile/chip — see `tileBorderStyle` in `borderStyle.ts`. */
+function tileBorderTokens(
+  prefix: string,
+  defaults: { width: number; color: string; opacity: number; radius: number; bg: string; padding: number },
+): Token[] {
+  return [
+    { key: `--editor-${prefix}-border-width`, label: "Обводка — толщина", defaultValue: defaults.width, ...BORDER_WIDTH_RANGE },
+    { key: `--editor-${prefix}-border-color`, label: "Обводка — цвет", type: "color", defaultValue: defaults.color },
+    { key: `--editor-${prefix}-border-opacity`, label: "Обводка — прозрачность", defaultValue: defaults.opacity, ...OPACITY_RANGE },
+    {
+      key: `--editor-${prefix}-radius`,
+      label: "Скругление",
+      defaultValue: defaults.radius,
+      type: "range",
+      min: 0,
+      max: 56,
+      step: 1,
+      unit: "px",
+    },
+    { key: `--editor-${prefix}-bg`, label: "Фон", type: "color", defaultValue: defaults.bg },
+    {
+      key: `--editor-${prefix}-padding`,
+      label: "Внутренний отступ",
+      defaultValue: defaults.padding,
+      type: "range",
+      min: 0,
+      max: 32,
+      step: 1,
+      unit: "px",
+    },
+  ];
+}
+
+const TILE_BORDER_DEFAULT = {
+  width: 1.5,
+  color: "#242938",
+  opacity: 1,
+  radius: 12,
+  bg: "#0b0f1e",
+  padding: 8,
+};
+
 const BLOCK_BORDER_DEFAULT: Omit<BlockBorderDefaults, "radius" | "padding"> = {
   width: 1.5,
   color: "#242938",
@@ -503,29 +545,46 @@ const SECTIONS: Section[] = [
     tokens: [
       {
         key: "--editor-popular-block-width",
-        label: "Ширина блока (0 = по содержимому)",
+        label: "Ширина блока (0 = на всю ширину)",
         defaultValue: 0,
         ...BLOCK_WIDTH_RANGE,
       },
+      { key: "--editor-popular-title-size", label: "Заголовок — размер", defaultValue: 14, ...FONT_RANGE },
+      { key: "--editor-popular-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#9ca3af" },
       {
-        key: "--editor-popular-tile-radius",
-        label: "Плитка — скругление",
+        key: "--editor-popular-title-gap",
+        label: "Отступ заголовок → ряд",
         defaultValue: 12,
+        ...LAYOUT_GAP_RANGE,
+      },
+      { key: "--editor-popular-image-width", label: "Плитка — мин. ширина", defaultValue: 120, ...SIZE_RANGE },
+      { key: "--editor-popular-image-height", label: "Плитка — высота", defaultValue: 88, ...SIZE_RANGE },
+      {
+        key: "--editor-popular-tile-flex-grow",
+        label: "Растягивать плитки (0 = фикс., 1+ = заполнить ряд)",
+        defaultValue: 1,
         type: "range",
         min: 0,
-        max: 56,
+        max: 4,
         step: 1,
-        unit: "px",
       },
-      { key: "--editor-popular-tile-bg", label: "Плитка — фон", type: "color", defaultValue: "#02060d" },
-      { key: "--editor-popular-image-width", label: "Картинка — ширина", defaultValue: 167, ...SIZE_RANGE },
-      { key: "--editor-popular-image-height", label: "Картинка — высота", defaultValue: 44, ...SIZE_RANGE },
       {
         key: "--editor-popular-image-gap",
-        label: "Отступ между картинками",
+        label: "Отступ между плитками",
         defaultValue: 16,
         ...LAYOUT_GAP_RANGE,
       },
+      {
+        key: "--editor-popular-image-padding",
+        label: "Картинка — внутренний отступ",
+        defaultValue: 4,
+        type: "range",
+        min: 0,
+        max: 24,
+        step: 1,
+        unit: "px",
+      },
+      ...tileBorderTokens("popular-tile", TILE_BORDER_DEFAULT),
       { key: "--editor-popular-scroll-size", label: "Скроллбар — толщина", defaultValue: 6, ...SCROLL_SIZE_RANGE },
       {
         key: "--editor-popular-scroll-track-color",
@@ -552,6 +611,10 @@ const SECTIONS: Section[] = [
         ...OPACITY_RANGE,
       },
       ...blockBorderTokens("popular-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 16 }),
+      { key: "--editor-popular-add-text-color", label: "«Своя картинка» — цвет текста", type: "color", defaultValue: "#9ca3af" },
+      { key: "--editor-popular-add-icon-size", label: "«Своя картинка» — иконка", defaultValue: 32, ...SIZE_RANGE },
+      { key: "--editor-popular-add-font-size", label: "«Своя картинка» — текст", defaultValue: 12, ...FONT_RANGE },
+      ...tileBorderTokens("popular-add", { ...TILE_BORDER_DEFAULT, radius: 12 }),
     ],
   },
   {
@@ -598,6 +661,7 @@ function normalizeValue(token: Token, value: string): string {
 function formatCssValue(token: Token, value: string): string {
   const normalized = normalizeValue(token, value);
   if (token.key.endsWith("-height") && normalized === "0") return "auto";
+  if (token.key === "--editor-popular-block-width" && normalized === "0") return "100%";
   if (token.key.endsWith("-block-width") && normalized === "0") return "fit-content";
   if (token.key.endsWith("-content-align")) return normalized === "1" ? "center" : "start";
   return token.type === "range" && token.unit ? `${normalized}${token.unit}` : normalized;
@@ -605,6 +669,7 @@ function formatCssValue(token: Token, value: string): string {
 
 function cssRawToState(token: Token, raw: string): string {
   if (token.key.endsWith("-height") && raw === "auto") return "0";
+  if (token.key === "--editor-popular-block-width" && raw === "100%") return "0";
   if (token.key.endsWith("-block-width") && raw === "fit-content") return "0";
   if (token.key.endsWith("-content-align")) return raw === "center" ? "1" : "0";
   if (token.type === "range" && token.unit && raw.endsWith(token.unit)) {

@@ -65,6 +65,3 @@ export function getPrintById(id: string): PrintDefinition | undefined {
 export function getPrintAssetUrl(id: string): string | undefined {
   return getPrintById(id)?.url;
 }
-
-/** Prints shown in the editor's bottom strip (same folder, scrollable row). */
-export const EDITOR_POPULAR_PRINTS: PrintDefinition[] = PRINT_CATALOG;

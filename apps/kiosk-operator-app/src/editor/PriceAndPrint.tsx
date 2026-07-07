@@ -3,6 +3,7 @@ import { TouchButton } from "@tshirt/ui-kit";
 import { calculatePriceTenge } from "@tshirt/shared-pricing";
 import type { GarmentFabric } from "@tshirt/shared-types";
 import { useEditorStore } from "./store.js";
+import { usePricingConfigStore } from "../lib/pricingConfigStore.js";
 import { blockBorderStyle } from "./borderStyle.js";
 
 export interface PriceAndPrintProps {
@@ -22,12 +23,16 @@ export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
   const size = useEditorStore((state) => state.size);
   const fabricName = useEditorStore((state) => state.fabricName);
   const printSize = useEditorStore((state) => state.printSizeBySide[state.side]);
-  const price = calculatePriceTenge({
-    garmentType,
-    fabric: fabricName as GarmentFabric,
-    size,
-    printSize,
-  });
+  const priceConfig = usePricingConfigStore((state) => state.config);
+  const price = calculatePriceTenge(
+    {
+      garmentType,
+      fabric: fabricName as GarmentFabric,
+      size,
+      printSize,
+    },
+    priceConfig,
+  );
 
   return (
     <div className="flex flex-col" style={{ gap: "var(--editor-price-section-gap)" }}>

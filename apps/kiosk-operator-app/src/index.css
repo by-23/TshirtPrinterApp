@@ -374,11 +374,20 @@ textarea {
   --editor-ordernote-block-height: auto;
   --editor-ordernote-block-content-align: center;
 
+  --editor-popular-title-size: 14px;
+  --editor-popular-title-color: #9ca3af;
+  --editor-popular-title-gap: 12px;
   --editor-popular-tile-radius: 12px;
+  --editor-popular-tile-bg: #0b0f1e;
+  --editor-popular-tile-border-width: 1.5px;
+  --editor-popular-tile-border-color: #242938;
+  --editor-popular-tile-border-opacity: 1;
+  --editor-popular-tile-padding: 8px;
+  --editor-popular-image-padding: 4px;
   --editor-popular-image-gap: 16px;
-  --editor-popular-tile-bg: #02060d;
-  --editor-popular-image-width: 167px;
-    --editor-popular-image-height: 44px;
+  --editor-popular-image-width: 120px;
+  --editor-popular-image-height: 88px;
+  --editor-popular-tile-flex-grow: 1;
   --editor-popular-block-border-width: 1.5px;
   --editor-popular-block-border-color: #242938;
   --editor-popular-block-border-opacity: 1;
@@ -386,11 +395,21 @@ textarea {
   --editor-popular-block-padding: 16px;
   --editor-popular-block-height: auto;
   --editor-popular-block-width: 100%;
+  --editor-popular-block-content-align: start;
+  --editor-popular-add-bg: #0b0f1e;
+  --editor-popular-add-border-width: 1.5px;
+  --editor-popular-add-border-color: #242938;
+  --editor-popular-add-border-opacity: 1;
+  --editor-popular-add-radius: 12px;
+  --editor-popular-add-padding: 8px;
+  --editor-popular-add-text-color: #9ca3af;
+  --editor-popular-add-icon-size: 32px;
+  --editor-popular-add-font-size: 12px;
   --editor-popular-scroll-size: 6px;
-    --editor-popular-scroll-track-color: #242938;
-    --editor-popular-scroll-track-opacity: 0.45;
-    --editor-popular-scroll-thumb-color: #5b6690;
-    --editor-popular-scroll-thumb-opacity: 0.9;
+  --editor-popular-scroll-track-color: #242938;
+  --editor-popular-scroll-track-opacity: 0.45;
+  --editor-popular-scroll-thumb-color: #5b6690;
+  --editor-popular-scroll-thumb-opacity: 0.9;
 
   --editor-tips-icon-width: 50px;
   --editor-tips-icon-height: 50px;
@@ -1124,6 +1143,10 @@ textarea {
   --editor-popular-scroll-track-opacity: 0.45;
   --editor-popular-scroll-thumb-color: #5b6690;
   --editor-popular-scroll-thumb-opacity: 0.9;
+  width: 100%;
+  box-sizing: border-box;
+  /* Keep tile borders (especially the first/last) inside the scrollport — auto overflow clips flush edges. */
+  padding-inline: var(--editor-popular-tile-border-width, 1.5px);
   padding-bottom: var(--editor-popular-scroll-size);
   scrollbar-width: thin;
   scrollbar-color:
@@ -1156,6 +1179,22 @@ textarea {
 
 .editor-popular-scroll::-webkit-scrollbar-thumb:hover {
   filter: brightness(1.15);
+}
+
+.editor-popular-tile {
+  flex: var(--editor-popular-tile-flex-grow, 1) 0 0;
+  min-width: var(--editor-popular-image-width);
+  height: var(--editor-popular-image-height);
+}
+
+.editor-popular-tile__image-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: var(--editor-popular-image-padding);
+  box-sizing: border-box;
 }
 /* ==========================================================================
    Kiosk page transitions (KioskShell.tsx + pageTransitionStore.ts)

@@ -3,13 +3,16 @@ import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { HOME_STATIC_LABELS } from "../lib/homeLabels.js";
+import { useTranslation } from "react-i18next";
+import { getBannerTitle } from "../lib/homeLabels.js";
 import { useKioskImagesRevision } from "../lib/kioskImages.js";
 import { usePopularPrintSlides } from "../lib/popularPrints.js";
 import { ChevronLeft, ChevronRight, Sparkles } from "./icons.js";
 import { PopularPrintSlideContent } from "./PopularPrintSlide.js";
 
 export function Banner() {
+  const { i18n } = useTranslation();
+  const bannerTitle = getBannerTitle(i18n.language);
   const imageRevision = useKioskImagesRevision();
   const slides = usePopularPrintSlides();
 
@@ -20,7 +23,7 @@ export function Banner() {
           style={{ color: "var(--brand-primary)" }}
           className="text-center text-[26px] font-extrabold uppercase tracking-wide"
         >
-          <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" /> {HOME_STATIC_LABELS.bannerTitle}{" "}
+          <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" /> {bannerTitle}{" "}
           <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" />
         </h2>
         <p className="text-center text-base text-white/50">
@@ -36,7 +39,7 @@ export function Banner() {
         style={{ color: "var(--brand-primary)" }}
         className="text-center text-[26px] font-extrabold uppercase tracking-wide"
       >
-        <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" /> {HOME_STATIC_LABELS.bannerTitle}{" "}
+        <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" /> {bannerTitle}{" "}
         <Sparkles aria-hidden className="inline h-6 w-6 align-[-2px]" />
       </h2>
 

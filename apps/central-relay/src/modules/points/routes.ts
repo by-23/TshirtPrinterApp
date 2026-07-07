@@ -10,6 +10,7 @@ import {
 } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { points } from "../../db/schema.js";
+import { pushSnapshotToPoint } from "../../realtime/socket.js";
 
 const SALT_ROUNDS = 10;
 
@@ -88,6 +89,9 @@ export async function pointsRoutes(app: FastifyInstance) {
     if (!row) {
       return reply.status(404).send({ error: "Point not found" });
     }
+    // Status/name/uploadMode changes must reach the kiosk without waiting for
+    // its own reconnect — push a fresh snapshot right away (Stage 7).
+    void pushSnapshotToPoint(row.id);
     return serializePoint(row);
   });
 

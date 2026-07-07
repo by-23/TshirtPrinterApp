@@ -1,12 +1,32 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { eq } from "drizzle-orm";
-import { createOrderSchema, updateOrderStatusSchema } from "@tshirt/shared-types";
+import { createOrderSchema, updateOrderStatusSchema, type SyncOrderPushPayload } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { orders } from "../../db/schema.js";
 import { emitOrderEvent } from "../../realtime/socket.js";
 import { generateOrderImages } from "./mockup.js";
+import { drainSyncQueue, enqueueOrderPush } from "../sync/queue.js";
+import { getSyncSocket } from "../sync/client.js";
 
 type OrderRow = typeof orders.$inferSelect;
+
+/** Queues this order's current state for `sync:order-push`, and nudges an immediate drain if already connected (Этап 7). */
+function pushOrderToCentral(app: FastifyInstance, row: OrderRow): void {
+  const payload: SyncOrderPushPayload = {
+    pointOrderId: row.id,
+    status: row.status,
+    garmentType: row.garmentType,
+    printSize: row.printSize,
+    price: row.price,
+    createdAt: row.createdAt,
+  };
+  void enqueueOrderPush(payload).then(() => {
+    const socket = getSyncSocket();
+    if (socket?.connected) {
+      void drainSyncQueue(socket, app.log);
+    }
+  });
+}
 
 function fileUrl(request: FastifyRequest, relativePath: string): string {
   return `${request.protocol}://${request.headers.host}/files/${relativePath}`;
@@ -90,6 +110,7 @@ export async function ordersRoutes(app: FastifyInstance) {
 
     const serialized = serializeOrder(finalRow, request);
     emitOrderEvent("created", serialized);
+    pushOrderToCentral(app, finalRow);
     return reply.status(201).send(serialized);
   });
 
@@ -112,6 +133,7 @@ export async function ordersRoutes(app: FastifyInstance) {
     }
     const serialized = serializeOrder(row, request);
     emitOrderEvent("updated", serialized);
+    pushOrderToCentral(app, row);
     return serialized;
   });
 }
