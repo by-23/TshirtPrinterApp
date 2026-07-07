@@ -9,7 +9,7 @@
     "chooseLanguage": "Choose language",
     "categories": {
       "memes": "Memes",
-      "animeMovies": "Anime & Movies",
+      "animeMovies": "Anime",
       "games": "Games",
       "text": "Text",
       "custom": "Custom Design",
@@ -162,6 +162,8 @@
   "gallery": {
     "loading": "Loading designs...",
     "empty": "This section will be filled with new designs soon",
-    "error": "Couldn't load designs. Check the connection to the point server."
+    "error": "Couldn't load designs. Check the connection to the point server.",
+    "searchPlaceholder": "Search by name",
+    "noResults": "Nothing found"
   }
 }

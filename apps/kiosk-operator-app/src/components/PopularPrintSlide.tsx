@@ -1,18 +1,21 @@
 import {
   DEFAULT_TSHIRT_BLACK,
   DEFAULT_TSHIRT_WHITE,
-  popularPrintImageKey,
   useKioskImage,
 } from "../lib/kioskImages.js";
-import type { PrintDefinition } from "../lib/printCatalog.js";
+import type { BannerSlide } from "../lib/popularPrints.js";
 import { Heart } from "./icons.js";
 
 /** Slide content only — SwiperSlide must be a direct child of Swiper in Banner.tsx. */
-export function PopularPrintSlideContent({ print }: { print: PrintDefinition }) {
+export function PopularPrintSlideContent({ slide }: { slide: BannerSlide }) {
   const whiteShirt = useKioskImage("tshirt-white") || DEFAULT_TSHIRT_WHITE;
   const blackShirt = useKioskImage("tshirt-black") || DEFAULT_TSHIRT_BLACK;
-  const printImage = useKioskImage(popularPrintImageKey(print.id)) || print.url;
-  const shirtUrl = print.shirt === "white" ? whiteShirt : blackShirt;
+  // Operator-uploaded override only applies to the local fallback catalog
+  // (`slide.overrideKey`) — real catalog designs already carry their own
+  // `imageUrl` from point-server.
+  const overrideImage = useKioskImage(slide.overrideKey ?? "");
+  const printImage = overrideImage || slide.imageUrl;
+  const shirtUrl = slide.shirt === "white" ? whiteShirt : blackShirt;
 
   return (
     <div className="relative h-[310px] w-full overflow-hidden rounded-[var(--radius-card-sm)]">
@@ -33,15 +36,15 @@ export function PopularPrintSlideContent({ print }: { print: PrintDefinition }) 
           />
         ) : null}
       </div>
-      <span className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-pill bg-ink-950/80 px-2.5 py-1 text-[13px] font-bold text-white backdrop-blur">
+      <span className="popular-likes-badge absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1">
         <Heart
           aria-hidden
-          className="h-3.5 w-3.5"
+          className="popular-likes-heart"
           fill="var(--brand-primary)"
           stroke="var(--brand-primary)"
           strokeWidth={0}
         />
-        {print.likes}
+        {slide.heartLabel}
       </span>
     </div>
   );

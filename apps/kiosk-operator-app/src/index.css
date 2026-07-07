@@ -41,6 +41,9 @@ textarea {
 .operator-theme-root {
   font-family: var(--operator-font-family, var(--font-family));
 }
+.gallery-theme-root {
+  font-family: var(--gallery-font-family, var(--font-family));
+}
 /* ==========================================================================
    Live theme tokens
    --------------------------------------------------------------------------
@@ -124,6 +127,10 @@ textarea {
   --popular-glow-strength: 3;
   --popular-shirt-scale: 0.85;
   --popular-print-scale: 1.3;
+  --popular-likes-heart-size: 14px;
+  --popular-likes-font-size: 13px;
+  --popular-likes-text-stroke-width: 0px;
+  --popular-likes-text-stroke-color: #05060f;
   --popular-bg-direction: to right;
   --popular-bg-start: #131a2e;
   --popular-bg-middle: #3c084c;
@@ -616,6 +623,56 @@ textarea {
   --checkout-cash-card-bg: linear-gradient(var(--checkout-cash-card-bg-direction),
       var(--checkout-cash-card-bg-start),
       var(--checkout-cash-card-bg-end));
+/* ========================================================================
+     Category gallery screen ("/kiosk/category/:category") — own independent
+     token set, tuned from GalleryThemePanel.tsx the same way the editor and
+     checkout tokens above are tuned from their own panels.
+     ======================================================================== */
+  --gallery-page-bg: #0a0f15;
+  --gallery-page-padding-x: 40px;
+  --gallery-page-padding-y: 40px;
+  --gallery-page-section-gap: 32px;
+
+  --gallery-back-btn-height: 48px;
+  --gallery-back-btn-radius: 999px;
+  --gallery-back-btn-bg: #131a2e;
+  --gallery-back-btn-border-width: 2px;
+  --gallery-back-btn-border-color: #26325a;
+  --gallery-back-btn-font-size: 14px;
+  --gallery-header-title-size: 28px;
+  --gallery-header-title-color: #ffffff;
+
+  --gallery-search-height: 56px;
+  --gallery-search-radius: 16px;
+  --gallery-search-border-width: 3.5px;
+  --gallery-search-border-color: #26325a;
+  --gallery-search-bg-color: #131a2e;
+  --gallery-search-bg-opacity: 0.72;
+  --gallery-search-icon-size: 24px;
+  --gallery-search-icon-color: #cac9cb;
+  --gallery-search-font-size: 18px;
+  --gallery-search-text-color: #ffffff;
+
+  --gallery-grid-columns: 3;
+  --gallery-grid-gap: 24px;
+  --gallery-glow-bleed: calc(8px + 10px * var(--gallery-card-glow-strength));
+  --gallery-card-radius: 60px;
+  --gallery-card-border-width: 4px;
+  --gallery-card-padding: 0px;
+  --gallery-card-bg-start: #131a2e;
+  --gallery-card-bg-end: #0a0d1a;
+  --gallery-card-glow-strength: 3;
+  --gallery-card-icon-color: #1d2c59;
+  --gallery-card-loading-border-color: #26325a;
+  --gallery-card-loading-icon-color: #a7b0d0;
+
+  --gallery-card-accent-1: #ff2d95;
+  --gallery-card-accent-2: #22d3f5;
+  --gallery-card-accent-3: #8b5cf6;
+  --gallery-card-accent-4: #14b8a6;
+  --gallery-card-accent-5: #2563eb;
+  --gallery-card-accent-6: #eab308;
+  --gallery-card-accent-7: #22c55e;
 /* Operator screen (Этап 5, docs/ui-mockups/operator.png). A normal desktop
      monitor rendered on a fixed-height virtual canvas (see OperatorFrame.tsx)
      and calibrated live via OperatorThemePanel.tsx — same mechanics as
@@ -927,6 +984,63 @@ textarea {
   color: rgb(255 255 255 / var(--category-select-subtitle-opacity, 0.7));
 }
 
+/* Category gallery (/kiosk/category/:category) — search bar + NxM image grid.
+   Every size/color reads from a `--gallery-*` custom property so the whole
+   screen is retunable live from GalleryThemePanel.tsx, same mechanics as the
+   editor/checkout screens above. */
+.gallery-search {
+  height: var(--gallery-search-height);
+  border-width: var(--gallery-search-border-width);
+  border-style: solid;
+  border-color: var(--gallery-search-border-color);
+  background: color-mix(in srgb, var(--gallery-search-bg-color) calc(var(--gallery-search-bg-opacity) * 100%), transparent);
+  border-radius: var(--gallery-search-radius);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gallery-search:focus-within {
+  border-color: var(--brand-primary);
+  box-shadow: var(--brand-pill-glow);
+}
+
+/* Card grid — scrolls with the page (see .gallery-theme-root) so glow is not
+   clipped by a nested overflow container. */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--gallery-grid-columns), minmax(0, 1fr));
+  gap: var(--gallery-grid-gap);
+}
+
+/* Padding gives the glow room to paint; negative margin cancels layout shift. */
+.gallery-card-shell {
+  padding: var(--gallery-glow-bleed);
+  margin: calc(-1 * var(--gallery-glow-bleed));
+  overflow: visible;
+}
+
+.gallery-card {
+  width: 100%;
+  border-width: var(--gallery-card-border-width);
+  border-style: solid;
+  border-color: var(--gallery-card-accent, var(--brand-primary));
+  border-radius: var(--gallery-card-radius);
+  padding: var(--gallery-card-padding);
+  background: linear-gradient(160deg, var(--gallery-card-bg-start), var(--gallery-card-bg-end));
+  box-shadow: 0 0 calc(34px * var(--gallery-card-glow-strength)) calc(-8px * var(--gallery-card-glow-strength)) color-mix(in srgb, var(--gallery-card-accent, var(--brand-primary)) 65%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gallery-card:hover {
+  box-shadow: 0 0 calc(46px * var(--gallery-card-glow-strength)) calc(-6px * var(--gallery-card-glow-strength)) color-mix(in srgb, var(--gallery-card-accent, var(--brand-primary)) 80%, transparent);
+}
+
+.gallery-card--loading {
+  border-style: dashed;
+  border-color: var(--gallery-card-loading-border-color);
+  background: transparent;
+  box-shadow: none;
+}
 .category-art-wrap {
   translate: var(--cat-image-offset-x, 0px) var(--cat-image-offset-y, 0px);
 }
@@ -939,6 +1053,20 @@ textarea {
 .popular-print-art {
   width: calc(4rem * var(--popular-print-scale, 1));
   height: calc(4rem * var(--popular-print-scale, 1));
+}
+
+.popular-likes-badge {
+  font-size: var(--popular-likes-font-size, 13px);
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-stroke: var(--popular-likes-text-stroke-width, 0px) var(--popular-likes-text-stroke-color, #05060f);
+  paint-order: stroke fill;
+}
+
+.popular-likes-badge .popular-likes-heart {
+  width: var(--popular-likes-heart-size, 14px);
+  height: var(--popular-likes-heart-size, 14px);
+  flex-shrink: 0;
 }
 
 .popular-swiper .swiper-slide {

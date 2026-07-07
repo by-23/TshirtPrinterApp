@@ -1,3 +1,14 @@
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Load `apps/point-server/.env` when present (local dev). Production should
+// inject env vars via the host/process manager instead.
+const envFile = resolve(dirname(fileURLToPath(import.meta.url)), "../.env");
+if (existsSync(envFile) && typeof process.loadEnvFile === "function") {
+  process.loadEnvFile(envFile);
+}
+
 export const env = {
   PORT: Number(process.env.PORT ?? 4000),
   DATABASE_PATH: process.env.DATABASE_PATH ?? "./data/point.db",
@@ -7,4 +18,8 @@ export const env = {
   CENTRAL_RELAY_URL: process.env.CENTRAL_RELAY_URL,
   POINT_SYNC_ID: process.env.POINT_SYNC_ID,
   POINT_SYNC_TOKEN: process.env.POINT_SYNC_TOKEN,
+  // Optional — fallback Giphy API key when not set in the operator panel
+  // (docs/PLAN.md Этап 3, "Несколько источников"). Unset = that source is
+  // silently skipped unless the panel stores a key, same fail-open principle.
+  GIPHY_API_KEY: process.env.GIPHY_API_KEY,
 };

@@ -28,13 +28,23 @@
 pnpm install
 ```
 
+### Киоск + оператор (точка)
+
+```bash
+pnpm --filter @tshirt/kiosk-operator-app dev   # http://localhost:5173
+```
+
+Киоск и оператор ходят в **point-server** (`http://localhost:4000`). Без него галерея дизайнов и заказы не работают.
+
 ### Point-server (точка)
 
 ```bash
 pnpm --filter @tshirt/point-server db:migrate
 pnpm --filter @tshirt/point-server db:seed
-pnpm --filter @tshirt/point-server dev
+pnpm --filter @tshirt/point-server dev   # http://localhost:4000
 ```
+
+Скопируйте `apps/point-server/.env.example` → `.env` и заполните `POINT_SYNC_ID` / `POINT_SYNC_TOKEN` (см. ниже), чтобы точка отображалась «В сети» в админке.
 
 ### Central-relay + admin-panel (облако)
 

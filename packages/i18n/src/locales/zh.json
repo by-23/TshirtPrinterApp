@@ -9,7 +9,7 @@
     "chooseLanguage": "选择语言",
     "categories": {
       "memes": "表情包",
-      "animeMovies": "动漫与电影",
+      "animeMovies": "动漫",
       "games": "游戏",
       "text": "文字",
       "custom": "自定义设计",
@@ -162,6 +162,8 @@
   "gallery": {
     "loading": "正在加载设计...",
     "empty": "该分类即将上新设计",
-    "error": "无法加载设计，请检查与门店服务器的连接。"
+    "error": "无法加载设计，请检查与门店服务器的连接。",
+    "searchPlaceholder": "按名称搜索",
+    "noResults": "未找到结果"
   }
 }

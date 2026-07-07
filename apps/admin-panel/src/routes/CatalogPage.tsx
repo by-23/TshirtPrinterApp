@@ -6,7 +6,7 @@ import { apiClient } from "../lib/apiClient.js";
 
 const CATEGORY_LABELS: Record<string, string> = {
   memes: "Мемы",
-  anime_movies: "Аниме и фильмы",
+  anime_movies: "Аниме",
   games: "Игры",
   text: "Надписи",
   custom: "Свой дизайн",

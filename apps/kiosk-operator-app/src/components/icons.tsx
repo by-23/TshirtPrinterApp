@@ -21,12 +21,17 @@ import {
   Gamepad2,
   Gift,
   GripVertical,
+  HardDrive,
   Headset,
   Heart,
   History,
   Image,
+  LayoutGrid,
   Layers,
   ListOrdered,
+  Loader2,
+  Lock,
+  LockOpen,
   Paintbrush,
   Palette,
   Plus,
@@ -34,6 +39,7 @@ import {
   QrCode,
   Redo2,
   Ruler,
+  Search,
   Settings,
   Shapes,
   Share2,
@@ -46,6 +52,7 @@ import {
   Star,
   Tag,
   Target,
+  Trash2,
   Type,
   Undo2,
   Upload,
@@ -84,6 +91,8 @@ export const FlameIcon = createFilledIcon(Flame);
 export const BoltIcon = createFilledIcon(Zap);
 export const CrownIcon = createFilledIcon(Crown);
 export const SmileyIcon = createIcon(Smile, { strokeWidth: 1.6 });
+export const SearchIcon = createIcon(Search, { strokeWidth: 2 });
+export const SpinnerIcon = createIcon(Loader2, { strokeWidth: 2 });
 
 /** Default size for icons inside buttons/rails that scale via `font-size`. */
 export const RAIL_ICON_CLASS = "h-[1em] w-[1em]";
@@ -105,12 +114,16 @@ export {
   Droplet,
   Gift,
   GripVertical,
+  HardDrive,
   Headset,
   Heart,
   History,
   Image,
+  LayoutGrid,
   Layers,
   ListOrdered,
+  Lock,
+  LockOpen,
   Palette,
   Plus,
   Printer,
@@ -126,6 +139,7 @@ export {
   Sparkles,
   Tag,
   Target,
+  Trash2,
   Type,
   Undo2,
   Upload,

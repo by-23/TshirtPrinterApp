@@ -1,0 +1,1 @@
+ALTER TABLE `designs` ADD `use_count` integer DEFAULT 0 NOT NULL;

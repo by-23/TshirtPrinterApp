@@ -2,15 +2,39 @@ import { io, type Socket } from "socket.io-client";
 import {
   ORDER_EVENT_CHANNEL,
   orderEventSchema,
+  type CatalogCacheUsage,
+  type CatalogScrapeConfig,
+  type CatalogScrapeStatus,
+  type CategoryQueryTags,
   type CreateOrderInput,
   type Design,
   type DesignCategory,
+  type DesignsPage,
+  type GalleryCategory,
+  type GiphyApiKeyTestResult,
   type Order,
   type OrderEvent,
   type OrderStatus,
+  type SetDesignIsolatedInput,
+  type UpdateCatalogScrapeConfigInput,
 } from "@tshirt/shared-types";
 
 export const POINT_SERVER_URL = "http://localhost:4000";
+
+/** Append a fetched designs page without duplicate cards — offset pagination can overlap when the catalog grows mid-scroll. */
+export function appendDesignPage(existing: Design[], incoming: Design[]): Design[] {
+  if (incoming.length === 0) return existing;
+  const seen = new Set(existing.map((design) => design.id));
+  const fresh = incoming.filter((design) => !seen.has(design.id));
+  return fresh.length > 0 ? [...existing, ...fresh] : existing;
+}
+
+/** Turns `/files/...` paths from point-server into absolute URLs for the kiosk UI. */
+export function resolveDesignImageUrl(imageUrl: string): string {
+  if (!imageUrl) return imageUrl;
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) return imageUrl;
+  return `${POINT_SERVER_URL}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+}
 
 export interface HealthResponse {
   status: string;
@@ -37,12 +61,125 @@ export async function fetchDesigns(category?: DesignCategory): Promise<Design[]>
   return res.json();
 }
 
+export interface FetchDesignsPageOptions {
+  search?: string;
+  offset: number;
+  limit: number;
+  /**
+   * `false` (default, matches point-server) excludes designs an operator has
+   * isolated; `true` fetches *only* isolated ones — used by the operator
+   * panel's "Изолированные" filter (see `DesignsPanel.tsx`). The kiosk
+   * gallery never sets this, so isolated designs simply never appear there.
+   */
+  isolated?: boolean;
+}
+
+/**
+ * Paginated designs fetch for the infinite-scroll gallery (see
+ * `CategoryGallery.tsx`) — the point-server route returns `{ items, total }`
+ * whenever `offset`/`limit` are present, as opposed to the plain array
+ * `fetchDesigns` gets back (docs/PLAN.md Этап 3).
+ *
+ * `category` is optional so the operator panel's "Изолированные" filter can
+ * fetch isolated designs across every category at once.
+ */
+export async function fetchDesignsPage(
+  category: DesignCategory | undefined,
+  { search, offset, limit, isolated }: FetchDesignsPageOptions,
+): Promise<DesignsPage> {
+  const url = new URL(`${POINT_SERVER_URL}/catalog/designs`);
+  if (category) {
+    url.searchParams.set("category", category);
+  }
+  url.searchParams.set("offset", String(offset));
+  url.searchParams.set("limit", String(limit));
+  if (search) {
+    url.searchParams.set("search", search);
+  }
+  if (isolated !== undefined) {
+    url.searchParams.set("isolated", String(isolated));
+  }
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch designs page: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function fetchDesign(id: string): Promise<Design> {
   const res = await fetch(`${POINT_SERVER_URL}/catalog/designs/${id}`);
   if (!res.ok) {
     throw new Error(`Failed to fetch design ${id}: ${res.status}`);
   }
   return res.json();
+}
+
+/**
+ * Home page "Популярные принты" banner — highest use-count designs across
+ * every category, capped per-category server-side (see
+ * `selectPopularDesigns` in point-server). `limit` defaults to
+ * `POPULAR_DESIGNS_DEFAULT_LIMIT` on the server when omitted.
+ */
+export async function fetchPopularDesigns(limit?: number): Promise<Design[]> {
+  const url = new URL(`${POINT_SERVER_URL}/catalog/designs/popular`);
+  if (limit) {
+    url.searchParams.set("limit", String(limit));
+  }
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch popular designs: ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
+ * Bumps a design's use count by one — call once a print order using it is
+ * successfully created (see `Editor.tsx` `handlePrint`). Fire-and-forget from
+ * the caller's point of view: a failed bump shouldn't block or roll back an
+ * order that already went through (fail-open).
+ */
+export async function markDesignUsed(id: string): Promise<Design> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/designs/${id}/use`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(`Failed to mark design ${id} as used: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteDesign(id: string): Promise<void> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/designs/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(`Failed to delete design ${id}: ${res.status}`);
+  }
+}
+
+/**
+ * "Изолировать"/"Вернуть" toggle from the operator's Designs → Галерея tab —
+ * hides (or restores) a design from the kiosk gallery without deleting it.
+ */
+export async function setDesignIsolated(id: string, isolated: boolean): Promise<Design> {
+  const body: SetDesignIsolatedInput = { isolated };
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/designs/${id}/isolate`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to set isolated for design ${id}: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Bulk "clear category" for the operator's Designs → Галерея tab — deletes every design (+ file) in one category. */
+export async function deleteDesignsByCategory(category: DesignCategory): Promise<number> {
+  const url = new URL(`${POINT_SERVER_URL}/catalog/designs`);
+  url.searchParams.set("category", category);
+  const res = await fetch(url, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(`Failed to delete category designs: ${res.status}`);
+  }
+  const body = (await res.json()) as { deleted: number };
+  return body.deleted;
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
@@ -109,4 +246,83 @@ export function subscribeOrderEvents(callback: (event: OrderEvent) => void): () 
   return () => {
     socket.off(ORDER_EVENT_CHANNEL, handler);
   };
+}
+
+// --- Pinterest catalog scraper (Этап 3) — settings tab in the operator panel ---
+
+export async function fetchScrapeConfig(): Promise<CatalogScrapeConfig> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/scrape-config`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch scrape config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateScrapeConfig(input: UpdateCatalogScrapeConfigInput): Promise<CatalogScrapeConfig> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/scrape-config`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update scrape config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function testGiphyApiKey(apiKey?: string): Promise<GiphyApiKeyTestResult> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/scrape-config/giphy/test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(apiKey != null && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Failed to test Giphy API key: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchScrapeStatus(): Promise<CatalogScrapeStatus[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/scrape-status`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch scrape status: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Disk-usage snapshot for the "Обзор" tab — GB limit + per-category breakdown (docs/PLAN.md "кэш картинок по ГБ"). */
+export async function fetchCacheUsage(): Promise<CatalogCacheUsage> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/cache-usage`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch cache usage: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function triggerScrapeRun(category: GalleryCategory): Promise<void> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/scrape/${category}/run`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(`Failed to trigger scrape run: ${res.status}`);
+  }
+}
+
+export async function fetchQueryTags(): Promise<CategoryQueryTags[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/query-tags`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch query tags: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateQueryTags(category: GalleryCategory, tags: string[]): Promise<CategoryQueryTags> {
+  const res = await fetch(`${POINT_SERVER_URL}/catalog/query-tags/${category}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tags }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update query tags: ${res.status}`);
+  }
+  return res.json();
 }

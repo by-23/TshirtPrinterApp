@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
 import { designCategorySchema, type GarmentFabric } from "@tshirt/shared-types";
 import { getPriceBreakdown } from "@tshirt/shared-pricing";
-import { createOrder, fetchDesign } from "../../lib/pointServer.js";
+import { createOrder, fetchDesign, markDesignUsed, resolveDesignImageUrl } from "../../lib/pointServer.js";
 import { useEditorStore } from "../../editor/store.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
@@ -62,7 +62,7 @@ export function Editor() {
     fetchDesign(designId)
       .then((design) => {
         if (cancelled || !design.imageUrl) return;
-        return FabricImage.fromURL(design.imageUrl).then((image) => {
+        return FabricImage.fromURL(resolveDesignImageUrl(design.imageUrl)).then((image) => {
           if (cancelled) return;
           placeImageCentered(canvas, image);
         });
@@ -125,6 +125,14 @@ export function Editor() {
         priceBreakdown,
       );
       useCheckoutStore.getState().setOrder(order);
+      // Real "used by a customer" signal for the hearts badge/popularity
+      // ranking — only fires for designs picked from a category gallery
+      // (custom/text/ai_style flows have no `designId`). Fire-and-forget:
+      // the order already succeeded, a stats bump failing shouldn't block
+      // checkout (fail-open).
+      if (designId) {
+        void markDesignUsed(designId).catch(() => {});
+      }
       navigate("/kiosk/checkout");
     } catch {
       setPrintError(true);

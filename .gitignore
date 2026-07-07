@@ -4,6 +4,8 @@ build/
 .turbo/
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 .env
@@ -13,6 +15,10 @@ build/
 
 # Generated per-order design/mockup PNGs (point-server, Stage 5)
 apps/point-server/data/orders/
+
+# Pinterest catalog scraper downloads/scratch space (point-server, Этап 3)
+apps/point-server/data/catalog/
+apps/point-server/data/catalog-tmp/
 
 # Uploaded catalog master images (central-relay, Stage 6)
 apps/central-relay/data/

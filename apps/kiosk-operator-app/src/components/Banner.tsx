@@ -5,14 +5,15 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { HOME_STATIC_LABELS } from "../lib/homeLabels.js";
 import { useKioskImagesRevision } from "../lib/kioskImages.js";
-import { PRINT_CATALOG } from "../lib/printCatalog.js";
+import { usePopularPrintSlides } from "../lib/popularPrints.js";
 import { ChevronLeft, ChevronRight, Sparkles } from "./icons.js";
 import { PopularPrintSlideContent } from "./PopularPrintSlide.js";
 
 export function Banner() {
   const imageRevision = useKioskImagesRevision();
+  const slides = usePopularPrintSlides();
 
-  if (PRINT_CATALOG.length === 0) {
+  if (slides.length === 0) {
     return (
       <section className="flex flex-col gap-5">
         <h2
@@ -67,15 +68,15 @@ export function Banner() {
             pagination={{ clickable: true, el: ".popular-swiper-pagination" }}
             slidesPerView={5}
             spaceBetween={10}
-            loop={PRINT_CATALOG.length > 5}
+            loop={slides.length > 5}
             observer
             observeParents
             observeSlideChildren
             className="popular-swiper h-[310px] w-full"
           >
-            {PRINT_CATALOG.map((print) => (
-              <SwiperSlide key={print.id}>
-                <PopularPrintSlideContent print={print} />
+            {slides.map((slide) => (
+              <SwiperSlide key={slide.id}>
+                <PopularPrintSlideContent slide={slide} />
               </SwiperSlide>
             ))}
           </Swiper>

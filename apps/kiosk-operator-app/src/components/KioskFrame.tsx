@@ -3,6 +3,7 @@ import { PointServerStatus } from "./PointServerStatus.js";
 import { ThemePanel } from "./ThemePanel.js";
 import { EditorThemePanel } from "./EditorThemePanel.js";
 import { CheckoutThemePanel } from "./CheckoutThemePanel.js";
+import { GalleryThemePanel } from "./GalleryThemePanel.js";
 import { DevViewSwitcher } from "./DevViewSwitcher.js";
 
 /** Real kiosk touchscreen resolution — every kiosk route is designed pixel-for-pixel at this size. */
@@ -10,6 +11,13 @@ export const KIOSK_WIDTH = 1080;
 export const KIOSK_HEIGHT = 1920;
 
 const OUTER_PADDING = 24;
+// Must match the bezel's `border-[6px]` below. The bezel's inline width/height
+// are border-box (Tailwind preflight), so without subtracting this here the
+// scaled inner canvas ends up 2×BEZEL_BORDER too big for the space actually
+// left inside the border — since scaling uses a top-left origin, that excess
+// only ever spills out on the right/bottom, never the left/top, which is why
+// the whole kiosk page reads as "shifted right" instead of just clipped evenly.
+const BEZEL_BORDER = 6;
 
 /**
  * Simulates the physical kiosk monitor: a fixed 1080×1920 canvas rendered
@@ -25,8 +33,8 @@ export function KioskFrame({ children }: { children: ReactNode }) {
     function updateScale() {
       const el = containerRef.current;
       if (!el) return;
-      const availableWidth = el.clientWidth - OUTER_PADDING * 2;
-      const availableHeight = el.clientHeight - OUTER_PADDING * 2;
+      const availableWidth = el.clientWidth - OUTER_PADDING * 2 - BEZEL_BORDER * 2;
+      const availableHeight = el.clientHeight - OUTER_PADDING * 2 - BEZEL_BORDER * 2;
       const next = Math.min(availableWidth / KIOSK_WIDTH, availableHeight / KIOSK_HEIGHT, 1);
       setScale(next > 0 ? next : 1);
     }
@@ -41,8 +49,11 @@ export function KioskFrame({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const frameWidth = KIOSK_WIDTH * scale;
-  const frameHeight = KIOSK_HEIGHT * scale;
+  // Border-box size of the bezel: scaled canvas + the border itself, so the
+  // canvas (sized/scaled independently below) exactly fills the space inside
+  // the border instead of overflowing it asymmetrically.
+  const frameWidth = KIOSK_WIDTH * scale + BEZEL_BORDER * 2;
+  const frameHeight = KIOSK_HEIGHT * scale + BEZEL_BORDER * 2;
 
   return (
     <div
@@ -84,6 +95,8 @@ export function KioskFrame({ children }: { children: ReactNode }) {
       <EditorThemePanel />
       {/* Same idea again, scoped to /kiosk/checkout (see CheckoutThemePanel.tsx). */}
       <CheckoutThemePanel />
+      {/* Same idea again, scoped to /kiosk/category/:category (see GalleryThemePanel.tsx). */}
+      <GalleryThemePanel />
       <DevViewSwitcher />
     </div>
   );
