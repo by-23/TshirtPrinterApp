@@ -20,6 +20,11 @@ apps/point-server/data/orders/
 apps/point-server/data/catalog/
 apps/point-server/data/catalog-tmp/
 
+# Downloaded local AI-stylization model weights + rendered preview thumbnails
+# (point-server, hybrid AI stylization) — re-downloaded/re-rendered on boot.
+apps/point-server/data/ai-models/
+apps/point-server/data/ai-style-previews/
+
 # Uploaded catalog master images (central-relay, Stage 6)
 apps/central-relay/data/
 

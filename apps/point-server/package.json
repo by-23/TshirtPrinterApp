@@ -20,6 +20,8 @@
     "better-sqlite3": "^11.8.1",
     "drizzle-orm": "^0.38.4",
     "fastify": "^5.2.1",
+    "heic-convert": "^2.1.0",
+    "onnxruntime-node": "^1.20.1",
     "pin-dl": "^0.1.0",
     "playwright": "^1.61.1",
     "sharp": "^0.35.3",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
+    "@types/heic-convert": "^2.1.1",
     "@types/node": "^22.10.7",
     "drizzle-kit": "^0.30.2",
     "tsx": "^4.19.2",

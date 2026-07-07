@@ -10,6 +10,8 @@ interface AiFlowState {
   /** Raw photo (camera snapshot or phone upload), data URL — shown as "ДО" on the result screen. */
   sourcePhoto: string | null;
   selectedStyleKey: string | null;
+  /** When true (default), client-side background removal runs after stylization. */
+  removeBackground: boolean;
   /** Pollinations output, background still present — kept only to feed background-removal; not shown to the user. */
   stylizedImage: string | null;
   /** Stylized + background removed — the actual print-ready design. */
@@ -20,6 +22,7 @@ interface AiFlowState {
   setStep: (step: AiFlowStep) => void;
   setSourcePhoto: (photo: string) => void;
   setSelectedStyleKey: (key: string | null) => void;
+  setRemoveBackground: (remove: boolean) => void;
   setStylizedImage: (image: string | null) => void;
   setFinalImage: (image: string | null) => void;
   setProcessingStage: (stage: AiProcessingStage) => void;
@@ -33,6 +36,7 @@ const initialState = {
   step: "source" as AiFlowStep,
   sourcePhoto: null as string | null,
   selectedStyleKey: null as string | null,
+  removeBackground: true,
   stylizedImage: null as string | null,
   finalImage: null as string | null,
   processingStage: null as AiProcessingStage,
@@ -44,6 +48,7 @@ export const useAiFlowStore = create<AiFlowState>((set) => ({
   setStep: (step) => set({ step }),
   setSourcePhoto: (sourcePhoto) => set({ sourcePhoto }),
   setSelectedStyleKey: (selectedStyleKey) => set({ selectedStyleKey }),
+  setRemoveBackground: (removeBackground) => set({ removeBackground }),
   setStylizedImage: (stylizedImage) => set({ stylizedImage }),
   setFinalImage: (finalImage) => set({ finalImage }),
   setProcessingStage: (processingStage) => set({ processingStage }),

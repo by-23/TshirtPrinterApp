@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
+import { fetchAiStyles } from "../../../lib/pointServer.js";
 import { AiStepIndicator } from "./AiStepIndicator.js";
 import { CircleCheck } from "../../../components/icons.js";
 
@@ -11,78 +12,111 @@ export function AiResult() {
   const navigate = useNavigate();
   const sourcePhoto = useAiFlowStore((state) => state.sourcePhoto);
   const finalImage = useAiFlowStore((state) => state.finalImage);
+  const selectedStyleKey = useAiFlowStore((state) => state.selectedStyleKey);
+  const removeBackground = useAiFlowStore((state) => state.removeBackground);
   const restartStyleSelection = useAiFlowStore((state) => state.restartStyleSelection);
   const [showAfter, setShowAfter] = useState(true);
+  const [styleLabel, setStyleLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedStyleKey) return;
+    let cancelled = false;
+    fetchAiStyles()
+      .then((styles) => {
+        if (cancelled) return;
+        const match = styles.find((style) => style.key === selectedStyleKey);
+        setStyleLabel(match?.label ?? selectedStyleKey);
+      })
+      .catch(() => {
+        if (!cancelled) setStyleLabel(selectedStyleKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStyleKey]);
 
   if (!finalImage) return null;
 
   return (
-    <div className="flex h-full flex-col items-center gap-5 overflow-y-auto px-4 py-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-extrabold uppercase tracking-wide text-white">{t("ai.result.title")}</h1>
-        <p className="mt-1 text-sm text-ink-200">{t("ai.result.subtitle")}</p>
+    <div className="ai-result-screen">
+      <div className="ai-result-header">
+        <h1 className="ai-result-header-title">{t("ai.result.title")}</h1>
+        <p className="ai-result-header-subtitle">
+          {styleLabel
+            ? t("ai.result.styleLine", { style: styleLabel })
+            : removeBackground
+              ? t("ai.result.subtitle")
+              : t("ai.result.subtitleNoBg")}
+        </p>
       </div>
 
       <AiStepIndicator current="result" />
 
-      <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <div className="flex h-72 w-full items-center justify-center overflow-hidden rounded-3xl bg-ink-900">
+      <div className="ai-result-content">
+        <div className="ai-result-preview">
           <img
             src={showAfter ? finalImage : (sourcePhoto ?? finalImage)}
             alt=""
-            className="max-h-full max-w-full object-contain"
+            className="ai-result-preview-image"
           />
         </div>
 
-        <div className="flex overflow-hidden rounded-pill border border-white/15">
+        <div className="ai-result-toggle" role="group" aria-label={t("ai.result.before")}>
           <button
             type="button"
             onClick={() => setShowAfter(false)}
-            className={`px-6 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${
-              !showAfter ? "bg-white/10 text-white" : "text-ink-200"
-            }`}
+            className={`ai-result-toggle-btn${!showAfter ? " ai-result-toggle-btn--active" : ""}`}
           >
             {t("ai.result.before")}
           </button>
           <button
             type="button"
             onClick={() => setShowAfter(true)}
-            className={`px-6 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${
-              showAfter ? "bg-neon-pink text-white" : "text-ink-200"
-            }`}
+            className={`ai-result-toggle-btn${showAfter ? " ai-result-toggle-btn--active" : ""}`}
           >
             {t("ai.result.after")}
           </button>
         </div>
 
-        <div className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-ink-900 px-4 py-3">
-          <img src={finalImage} alt="" className="h-12 w-12 flex-shrink-0 rounded-xl object-cover" />
-          <div className="flex flex-1 flex-col">
-            <span className="text-sm font-semibold text-white">{t("ai.result.bgRemovedTitle")}</span>
-            <span className="text-xs text-ink-200">{t("ai.result.bgRemovedSubtitle")}</span>
+        {removeBackground ? (
+          <div className="ai-result-status-wrap">
+            <div className="ai-result-status">
+              <div className="ai-result-status-thumb-wrap">
+                <img src={finalImage} alt="" className="ai-result-status-thumb" />
+              </div>
+              <div className="ai-result-status-text">
+                <span className="ai-result-status-title">{t("ai.result.bgRemovedTitle")}</span>
+                <span className="ai-result-status-subtitle">{t("ai.result.bgRemovedSubtitle")}</span>
+              </div>
+              <CircleCheck aria-hidden className="ai-result-status-check" />
+            </div>
           </div>
-          <CircleCheck aria-hidden className="h-5 w-5 flex-shrink-0 text-emerald-400" />
-        </div>
+        ) : null}
       </div>
 
-      <div className="flex w-full max-w-sm flex-col gap-3">
+      <div className="ai-result-actions">
         <button
           type="button"
           onClick={() => navigate("/kiosk/editor?category=ai_style")}
-          className="rounded-pill bg-neon-pink px-6 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-neon-pink transition-transform active:scale-[0.98]"
+          className="ai-result-primary-btn"
         >
           {t("ai.result.editOnShirt")}
         </button>
         <button
           type="button"
           onClick={restartStyleSelection}
-          className="rounded-pill border border-white/15 bg-ink-900 px-6 py-3.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-ink-800"
+          className="ai-result-secondary-btn"
         >
           {t("ai.result.pickAnotherStyle")}
         </button>
       </div>
 
-      <p className="max-w-sm text-center text-xs text-ink-300">ⓘ {t("ai.result.infoBar")}</p>
+      <p className="ai-result-info-bar">
+        <span className="ai-result-info-icon" aria-hidden>
+          i
+        </span>
+        {t("ai.result.infoBar")}
+      </p>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { useAiFlowStore } from "../lib/aiFlowStore.js";
+import { useAiFlowStore, type AiFlowStep } from "../lib/aiFlowStore.js";
 import { GripVertical, Palette } from "./icons.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 
@@ -79,10 +79,42 @@ const CARD_HEIGHT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "uni
   unit: "px",
 };
 
+const QR_CARD_HEIGHT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 180,
+  max: 1600,
+  step: 1,
+  unit: "px",
+};
+
+const NUMBERS_SPACING_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 0,
+  max: 240,
+  step: 1,
+  unit: "px",
+};
+
+const WAITING_INSTRUCTIONS_GAP_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 0,
+  max: 120,
+  step: 1,
+  unit: "px",
+};
+
 const CARD_WIDTH_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
   type: "range",
   min: 280,
   max: 1080,
+  step: 1,
+  unit: "px",
+};
+
+const PHOTO_WIDTH_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 80,
+  max: 1200,
   step: 1,
   unit: "px",
 };
@@ -157,8 +189,109 @@ const GRADIENT_DIRECTION: Pick<SelectToken, "type" | "options"> = {
   options: [...GRADIENT_DIRECTION_OPTIONS],
 };
 
+const BLOCK_WIDTH_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 120,
+  max: 1080,
+  step: 1,
+  unit: "px",
+};
+
+const TIMER_VALUE_FONT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 16,
+  max: 120,
+  step: 1,
+  unit: "px",
+};
+
+interface BlockBorderStyleDefaults {
+  color: string;
+  opacity: number;
+  radius: number;
+  padding: number;
+}
+
+/** Color, opacity, radius and padding for an AI QR block — border width lives in «QR — обводки». */
+function aiQrBlockStyleTokens(blockPrefix: string, defaults: BlockBorderStyleDefaults): Token[] {
+  return [
+    {
+      key: `--ai-qr-${blockPrefix}-border-color`,
+      label: "Обводка — цвет",
+      type: "color",
+      defaultValue: defaults.color,
+    },
+    {
+      key: `--ai-qr-${blockPrefix}-border-opacity`,
+      label: "Обводка — прозрачность",
+      defaultValue: defaults.opacity,
+      ...OPACITY_RANGE,
+    },
+    {
+      key: `--ai-qr-${blockPrefix}-radius`,
+      label: "Скругление блока",
+      defaultValue: defaults.radius,
+      ...RADIUS_RANGE,
+    },
+    {
+      key: `--ai-qr-${blockPrefix}-padding`,
+      label: "Внутренний отступ",
+      defaultValue: defaults.padding,
+      ...PADDING_RANGE,
+    },
+  ];
+}
+
+const QR_OUTLINE_WIDTH_TOKENS: Token[] = [
+  { key: "--ai-qr-card-border-width", label: "Карточка QR", defaultValue: 4.5, ...BORDER_WIDTH_RANGE },
+  { key: "--ai-qr-timer-box-border-width", label: "Рамка таймера", defaultValue: 1.5, ...BORDER_WIDTH_RANGE },
+  { key: "--ai-qr-steps-block-border-width", label: "Рамка инструкций", defaultValue: 1.5, ...BORDER_WIDTH_RANGE },
+  { key: "--ai-qr-steps-divider-width", label: "Разделители шагов", defaultValue: 1.5, ...BORDER_WIDTH_RANGE },
+  { key: "--ai-qr-steps-badge-border-width", label: "Обводка номера шага", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+];
+
+/** Shared step indicator (Фото → Стиль → Обработка → Результат) — used on style, processing and result screens. */
+const AI_STEPS_TOKENS: Token[] = [
+  { key: "--ai-steps-max-width", label: "Ширина блока", defaultValue: 960, ...BLOCK_WIDTH_RANGE },
+  { key: "--ai-steps-padding-y", label: "Отступ сверху/снизу", defaultValue: 0, ...PADDING_RANGE },
+  { key: "--ai-steps-circle-size", label: "Круг — размер", defaultValue: 52, ...SIZE_RANGE },
+  { key: "--ai-steps-node-border-width", label: "Круг — обводка", defaultValue: 2, ...BORDER_WIDTH_RANGE },
+  { key: "--ai-steps-node-icon-size", label: "Иконка — размер", defaultValue: 22, ...SIZE_RANGE },
+  { key: "--ai-steps-done-border-color", label: "Готово — обводка", type: "color", defaultValue: "#34d399" },
+  { key: "--ai-steps-done-bg-color", label: "Готово — фон", type: "color", defaultValue: "#34d399" },
+  { key: "--ai-steps-done-bg-opacity", label: "Готово — прозрачность фона", defaultValue: 0.15, ...OPACITY_RANGE },
+  { key: "--ai-steps-done-icon-color", label: "Готово — иконка", type: "color", defaultValue: "#34d399" },
+  { key: "--ai-steps-active-border-color", label: "Активный — обводка", type: "color", defaultValue: "#ff2d95" },
+  { key: "--ai-steps-active-bg-color", label: "Активный — фон", type: "color", defaultValue: "#ff2d95" },
+  { key: "--ai-steps-active-bg-opacity", label: "Активный — прозрачность фона", defaultValue: 0.15, ...OPACITY_RANGE },
+  { key: "--ai-steps-active-icon-color", label: "Активный — иконка", type: "color", defaultValue: "#ff2d95" },
+  { key: "--ai-steps-idle-border-color", label: "Ожидание — обводка", type: "color", defaultValue: "#ffffff" },
+  { key: "--ai-steps-idle-border-opacity", label: "Ожидание — прозрачность обводки", defaultValue: 0.2, ...OPACITY_RANGE },
+  { key: "--ai-steps-idle-icon-color", label: "Ожидание — иконка", type: "color", defaultValue: "#ffffff" },
+  { key: "--ai-steps-idle-icon-opacity", label: "Ожидание — прозрачность иконки", defaultValue: 0.4, ...OPACITY_RANGE },
+  { key: "--ai-steps-label-gap", label: "Зазор круг/подпись", defaultValue: 8, ...GAP_RANGE },
+  { key: "--ai-steps-label-size", label: "Подпись — размер", defaultValue: 16, ...FONT_RANGE },
+  { key: "--ai-steps-label-done-color", label: "Подпись готово — цвет", type: "color", defaultValue: "#ffffff" },
+  { key: "--ai-steps-label-active-color", label: "Подпись активная — цвет", type: "color", defaultValue: "#ff2d95" },
+  { key: "--ai-steps-label-idle-color", label: "Подпись ожидание — цвет", type: "color", defaultValue: "#ffffff" },
+  { key: "--ai-steps-label-idle-opacity", label: "Подпись ожидание — прозрачность", defaultValue: 0.4, ...OPACITY_RANGE },
+  { key: "--ai-steps-active-underline-height", label: "Подчёркивание — высота", defaultValue: 3, ...BORDER_WIDTH_RANGE },
+  { key: "--ai-steps-active-underline-color", label: "Подчёркивание — цвет", type: "color", defaultValue: "#ff2d95" },
+  {
+    key: "--ai-steps-active-underline-margin-top",
+    label: "Подчёркивание — отступ сверху",
+    defaultValue: 4,
+    ...GAP_RANGE,
+  },
+  { key: "--ai-steps-connector-width", label: "Линия — ширина", defaultValue: 48, ...BLOCK_WIDTH_RANGE },
+  { key: "--ai-steps-connector-height", label: "Линия — высота", defaultValue: 2, ...BORDER_WIDTH_RANGE },
+  { key: "--ai-steps-connector-done-color", label: "Линия готово — цвет", type: "color", defaultValue: "#ff2d95" },
+  { key: "--ai-steps-connector-idle-color", label: "Линия ожидание — цвет", type: "color", defaultValue: "#ffffff" },
+  { key: "--ai-steps-connector-idle-opacity", label: "Линия ожидание — прозрачность", defaultValue: 0.15, ...OPACITY_RANGE },
+];
+
 /**
- * Every tunable AI source-select token. Values MUST match defaults in `index.css`.
+ * Every tunable AI screen token (source select + QR upload + style select + result). Values MUST match defaults in `index.css`.
  */
 const SECTIONS: Section[] = [
   {
@@ -336,11 +469,503 @@ const SECTIONS: Section[] = [
       { key: "--ai-source-info-icon-color-opacity", label: "Иконка — прозрачность", defaultValue: 0.75, ...OPACITY_RANGE },
     ],
   },
+  {
+    title: "QR — экран",
+    tokens: [
+      { key: "--ai-qr-screen-padding-x", label: "Отступы по бокам", defaultValue: 40, ...PADDING_RANGE },
+      { key: "--ai-qr-screen-padding-top", label: "Отступ сверху", defaultValue: 12, ...PADDING_RANGE },
+      { key: "--ai-qr-screen-padding-bottom", label: "Отступ снизу", defaultValue: 48, ...PADDING_RANGE },
+      { key: "--ai-qr-main-gap", label: "Зазор в центральной зоне", defaultValue: 32, ...GAP_RANGE },
+      { key: "--ai-qr-main-padding-y", label: "Центр — отступ сверху/снизу", defaultValue: 24, ...PADDING_RANGE },
+      { key: "--ai-qr-footer-gap", label: "Зазор в нижней зоне", defaultValue: 36, ...GAP_RANGE },
+    ],
+  },
+  {
+    title: "QR — заголовок",
+    tokens: [
+      { key: "--ai-qr-header-title-size", label: "Заголовок — размер", defaultValue: 38, ...FONT_RANGE },
+      { key: "--ai-qr-header-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-qr-header-subtitle-size", label: "Подзаголовок — размер", defaultValue: 24, ...FONT_RANGE },
+      { key: "--ai-qr-header-subtitle-color", label: "Подзаголовок — цвет", type: "color", defaultValue: "#ffffff" },
+      {
+        key: "--ai-qr-header-subtitle-margin-top",
+        label: "Подзаголовок — отступ сверху",
+        defaultValue: 8,
+        ...GAP_RANGE,
+      },
+    ],
+  },
+  {
+    title: "QR — карточка",
+    tokens: [
+      { key: "--ai-qr-card-max-width", label: "Ширина блока", defaultValue: 920, ...CARD_WIDTH_RANGE },
+      { key: "--ai-qr-card-min-height", label: "Высота блока", defaultValue: 720, ...QR_CARD_HEIGHT_RANGE },
+      {
+        key: "--ai-qr-card-bg-direction",
+        label: "Фон — направление",
+        defaultValue: "to bottom",
+        ...GRADIENT_DIRECTION,
+      },
+      { key: "--ai-qr-card-bg-start", label: "Фон — верх", type: "color", defaultValue: "#842050" },
+      { key: "--ai-qr-card-bg-end", label: "Фон — низ", type: "color", defaultValue: "#07060c" },
+      { key: "--ai-qr-card-gap", label: "Зазор между элементами", defaultValue: 20, ...GAP_RANGE },
+      { key: "--ai-qr-card-glow-size", label: "Свечение — размер", defaultValue: 72, ...GLOW_SIZE_RANGE },
+      { key: "--ai-qr-card-glow-spread", label: "Свечение — spread", defaultValue: 0, ...GLOW_SPREAD_RANGE },
+      { key: "--ai-qr-card-glow-color", label: "Свечение — цвет", type: "color", defaultValue: "#ff3898" },
+      { key: "--ai-qr-card-glow-opacity", label: "Свечение — прозрачность", defaultValue: 0.45, ...OPACITY_RANGE },
+      ...aiQrBlockStyleTokens("card", {
+        color: "#ff3898",
+        opacity: 0.75,
+        radius: 28,
+        padding: 40,
+      }),
+    ],
+  },
+  {
+    title: "QR — текст в карточке",
+    tokens: [
+      { key: "--ai-qr-scan-title-size", label: "«Отсканируйте QR» — размер", defaultValue: 28, ...FONT_RANGE },
+      { key: "--ai-qr-scan-title-color", label: "«Отсканируйте QR» — цвет", type: "color", defaultValue: "#ff3898" },
+      { key: "--ai-qr-scan-subtitle-size", label: "Подпись — размер", defaultValue: 22, ...FONT_RANGE },
+      { key: "--ai-qr-scan-subtitle-color", label: "Подпись — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-qr-scan-subtitle-width", label: "Подпись — ширина", defaultValue: 420, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-qr-note-size", label: "Примечание — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-qr-note-color", label: "Примечание — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-qr-note-width", label: "Примечание — ширина", defaultValue: 360, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-qr-error-size", label: "Ошибка — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-qr-error-color", label: "Ошибка — цвет", type: "color", defaultValue: "#fca5a5" },
+    ],
+  },
+  {
+    title: "QR — код",
+    tokens: [
+      { key: "--ai-qr-code-size", label: "QR-код — размер", defaultValue: 280, ...ICON_SIZE_RANGE },
+      { key: "--ai-qr-code-radius", label: "QR-код — скругление", defaultValue: 16, ...RADIUS_RANGE },
+      { key: "--ai-qr-code-padding", label: "QR-код — внутренний отступ", defaultValue: 14, ...PADDING_RANGE },
+    ],
+  },
+  {
+    title: "QR — таймер",
+    tokens: [
+      { key: "--ai-qr-timer-label-size", label: "Подпись — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-qr-timer-label-color", label: "Подпись — цвет", type: "color", defaultValue: "#a7b0d0" },
+      { key: "--ai-qr-timer-value-size", label: "Цифры — размер", defaultValue: 64, ...TIMER_VALUE_FONT_RANGE },
+      { key: "--ai-qr-timer-value-color", label: "Цифры — цвет", type: "color", defaultValue: "#ff3898" },
+      {
+        key: "--ai-qr-timer-box-border-color",
+        label: "Рамка — цвет",
+        type: "color",
+        defaultValue: "#721c46",
+      },
+      {
+        key: "--ai-qr-timer-box-border-opacity",
+        label: "Рамка — прозрачность",
+        defaultValue: 0.75,
+        ...OPACITY_RANGE,
+      },
+      { key: "--ai-qr-timer-box-radius", label: "Рамка — скругление", defaultValue: 16, ...RADIUS_RANGE },
+      { key: "--ai-qr-timer-box-padding-x", label: "Рамка — отступ X", defaultValue: 40, ...PADDING_RANGE },
+      { key: "--ai-qr-timer-box-padding-y", label: "Рамка — отступ Y", defaultValue: 18, ...PADDING_RANGE },
+      { key: "--ai-qr-timer-box-gap", label: "Рамка — зазор", defaultValue: 8, ...GAP_RANGE },
+      { key: "--ai-qr-timer-box-bg", label: "Рамка — фон", type: "color", defaultValue: "#310f23" },
+    ],
+  },
+  {
+    title: "QR — ожидание",
+    tokens: [
+      { key: "--ai-qr-waiting-gap", label: "Зазор иконка/текст", defaultValue: 20, ...GAP_RANGE },
+      { key: "--ai-qr-waiting-size", label: "Спиннер — размер", defaultValue: 52, ...SIZE_RANGE },
+      { key: "--ai-qr-waiting-dot-size", label: "Спиннер — точка", defaultValue: 10, ...SIZE_RANGE },
+      { key: "--ai-qr-waiting-color", label: "Цвет", type: "color", defaultValue: "#22d3f5" },
+      { key: "--ai-qr-waiting-font-size", label: "Текст — размер", defaultValue: 38, ...FONT_RANGE },
+      {
+        key: "--ai-qr-waiting-instructions-gap",
+        label: "Отступ до инструкции",
+        defaultValue: 32,
+        ...WAITING_INSTRUCTIONS_GAP_RANGE,
+      },
+    ],
+  },
+  {
+    title: "QR — инструкция (шаги 1-2-3)",
+    tokens: [
+      { key: "--ai-qr-steps-max-width", label: "Ширина блока", defaultValue: 900, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-qr-steps-numbers-gap", label: "Отступ номеров от рамки", defaultValue: 14, ...GAP_RANGE },
+      {
+        key: "--ai-qr-steps-numbers-spacing",
+        label: "Расстояние между цифрами",
+        defaultValue: 48,
+        ...NUMBERS_SPACING_RANGE,
+      },
+      ...aiQrBlockStyleTokens("steps-block", {
+        color: "#242938",
+        opacity: 1,
+        radius: 16,
+        padding: 28,
+      }),
+      { key: "--ai-qr-steps-block-bg-color", label: "Фон — цвет", type: "color", defaultValue: "#0b0f1e" },
+      { key: "--ai-qr-steps-block-bg-opacity", label: "Фон — прозрачность", defaultValue: 0.45, ...OPACITY_RANGE },
+      { key: "--ai-qr-steps-badge-size", label: "Номер — размер", defaultValue: 60, ...SIZE_RANGE },
+      { key: "--ai-qr-steps-badge-font-size", label: "Номер — шрифт", defaultValue: 28, ...FONT_RANGE },
+      {
+        key: "--ai-qr-steps-badge-border-color",
+        label: "Номер — цвет обводки",
+        type: "color",
+        defaultValue: "#ffffff",
+      },
+      {
+        key: "--ai-qr-steps-badge-border-opacity",
+        label: "Номер — прозрачность обводки",
+        defaultValue: 0.35,
+        ...OPACITY_RANGE,
+      },
+      { key: "--ai-qr-steps-icon-size", label: "Иконка — размер", defaultValue: 80, ...ICON_SIZE_RANGE },
+      { key: "--ai-qr-steps-icon-color", label: "Иконка — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-qr-steps-text-size", label: "Текст — размер", defaultValue: 28, ...FONT_RANGE },
+      { key: "--ai-qr-steps-text-color", label: "Текст — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-qr-steps-item-gap", label: "Зазор внутри шага", defaultValue: 22, ...GAP_RANGE },
+      { key: "--ai-qr-steps-divider-color", label: "Разделитель — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-qr-steps-divider-opacity", label: "Разделитель — прозрачность", defaultValue: 0.18, ...OPACITY_RANGE },
+      { key: "--ai-qr-steps-divider-inset-y", label: "Разделитель — отступ сверху/снизу", defaultValue: 16, ...PADDING_RANGE },
+    ],
+  },
+  {
+    title: "QR — обводки (толщина)",
+    tokens: QR_OUTLINE_WIDTH_TOKENS,
+  },
+  {
+    title: "QR — ссылка на камеру",
+    tokens: [
+      { key: "--ai-qr-camera-link-size", label: "Текст — размер", defaultValue: 22, ...FONT_RANGE },
+      { key: "--ai-qr-camera-link-color", label: "Текст — цвет", type: "color", defaultValue: "#22d3f5" },
+    ],
+  },
+  {
+    title: "Стиль — экран",
+    tokens: [
+      { key: "--ai-style-screen-padding-x", label: "Отступы по бокам", defaultValue: 40, ...PADDING_RANGE },
+      { key: "--ai-style-screen-padding-top", label: "Отступ сверху", defaultValue: 8, ...PADDING_RANGE },
+      { key: "--ai-style-screen-padding-bottom", label: "Отступ снизу", defaultValue: 32, ...PADDING_RANGE },
+      { key: "--ai-style-screen-gap", label: "Зазор между блоками", defaultValue: 28, ...GAP_RANGE },
+    ],
+  },
+  {
+    title: "Стиль — заголовок",
+    tokens: [
+      { key: "--ai-style-header-title-size", label: "Заголовок — размер", defaultValue: 38, ...FONT_RANGE },
+      { key: "--ai-style-header-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-header-subtitle-size", label: "Подзаголовок — размер", defaultValue: 24, ...FONT_RANGE },
+      { key: "--ai-style-header-subtitle-color", label: "Подзаголовок — цвет", type: "color", defaultValue: "#a7b0d0" },
+      {
+        key: "--ai-style-header-subtitle-margin-top",
+        label: "Подзаголовок — отступ сверху",
+        defaultValue: 8,
+        ...GAP_RANGE,
+      },
+    ],
+  },
+  {
+    title: "Стиль — превью фото",
+    tokens: [
+      { key: "--ai-style-photo-row-gap", label: "Зазор бейдж/фото", defaultValue: 20, ...GAP_RANGE },
+      { key: "--ai-style-photo-width", label: "Фото — ширина", defaultValue: 220, ...PHOTO_WIDTH_RANGE },
+      { key: "--ai-style-photo-height", label: "Фото — высота", defaultValue: 300, ...CARD_HEIGHT_RANGE },
+      { key: "--ai-style-photo-radius", label: "Фото — скругление", defaultValue: 20, ...RADIUS_RANGE },
+      { key: "--ai-style-photo-border-width", label: "Фото — обводка толщина", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-style-photo-border-color", label: "Фото — обводка цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-photo-border-opacity", label: "Фото — обводка прозрачность", defaultValue: 0.12, ...OPACITY_RANGE },
+    ],
+  },
+  {
+    title: "Стиль — бейдж «Фото загружено»",
+    tokens: [
+      { key: "--ai-style-photo-badge-gap", label: "Зазор текст/иконка", defaultValue: 8, ...GAP_RANGE },
+      { key: "--ai-style-photo-badge-padding-x", label: "Отступы по бокам", defaultValue: 16, ...PADDING_RANGE },
+      { key: "--ai-style-photo-badge-padding-y", label: "Отступы сверху/снизу", defaultValue: 10, ...PADDING_RANGE },
+      { key: "--ai-style-photo-badge-radius", label: "Скругление", defaultValue: 999, ...RADIUS_RANGE },
+      { key: "--ai-style-photo-badge-border-width", label: "Обводка — толщина", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-style-photo-badge-border-color", label: "Обводка — цвет", type: "color", defaultValue: "#34d399" },
+      { key: "--ai-style-photo-badge-border-opacity", label: "Обводка — прозрачность", defaultValue: 0.55, ...OPACITY_RANGE },
+      { key: "--ai-style-photo-badge-bg-color", label: "Фон — цвет", type: "color", defaultValue: "#34d399" },
+      { key: "--ai-style-photo-badge-bg-opacity", label: "Фон — прозрачность", defaultValue: 0.1, ...OPACITY_RANGE },
+      { key: "--ai-style-photo-badge-font-size", label: "Текст — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-style-photo-badge-color", label: "Текст — цвет", type: "color", defaultValue: "#34d399" },
+      { key: "--ai-style-photo-badge-icon-size", label: "Иконка — размер", defaultValue: 20, ...SIZE_RANGE },
+    ],
+  },
+  {
+    title: "Стиль — галочка «Вырезать фон»",
+    tokens: [
+      { key: "--ai-style-bg-option-gap", label: "Зазор галочка/текст", defaultValue: 10, ...GAP_RANGE },
+      { key: "--ai-style-bg-option-padding-x", label: "Отступы по бокам", defaultValue: 18, ...PADDING_RANGE },
+      { key: "--ai-style-bg-option-padding-y", label: "Отступы сверху/снизу", defaultValue: 12, ...PADDING_RANGE },
+      { key: "--ai-style-bg-option-radius", label: "Скругление", defaultValue: 999, ...RADIUS_RANGE },
+      { key: "--ai-style-bg-option-border-width", label: "Рамка — толщина", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-style-bg-option-border-color", label: "Рамка — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-bg-option-border-opacity", label: "Рамка — прозрачность", defaultValue: 0.16, ...OPACITY_RANGE },
+      { key: "--ai-style-bg-option-bg-color", label: "Фон — цвет", type: "color", defaultValue: "#0a0a12" },
+      { key: "--ai-style-bg-option-bg-opacity", label: "Фон — прозрачность", defaultValue: 0.72, ...OPACITY_RANGE },
+      { key: "--ai-style-bg-option-font-size", label: "Текст — размер", defaultValue: 20, ...FONT_RANGE },
+      { key: "--ai-style-bg-option-color", label: "Текст — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-bg-option-mark-size", label: "Квадрат — размер", defaultValue: 22, ...SIZE_RANGE },
+      { key: "--ai-style-bg-option-mark-border-width", label: "Квадрат — обводка толщина", defaultValue: 2, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-style-bg-option-mark-border-color", label: "Квадрат — обводка цвет", type: "color", defaultValue: "#a7b0d0" },
+      { key: "--ai-style-bg-option-mark-bg", label: "Квадрат — фон", type: "color", defaultValue: "#12121c" },
+      { key: "--ai-style-bg-option-checked-border-color", label: "Включено — рамка цвет", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-bg-option-checked-border-opacity", label: "Включено — рамка прозрачность", defaultValue: 0.72, ...OPACITY_RANGE },
+      { key: "--ai-style-bg-option-checked-bg-color", label: "Включено — фон цвет", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-bg-option-checked-bg-opacity", label: "Включено — фон прозрачность", defaultValue: 0.12, ...OPACITY_RANGE },
+      { key: "--ai-style-bg-option-checked-glow-size", label: "Включено — свечение размер", defaultValue: 18, ...GLOW_SIZE_RANGE },
+      { key: "--ai-style-bg-option-checked-glow-color", label: "Включено — свечение цвет", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-bg-option-checked-glow-opacity", label: "Включено — свечение прозрачность", defaultValue: 0.35, ...OPACITY_RANGE },
+      { key: "--ai-style-bg-option-checked-mark-bg", label: "Включено — квадрат фон", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-bg-option-checked-mark-color", label: "Включено — галочка цвет", type: "color", defaultValue: "#ffffff" },
+    ],
+  },
+  {
+    title: "Стиль — индикатор шагов",
+    tokens: AI_STEPS_TOKENS,
+  },
+  {
+    title: "Стиль — карточки (общие)",
+    tokens: [
+      { key: "--ai-style-cards-max-width", label: "Ширина ряда", defaultValue: 960, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-style-cards-gap", label: "Зазор между карточками", defaultValue: 16, ...GAP_RANGE },
+      { key: "--ai-style-cards-padding-y", label: "Отступы сверху/снизу", defaultValue: 8, ...PADDING_RANGE },
+      { key: "--ai-style-cards-scroll-size", label: "Скролл — высота", type: "range", defaultValue: 6, min: 2, max: 20, step: 1, unit: "px" },
+      { key: "--ai-style-cards-scroll-track-color", label: "Скролл — дорожка цвет", type: "color", defaultValue: "#242938" },
+      { key: "--ai-style-cards-scroll-track-opacity", label: "Скролл — дорожка прозрачность", defaultValue: 0.45, ...OPACITY_RANGE },
+      { key: "--ai-style-cards-scroll-thumb-color", label: "Скролл — ползунок цвет", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-cards-scroll-thumb-opacity", label: "Скролл — ползунок прозрачность", defaultValue: 0.72, ...OPACITY_RANGE },
+      { key: "--ai-style-card-min-width", label: "Мин. ширина карточки", defaultValue: 180, ...PHOTO_WIDTH_RANGE },
+      { key: "--ai-style-card-min-height", label: "Мин. высота карточки", defaultValue: 340, ...CARD_HEIGHT_RANGE },
+      { key: "--ai-style-card-radius", label: "Скругление", defaultValue: 20, ...RADIUS_RANGE },
+      { key: "--ai-style-card-border-width", label: "Рамка — толщина", defaultValue: 2, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-style-card-border-color", label: "Рамка — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-card-border-opacity", label: "Рамка — прозрачность", defaultValue: 0.12, ...OPACITY_RANGE },
+      { key: "--ai-style-card-bg", label: "Фон карточки", type: "color", defaultValue: "#0a0a12" },
+      { key: "--ai-style-card-selected-border-width", label: "Выбрана — толщина рамки", defaultValue: 3, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-style-card-selected-border-color", label: "Выбрана — цвет рамки", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-card-selected-glow-size", label: "Выбрана — свечение размер", defaultValue: 24, ...GLOW_SIZE_RANGE },
+      { key: "--ai-style-card-selected-glow-spread", label: "Выбрана — свечение spread", defaultValue: 0, ...GLOW_SPREAD_RANGE },
+      { key: "--ai-style-card-selected-glow-color", label: "Выбрана — свечение цвет", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-card-selected-glow-opacity", label: "Выбрана — свечение прозрачность", defaultValue: 0.55, ...OPACITY_RANGE },
+      { key: "--ai-style-card-active-scale", label: "Сжатие при нажатии", defaultValue: 0.98, ...SCALE_RANGE },
+      { key: "--ai-style-card-title-size", label: "Заголовок — размер", defaultValue: 22, ...FONT_RANGE },
+      { key: "--ai-style-card-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-card-title-padding-x", label: "Заголовок — отступ X", defaultValue: 12, ...PADDING_RANGE },
+      { key: "--ai-style-card-title-padding-top", label: "Заголовок — отступ сверху", defaultValue: 12, ...PADDING_RANGE },
+      { key: "--ai-style-card-title-padding-bottom", label: "Заголовок — отступ снизу", defaultValue: 8, ...PADDING_RANGE },
+      { key: "--ai-style-card-preview-min-height", label: "Превью — мин. высота", defaultValue: 200, ...CARD_HEIGHT_RANGE },
+      { key: "--ai-style-card-desc-size", label: "Описание — размер", defaultValue: 16, ...FONT_RANGE },
+      { key: "--ai-style-card-desc-color", label: "Описание — цвет", type: "color", defaultValue: "#a7b0d0" },
+      { key: "--ai-style-card-desc-padding-x", label: "Описание — отступ X", defaultValue: 12, ...PADDING_RANGE },
+      { key: "--ai-style-card-desc-padding-y", label: "Описание — отступ Y", defaultValue: 14, ...PADDING_RANGE },
+    ],
+  },
+  {
+    title: "Стиль — кнопки",
+    tokens: [
+      { key: "--ai-style-footer-max-width", label: "Ширина блока кнопок", defaultValue: 960, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-style-footer-gap", label: "Зазор между кнопками", defaultValue: 16, ...GAP_RANGE },
+      { key: "--ai-style-back-btn-flex", label: "«Назад» — доля ширины", defaultValue: 1, min: 0.5, max: 3, step: 0.1, type: "range" },
+      { key: "--ai-style-stylize-btn-flex", label: "«Стилизовать» — доля ширины", defaultValue: 2, min: 0.5, max: 4, step: 0.1, type: "range" },
+      { key: "--ai-style-back-btn-radius", label: "«Назад» — скругление", defaultValue: 999, ...RADIUS_RANGE },
+      { key: "--ai-style-back-btn-padding-y", label: "«Назад» — отступ Y", defaultValue: 18, ...PADDING_RANGE },
+      { key: "--ai-style-back-btn-padding-x", label: "«Назад» — отступ X", defaultValue: 24, ...PADDING_RANGE },
+      { key: "--ai-style-back-btn-font-size", label: "«Назад» — размер", defaultValue: 20, ...FONT_RANGE },
+      { key: "--ai-style-back-btn-bg", label: "«Назад» — фон", type: "color", defaultValue: "#1a1f35" },
+      { key: "--ai-style-back-btn-color", label: "«Назад» — текст", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-stylize-btn-radius", label: "«Стилизовать» — скругление", defaultValue: 999, ...RADIUS_RANGE },
+      { key: "--ai-style-stylize-btn-padding-y", label: "«Стилизовать» — отступ Y", defaultValue: 18, ...PADDING_RANGE },
+      { key: "--ai-style-stylize-btn-padding-x", label: "«Стилизовать» — отступ X", defaultValue: 24, ...PADDING_RANGE },
+      { key: "--ai-style-stylize-btn-font-size", label: "«Стилизовать» — размер", defaultValue: 22, ...FONT_RANGE },
+      { key: "--ai-style-stylize-btn-bg", label: "«Стилизовать» — фон", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-stylize-btn-color", label: "«Стилизовать» — текст", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-style-stylize-btn-glow-size", label: "«Стилизовать» — свечение", defaultValue: 20, ...GLOW_SIZE_RANGE },
+      { key: "--ai-style-stylize-btn-glow-spread", label: "«Стилизовать» — spread", defaultValue: 0, ...GLOW_SPREAD_RANGE },
+      { key: "--ai-style-stylize-btn-glow-color", label: "«Стилизовать» — цвет свечения", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-style-stylize-btn-glow-opacity", label: "«Стилизовать» — прозрачность свечения", defaultValue: 0.45, ...OPACITY_RANGE },
+      { key: "--ai-style-stylize-btn-disabled-opacity", label: "«Стилизовать» — прозрачность disabled", defaultValue: 0.4, ...OPACITY_RANGE },
+    ],
+  },
+  {
+    title: "Стиль — сообщение об ошибке",
+    tokens: [
+      { key: "--ai-style-error-size", label: "Текст — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-style-error-color", label: "Текст — цвет", type: "color", defaultValue: "#fca5a5" },
+      { key: "--ai-style-error-radius", label: "Скругление", defaultValue: 16, ...RADIUS_RANGE },
+      { key: "--ai-style-error-padding-x", label: "Отступ X", defaultValue: 16, ...PADDING_RANGE },
+      { key: "--ai-style-error-padding-y", label: "Отступ Y", defaultValue: 12, ...PADDING_RANGE },
+      { key: "--ai-style-error-border-color", label: "Рамка — цвет", type: "color", defaultValue: "#f87171" },
+      { key: "--ai-style-error-border-opacity", label: "Рамка — прозрачность", defaultValue: 0.3, ...OPACITY_RANGE },
+      { key: "--ai-style-error-bg-color", label: "Фон — цвет", type: "color", defaultValue: "#f87171" },
+      { key: "--ai-style-error-bg-opacity", label: "Фон — прозрачность", defaultValue: 0.1, ...OPACITY_RANGE },
+    ],
+  },
+  {
+    title: "Результат — экран",
+    tokens: [
+      { key: "--ai-result-screen-padding-x", label: "Отступы по бокам", defaultValue: 40, ...PADDING_RANGE },
+      { key: "--ai-result-screen-padding-top", label: "Отступ сверху", defaultValue: 8, ...PADDING_RANGE },
+      { key: "--ai-result-screen-padding-bottom", label: "Отступ снизу", defaultValue: 32, ...PADDING_RANGE },
+      { key: "--ai-result-screen-gap", label: "Зазор между блоками", defaultValue: 28, ...GAP_RANGE },
+      { key: "--ai-result-content-max-width", label: "Ширина контента", defaultValue: 520, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-result-content-gap", label: "Зазор внутри контента", defaultValue: 16, ...GAP_RANGE },
+    ],
+  },
+  {
+    title: "Результат — заголовок",
+    tokens: [
+      { key: "--ai-result-header-title-size", label: "Заголовок — размер", defaultValue: 38, ...FONT_RANGE },
+      { key: "--ai-result-header-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-header-subtitle-size", label: "Подзаголовок — размер", defaultValue: 24, ...FONT_RANGE },
+      { key: "--ai-result-header-subtitle-color", label: "Подзаголовок — цвет", type: "color", defaultValue: "#a7b0d0" },
+      {
+        key: "--ai-result-header-subtitle-margin-top",
+        label: "Подзаголовок — отступ сверху",
+        defaultValue: 8,
+        ...GAP_RANGE,
+      },
+    ],
+  },
+  {
+    title: "Результат — индикатор шагов",
+    tokens: AI_STEPS_TOKENS,
+  },
+  {
+    title: "Результат — превью",
+    tokens: [
+      { key: "--ai-result-preview-width", label: "Ширина блока", defaultValue: 520, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-result-preview-height", label: "Высота", defaultValue: 420, ...CARD_HEIGHT_RANGE },
+      { key: "--ai-result-preview-radius", label: "Скругление", defaultValue: 24, ...RADIUS_RANGE },
+      { key: "--ai-result-preview-bg", label: "Фон", type: "color", defaultValue: "#0a0a12" },
+      { key: "--ai-result-preview-border-width", label: "Рамка — толщина", defaultValue: 0, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-result-preview-border-color", label: "Рамка — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-preview-border-opacity", label: "Рамка — прозрачность", defaultValue: 0.12, ...OPACITY_RANGE },
+    ],
+  },
+  {
+    title: "Результат — переключатель До/После",
+    tokens: [
+      { key: "--ai-result-toggle-radius", label: "Скругление", defaultValue: 999, ...RADIUS_RANGE },
+      { key: "--ai-result-toggle-border-width", label: "Рамка — толщина", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-result-toggle-border-color", label: "Рамка — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-toggle-border-opacity", label: "Рамка — прозрачность", defaultValue: 0.15, ...OPACITY_RANGE },
+      { key: "--ai-result-toggle-padding-x", label: "Отступ X", defaultValue: 24, ...PADDING_RANGE },
+      { key: "--ai-result-toggle-padding-y", label: "Отступ Y", defaultValue: 10, ...PADDING_RANGE },
+      { key: "--ai-result-toggle-font-size", label: "Текст — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-result-toggle-inactive-color", label: "Неактивный — цвет", type: "color", defaultValue: "#a7b0d0" },
+      { key: "--ai-result-toggle-inactive-bg-color", label: "Неактивный — фон", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-toggle-inactive-bg-opacity", label: "Неактивный — прозрачность фона", defaultValue: 0, ...OPACITY_RANGE },
+      { key: "--ai-result-toggle-active-bg", label: "Активный — фон", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-result-toggle-active-color", label: "Активный — текст", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-toggle-active-bg-opacity", label: "Активный — прозрачность фона", defaultValue: 1, ...OPACITY_RANGE },
+    ],
+  },
+  {
+    title: "Результат — карточка статуса",
+    tokens: [
+      { key: "--ai-result-status-width", label: "Ширина блока", defaultValue: 520, ...BLOCK_WIDTH_RANGE },
+      {
+        key: "--ai-result-status-height",
+        label: "Высота блока",
+        defaultValue: 72,
+        min: 48,
+        max: 900,
+        step: 1,
+        type: "range",
+        unit: "px",
+      },
+      { key: "--ai-result-status-radius", label: "Скругление", defaultValue: 16, ...RADIUS_RANGE },
+      { key: "--ai-result-status-border-width", label: "Рамка — толщина", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-result-status-border-color", label: "Рамка — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-status-border-opacity", label: "Рамка — прозрачность", defaultValue: 0.1, ...OPACITY_RANGE },
+      { key: "--ai-result-status-bg", label: "Фон", type: "color", defaultValue: "#0a0a12" },
+      { key: "--ai-result-status-padding-x", label: "Отступ X", defaultValue: 16, ...PADDING_RANGE },
+      { key: "--ai-result-status-padding-y", label: "Отступ Y", defaultValue: 12, ...PADDING_RANGE },
+      { key: "--ai-result-status-gap", label: "Зазор элементов", defaultValue: 12, ...GAP_RANGE },
+      { key: "--ai-result-status-thumb-size", label: "Миниатюра — размер", defaultValue: 48, ...SIZE_RANGE },
+      { key: "--ai-result-status-thumb-radius", label: "Миниатюра — скругление", defaultValue: 12, ...RADIUS_RANGE },
+      { key: "--ai-result-status-thumb-checker-a", label: "Шахматка — светлая", type: "color", defaultValue: "#3a3a48" },
+      { key: "--ai-result-status-thumb-checker-b", label: "Шахматка — тёмная", type: "color", defaultValue: "#2a2a34" },
+      { key: "--ai-result-status-thumb-checker-size", label: "Шахматка — размер", defaultValue: 8, min: 4, max: 24, step: 1, type: "range", unit: "px" },
+      { key: "--ai-result-status-title-size", label: "Заголовок — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-result-status-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-status-subtitle-size", label: "Подпись — размер", defaultValue: 14, ...FONT_RANGE },
+      { key: "--ai-result-status-subtitle-color", label: "Подпись — цвет", type: "color", defaultValue: "#a7b0d0" },
+      { key: "--ai-result-status-check-size", label: "Галочка — размер", defaultValue: 20, ...SIZE_RANGE },
+      { key: "--ai-result-status-check-color", label: "Галочка — цвет", type: "color", defaultValue: "#34d399" },
+    ],
+  },
+  {
+    title: "Результат — кнопки",
+    tokens: [
+      { key: "--ai-result-actions-max-width", label: "Ширина блока", defaultValue: 520, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-result-actions-gap", label: "Зазор между кнопками", defaultValue: 12, ...GAP_RANGE },
+      { key: "--ai-result-primary-btn-radius", label: "Основная — скругление", defaultValue: 999, ...RADIUS_RANGE },
+      { key: "--ai-result-primary-btn-padding-y", label: "Основная — отступ Y", defaultValue: 18, ...PADDING_RANGE },
+      { key: "--ai-result-primary-btn-padding-x", label: "Основная — отступ X", defaultValue: 24, ...PADDING_RANGE },
+      { key: "--ai-result-primary-btn-font-size", label: "Основная — размер", defaultValue: 20, ...FONT_RANGE },
+      { key: "--ai-result-primary-btn-bg", label: "Основная — фон", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-result-primary-btn-color", label: "Основная — текст", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-primary-btn-glow-size", label: "Основная — свечение", defaultValue: 20, ...GLOW_SIZE_RANGE },
+      { key: "--ai-result-primary-btn-glow-spread", label: "Основная — spread", defaultValue: 0, ...GLOW_SPREAD_RANGE },
+      { key: "--ai-result-primary-btn-glow-color", label: "Основная — цвет свечения", type: "color", defaultValue: "#ff2d95" },
+      { key: "--ai-result-primary-btn-glow-opacity", label: "Основная — прозрачность свечения", defaultValue: 0.45, ...OPACITY_RANGE },
+      { key: "--ai-result-primary-btn-active-scale", label: "Основная — сжатие при нажатии", defaultValue: 0.98, ...SCALE_RANGE },
+      { key: "--ai-result-secondary-btn-radius", label: "Вторичная — скругление", defaultValue: 999, ...RADIUS_RANGE },
+      { key: "--ai-result-secondary-btn-padding-y", label: "Вторичная — отступ Y", defaultValue: 18, ...PADDING_RANGE },
+      { key: "--ai-result-secondary-btn-padding-x", label: "Вторичная — отступ X", defaultValue: 24, ...PADDING_RANGE },
+      { key: "--ai-result-secondary-btn-font-size", label: "Вторичная — размер", defaultValue: 18, ...FONT_RANGE },
+      { key: "--ai-result-secondary-btn-bg", label: "Вторичная — фон", type: "color", defaultValue: "#0a0a12" },
+      { key: "--ai-result-secondary-btn-color", label: "Вторичная — текст", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-secondary-btn-border-width", label: "Вторичная — рамка толщина", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-result-secondary-btn-border-color", label: "Вторичная — рамка цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-secondary-btn-border-opacity", label: "Вторичная — рамка прозрачность", defaultValue: 0.15, ...OPACITY_RANGE },
+      { key: "--ai-result-secondary-btn-active-scale", label: "Вторичная — сжатие при нажатии", defaultValue: 0.98, ...SCALE_RANGE },
+    ],
+  },
+  {
+    title: "Результат — инфо-бар",
+    tokens: [
+      { key: "--ai-result-info-gap", label: "Зазор иконка/текст", defaultValue: 10, ...GAP_RANGE },
+      { key: "--ai-result-info-max-width", label: "Ширина", defaultValue: 520, ...BLOCK_WIDTH_RANGE },
+      { key: "--ai-result-info-font-size", label: "Текст — размер", defaultValue: 14, ...FONT_RANGE },
+      { key: "--ai-result-info-text-color", label: "Текст — цвет", type: "color", defaultValue: "#8b8fa3" },
+      { key: "--ai-result-info-icon-size", label: "Иконка «i» — размер", defaultValue: 18, ...SIZE_RANGE },
+      { key: "--ai-result-info-icon-font-size", label: "Иконка «i» — шрифт", defaultValue: 10, ...FONT_RANGE },
+      { key: "--ai-result-info-icon-border-width", label: "Иконка — обводка толщина", defaultValue: 1, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-result-info-icon-border-color", label: "Иконка — обводка цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-info-icon-border-opacity", label: "Иконка — обводка прозрачность", defaultValue: 0.35, ...OPACITY_RANGE },
+      { key: "--ai-result-info-icon-color", label: "Иконка — цвет", type: "color", defaultValue: "#ffffff" },
+      { key: "--ai-result-info-icon-color-opacity", label: "Иконка — прозрачность", defaultValue: 0.75, ...OPACITY_RANGE },
+    ],
+  },
 ];
 
-const ALL_TOKENS: Token[] = SECTIONS.flatMap((section) => section.tokens);
+function isSectionVisible(title: string, step: AiFlowStep): boolean {
+  if (title.startsWith("QR —")) return step === "qr";
+  if (title.startsWith("Стиль —")) return step === "style";
+  if (title.startsWith("Результат —")) return step === "result" || step === "processing";
+  if (
+    title === "Заголовок экрана" ||
+    title === "Сетка карточек" ||
+    title.startsWith("Карточка «") ||
+    title === "Иконки карточек" ||
+    title === "Бейдж AI" ||
+    title === "Инфо-бар"
+  ) {
+    return step === "source";
+  }
+  return true;
+}
+
+const ALL_TOKENS: Token[] = Array.from(
+  new Map(SECTIONS.flatMap((section) => section.tokens).map((token) => [token.key, token])).values(),
+);
 const TOKEN_BY_KEY = new Map(ALL_TOKENS.map((token) => [token.key, token]));
-const STORAGE_KEY = "kiosk-ai-source-theme-overrides-v1";
+const STORAGE_KEY = "kiosk-ai-theme-overrides-v3";
 const SCOPE_SELECTOR = ".ai-theme-root";
 
 function normalizeValue(token: Token, value: string): string {
@@ -391,7 +1016,9 @@ function getBaselineValues(): Record<string, string> {
 
 function loadStoredValues(): Record<string, string> {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw =
+      window.localStorage.getItem(STORAGE_KEY) ??
+      window.localStorage.getItem("kiosk-ai-source-theme-overrides-v1");
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, string>;
     const normalized: Record<string, string> = {};
@@ -426,7 +1053,7 @@ function clearToken(key: string) {
 }
 
 /**
- * Floating design panel for `/kiosk/ai` step "source" (ИИ-стиль — выбор фото).
+ * Floating design panel for `/kiosk/ai` steps "source", "qr", "style", "processing" and "result".
  */
 export function AiThemePanel() {
   const location = useLocation();
@@ -439,7 +1066,9 @@ export function AiThemePanel() {
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  const isAiSourceScreen = location.pathname === "/kiosk/ai" && step === "source";
+  const isAiThemedScreen =
+    location.pathname === "/kiosk/ai" &&
+    (step === "source" || step === "qr" || step === "style" || step === "processing" || step === "result");
 
   useEffect(() => {
     function applyAll() {
@@ -460,7 +1089,7 @@ export function AiThemePanel() {
     }
   }, [open, values]);
 
-  if (!isAiSourceScreen) return null;
+  if (!isAiThemedScreen) return null;
 
   function persist(next: Record<string, string>) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -491,6 +1120,7 @@ export function AiThemePanel() {
       persist(next);
       return next;
     });
+    applyValue(token.key, defaultValue);
   }
 
   async function handleSaveDefaults() {
@@ -614,7 +1244,7 @@ export function AiThemePanel() {
             </button>
           </div>
 
-          {SECTIONS.map((section) => (
+          {SECTIONS.filter((section) => isSectionVisible(section.title, step)).map((section) => (
             <div key={section.title} className="flex flex-col gap-5">
               <span className="text-base font-bold uppercase tracking-wider text-white/50">{section.title}</span>
               {section.tokens.map((token) => renderToken(token))}

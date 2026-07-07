@@ -27,4 +27,12 @@ export const env = {
   // anonymous API docs/PLAN.md originally assumed. Optional/fail-open: unset
   // means `POST /ai/stylize` just answers 503 (see modules/ai/pollinations.ts).
   POLLINATIONS_API_TOKEN: process.env.POLLINATIONS_API_TOKEN,
+  // ИИ-раздел (Этап 9), `uploadMode: "wifi"` — overrides the QR upload URL's
+  // host:port (see `modules/ai/routes.ts`). Needed because the kiosk
+  // frontend always talks to point-server over a fixed `localhost:PORT`
+  // (see `POINT_SERVER_URL` in the kiosk app), so `request.headers.host`
+  // is *always* "localhost" regardless of what LAN IP a phone would need —
+  // unset means the QR falls back to that (broken-for-a-phone) default.
+  // Set to this point's real LAN IP, e.g. `192.168.1.13:4000` (see `ipconfig`/`ip addr`).
+  PUBLIC_LAN_HOST: process.env.PUBLIC_LAN_HOST,
 };

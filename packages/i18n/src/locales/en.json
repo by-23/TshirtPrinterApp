@@ -213,6 +213,7 @@
       "title": "Choose a style",
       "subtitle": "We'll apply AI stylization to your photo",
       "photoLoaded": "Photo loaded",
+      "removeBackground": "Remove background",
       "stylize": "Stylize",
       "loadError": "Couldn't load the style list."
     },
@@ -227,13 +228,15 @@
     "result": {
       "title": "Your design is ready",
       "subtitle": "The background was removed automatically — ready to print",
+      "subtitleNoBg": "Stylization is ready — you can print right away",
+      "styleLine": "AI style • {{style}}",
       "before": "Before",
       "after": "After",
-      "bgRemovedTitle": "Background removed automatically",
-      "bgRemovedSubtitle": "Ready to print on a t-shirt",
+      "bgRemovedTitle": "Background removed",
+      "bgRemovedSubtitle": "Background cut out automatically",
       "editOnShirt": "Edit on a t-shirt",
       "pickAnotherStyle": "Pick another style",
-      "infoBar": "The result is saved in the editor — you can add text or resize it"
+      "infoBar": "The image will be placed in the print area. You can resize it in the editor."
     }
   }
 }

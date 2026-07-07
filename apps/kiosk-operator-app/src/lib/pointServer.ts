@@ -4,6 +4,9 @@ import {
   ORDER_EVENT_CHANNEL,
   type AiPhotoReceivedPayload,
   type AiStyle,
+  type AiStyleAdmin,
+  type CreateAiStyleInput,
+  type UpdateAiStyleInput,
   type CatalogCacheUsage,
   type CatalogScrapeConfig,
   type CatalogScrapeStatus,
@@ -454,4 +457,54 @@ export function subscribeAiPhotoReceived(callback: (payload: AiPhotoReceivedPayl
   return () => {
     socket.off(AI_PHOTO_RECEIVED_EVENT, handler);
   };
+}
+
+// --- "ИИ-стили" operator panel — CRUD over the ai_styles catalog (hybrid Pollinations + local stylization) ---
+
+export async function fetchAiStylesAdmin(): Promise<AiStyleAdmin[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/styles/admin`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI styles (admin): ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function createAiStyle(input: CreateAiStyleInput): Promise<AiStyleAdmin> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/styles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    throw new Error(typeof body?.error === "string" ? body.error : `Failed to create AI style: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateAiStyle(id: number, input: UpdateAiStyleInput): Promise<AiStyleAdmin> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/styles/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update AI style ${id}: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteAiStyle(id: number): Promise<void> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/styles/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(`Failed to delete AI style ${id}: ${res.status}`);
+  }
+}
+
+export async function regenerateAiStylePreview(id: number): Promise<void> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/styles/${id}/regenerate-preview`, { method: "POST" });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Failed to regenerate AI style preview: ${res.status}`);
+  }
 }

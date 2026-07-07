@@ -10,11 +10,12 @@ import {
   Palette,
   Printer,
   Settings,
+  Sparkles,
   Users,
 } from "../../components/icons.js";
 import { OperatorOnlineStatus } from "./OperatorOnlineStatus.js";
 
-export type OperatorView = "orders" | "inProgress" | "history" | "designs";
+export type OperatorView = "orders" | "inProgress" | "history" | "designs" | "aiStyles";
 
 interface NavItem {
   id: OperatorView | "clients" | "printer" | "printSettings" | "materials" | "schedule" | "notifications" | "support";
@@ -28,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "inProgress", label: "В работе", icon: Clock, view: "inProgress" },
   { id: "history", label: "История", icon: History, view: "history" },
   { id: "designs", label: "Дизайны", icon: Palette, view: "designs" },
+  { id: "aiStyles", label: "ИИ-стили", icon: Sparkles, view: "aiStyles" },
   { id: "clients", label: "Клиенты", icon: Users },
   { id: "printer", label: "Принтер", icon: Printer },
   { id: "printSettings", label: "Настройки печати", icon: Settings },

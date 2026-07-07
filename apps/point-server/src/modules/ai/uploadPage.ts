@@ -73,7 +73,7 @@ export function renderUploadPage(token: string): string {
   <img id="preview" alt="" />
   <label id="picker">
     <span>📷 Выбрать фото</span>
-    <input id="file" type="file" accept="image/*" capture="environment" />
+    <input id="file" type="file" accept="image/*" />
   </label>
   <button id="submit" disabled>Отправить на киоск</button>
   <div id="status"></div>
@@ -102,11 +102,26 @@ export function renderUploadPage(token: string): string {
       formData.append("photo", chosenFile);
       fetch("/ai/upload/" + token + "/photo", { method: "POST", body: formData })
         .then(function (res) {
-          if (!res.ok) throw new Error("upload failed");
-          statusEl.textContent = "Готово! Смотрите на экран киоска.";
+          if (res.ok) {
+            statusEl.textContent = "Готово! Смотрите на экран киоска.";
+            return;
+          }
+          // Read the server's error body (if any) so the real failure reason
+          // (e.g. unsupported format) is visible right on the phone screen
+          // instead of a generic message — makes remote debugging possible.
+          return res
+            .json()
+            .catch(function () {
+              return null;
+            })
+            .then(function (body) {
+              var detail = body && (body.message || body.error);
+              throw new Error(detail ? detail + " (HTTP " + res.status + ")" : "HTTP " + res.status);
+            });
         })
-        .catch(function () {
-          statusEl.textContent = "Не удалось загрузить фото. Попробуйте ещё раз.";
+        .catch(function (err) {
+          var detail = err && err.message ? err.message : "неизвестная сетевая ошибка";
+          statusEl.textContent = "Не удалось загрузить фото: " + detail;
           submitBtn.disabled = false;
         });
     });

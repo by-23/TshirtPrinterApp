@@ -85,6 +85,13 @@
       "when": 1783400248706,
       "tag": "0011_harsh_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1783456148253,
+      "tag": "0012_far_secret_warriors",
+      "breakpoints": true
     }
   ]
 }

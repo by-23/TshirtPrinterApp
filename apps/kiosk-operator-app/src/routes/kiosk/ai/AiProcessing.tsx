@@ -17,6 +17,7 @@ export function AiProcessing() {
   const { t } = useTranslation();
   const sourcePhoto = useAiFlowStore((state) => state.sourcePhoto);
   const selectedStyleKey = useAiFlowStore((state) => state.selectedStyleKey);
+  const removeBackground = useAiFlowStore((state) => state.removeBackground);
   const processingStage = useAiFlowStore((state) => state.processingStage);
   const error = useAiFlowStore((state) => state.error);
   const setStep = useAiFlowStore((state) => state.setStep);
@@ -40,10 +41,14 @@ export function AiProcessing() {
       const { imageBase64: stylized } = await stylizeAiPhoto(sourcePhoto, selectedStyleKey);
       if (cancelled) return;
       setStylizedImage(stylized);
-      setProcessingStage("removingBackground");
-      const finalImage = await removeImageBackground(stylized);
-      if (cancelled) return;
-      setFinalImage(finalImage);
+      if (removeBackground) {
+        setProcessingStage("removingBackground");
+        const finalImage = await removeImageBackground(stylized);
+        if (cancelled) return;
+        setFinalImage(finalImage);
+      } else {
+        setFinalImage(stylized);
+      }
       setStep("result");
     })().catch((err: unknown) => {
       if (cancelled) return;

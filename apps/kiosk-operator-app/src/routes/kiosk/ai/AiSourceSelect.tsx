@@ -56,13 +56,6 @@ export function AiSourceSelect() {
           <span className="ai-source-card-subtitle">{t("ai.source.phoneSubtitle")}</span>
         </button>
       </div>
-
-      <div className="ai-source-info-bar">
-        <span className="ai-source-info-icon" aria-hidden>
-          i
-        </span>
-        <span>{t("ai.source.infoBar")}</span>
-      </div>
     </div>
   );
 }

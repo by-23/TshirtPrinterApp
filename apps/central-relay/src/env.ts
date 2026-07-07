@@ -1,3 +1,16 @@
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Load `apps/central-relay/.env` when present (local dev/on-prem central-relay
+// hosts) — mirrors `apps/point-server/src/env.ts`. Production PaaS hosting
+// (Railway/Render/etc., see docs/PLAN.md "Допущения") should keep injecting
+// env vars via the platform instead.
+const envFile = resolve(dirname(fileURLToPath(import.meta.url)), "../.env");
+if (existsSync(envFile) && typeof process.loadEnvFile === "function") {
+  process.loadEnvFile(envFile);
+}
+
 export const env = {
   PORT: Number(process.env.PORT ?? 4100),
   DATABASE_URL:

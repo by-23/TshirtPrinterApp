@@ -5,6 +5,9 @@ import { drainSyncQueue } from "./modules/sync/queue.js";
 import { ensureAllCategoriesStocked, startCacheFiller } from "./modules/catalog-scraper/job.js";
 import { ensurePortAvailable } from "./lib/ensurePort.js";
 import { env } from "./env.js";
+import { ensureAiModelsDownloaded } from "./modules/ai/local/downloadModels.js";
+import { ensureStylePreviews } from "./modules/ai/local/previewCache.js";
+import { getAllStylesForPreviewRender } from "./modules/ai/styles.js";
 
 /** Safety-net interval for `sync_queue` retries — connect/order-create already nudge a drain, this just catches anything left behind after a failed attempt. */
 const SYNC_QUEUE_DRAIN_INTERVAL_MS = 30_000;
@@ -80,6 +83,15 @@ app
     // по ГБ". Independent of the eager fill above: this one paces itself
     // indefinitely instead of stopping at the gallery's minimum stock.
     startCacheFiller(app.log);
+    // Hybrid AI stylization (Pollinations + local fallback) — downloads any
+    // missing .onnx weights, then pre-renders every style's preview
+    // thumbnail from the local engine, so the "Выберите стиль" screen never
+    // depends on internet just to show its cards. Both are best-effort and
+    // never block kiosk/operator traffic — see modules/ai/local/.
+    void ensureAiModelsDownloaded(app.log).then(async () => {
+      const styles = await getAllStylesForPreviewRender();
+      await ensureStylePreviews(styles, app.log);
+    });
   })
   .catch((err) => {
     app.log.error(err);

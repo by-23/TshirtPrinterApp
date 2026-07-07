@@ -1,8 +1,13 @@
 import { env } from "../../env.js";
 
 const POLLINATIONS_EDIT_URL = "https://gen.pollinations.ai/v1/images/edits";
-/** Style transfer can genuinely take tens of seconds — generous but bounded, so a hung request doesn't wedge the kiosk forever. */
-const REQUEST_TIMEOUT_MS = 45_000;
+/**
+ * Bounded so a point with no internet fails fast into the local-engine
+ * fallback (see `routes.ts`) instead of making the customer wait the better
+ * part of a minute first. Still generous enough for a normal (if slow)
+ * mobile-hotspot-class connection to complete a real style-transfer call.
+ */
+const REQUEST_TIMEOUT_MS = 12_000;
 
 function decodeDataUrl(dataUrl: string): { buffer: Buffer; mimeType: string } {
   const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);

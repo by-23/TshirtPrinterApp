@@ -9,6 +9,7 @@ import { OrderList } from "./OrderList.js";
 import { OrderDetails } from "./OrderDetails.js";
 import { PrinterPanel } from "./PrinterPanel.js";
 import { DesignsPanel } from "./DesignsPanel.js";
+import { AiStylesPanel } from "./AiStylesPanel.js";
 
 /**
  * `/operator` — realtime order feed for the printing point, strictly
@@ -114,6 +115,8 @@ export function OperatorHome() {
 
         {view === "designs" ? (
           <DesignsPanel />
+        ) : view === "aiStyles" ? (
+          <AiStylesPanel />
         ) : (
           <div className="flex min-h-0 flex-1 overflow-hidden">
             <OrderList

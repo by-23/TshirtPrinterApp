@@ -34,6 +34,8 @@ export function AiFlow() {
   const restartStyleSelection = useAiFlowStore((state) => state.restartStyleSelection);
   const reset = useAiFlowStore((state) => state.reset);
   const isSourceStep = step === "source";
+  const isThemedHeaderStep =
+    isSourceStep || step === "qr" || step === "style" || step === "processing" || step === "result";
 
   useEffect(() => {
     warmBackgroundRemoval();
@@ -55,17 +57,17 @@ export function AiFlow() {
 
   return (
     <div
-      className={`flex h-full w-full flex-col overflow-hidden text-white ${isSourceStep ? "ai-theme-root" : ""}`}
-      style={{ backgroundColor: isSourceStep ? "var(--ai-page-bg)" : "#000000" }}
+      className={`flex h-full w-full flex-col overflow-hidden text-white ${isThemedHeaderStep ? "ai-theme-root" : ""}`}
+      style={{ backgroundColor: isThemedHeaderStep ? "var(--ai-page-bg)" : "#000000" }}
     >
-      <header className={isSourceStep ? "ai-flow-header" : "relative flex flex-shrink-0 items-center justify-between px-5 py-4"}>
+      <header className={isThemedHeaderStep ? "ai-flow-header" : "relative flex flex-shrink-0 items-center justify-between px-5 py-4"}>
         <button
           type="button"
           onClick={handleBack}
           aria-label={t("common.back")}
-          className={isSourceStep ? "ai-flow-back-btn" : "ai-flow-back-btn flex items-center gap-2 px-3 py-2 text-white transition-colors hover:brightness-125"}
+          className={isThemedHeaderStep ? "ai-flow-back-btn" : "ai-flow-back-btn flex items-center gap-2 px-3 py-2 text-white transition-colors hover:brightness-125"}
           style={
-            isSourceStep
+            isThemedHeaderStep
               ? undefined
               : {
                   border: "1px solid rgba(255, 255, 255, 0.18)",
@@ -76,14 +78,14 @@ export function AiFlow() {
         >
           <ArrowLeft
             aria-hidden
-            className={isSourceStep ? "ai-flow-back-btn-icon" : "h-5 w-5 flex-shrink-0"}
+            className={isThemedHeaderStep ? "ai-flow-back-btn-icon" : "h-5 w-5 flex-shrink-0"}
             strokeWidth={2.6}
           />
           <span className="flex flex-col text-left leading-tight">
-            <span className={isSourceStep ? "ai-flow-back-btn-title" : "text-sm font-bold uppercase tracking-wide"}>
+            <span className={isThemedHeaderStep ? "ai-flow-back-btn-title" : "text-sm font-bold uppercase tracking-wide"}>
               {t("common.back")}
             </span>
-            <span className={isSourceStep ? "ai-flow-back-btn-subtitle" : "text-xs font-medium text-ink-300"}>
+            <span className={isThemedHeaderStep ? "ai-flow-back-btn-subtitle" : "text-xs font-medium text-ink-300"}>
               {t("ai.backHome")}
             </span>
           </span>

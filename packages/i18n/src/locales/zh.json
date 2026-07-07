@@ -213,6 +213,7 @@
       "title": "选择风格",
       "subtitle": "我们将对您的照片应用AI风格化",
       "photoLoaded": "照片已加载",
+      "removeBackground": "抠除背景",
       "stylize": "风格化",
       "loadError": "无法加载风格列表。"
     },
@@ -227,13 +228,15 @@
     "result": {
       "title": "您的设计已完成",
       "subtitle": "背景已自动移除——可以直接打印",
+      "subtitleNoBg": "风格化已完成——可以直接打印",
+      "styleLine": "AI风格 • {{style}}",
       "before": "之前",
       "after": "之后",
-      "bgRemovedTitle": "背景已自动移除",
-      "bgRemovedSubtitle": "可打印在T恤上",
+      "bgRemovedTitle": "背景已移除",
+      "bgRemovedSubtitle": "背景已自动抠图",
       "editOnShirt": "在T恤上编辑",
       "pickAnotherStyle": "选择其他风格",
-      "infoBar": "结果已保存到编辑器——您可以添加文字或调整大小"
+      "infoBar": "图片将放置在打印区域，可在编辑器中调整大小。"
     }
   }
 }

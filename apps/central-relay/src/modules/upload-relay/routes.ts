@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { getUploadSession, isSessionUsable, markSessionUploaded } from "./service.js";
 import { renderUploadPage } from "./uploadPage.js";
 import { emitPhotoReadyToPoint } from "../../realtime/socket.js";
+import { looksLikeHeic, convertHeicToJpeg } from "./heic.js";
 
 /** Longest side a phone photo is downscaled to before it's pushed over the socket to point-server as base64. */
 const MAX_PHOTO_DIMENSION_PX = 1600;
@@ -28,14 +29,26 @@ export async function uploadRelayRoutes(app: FastifyInstance) {
       return reply.status(410).send({ error: "Upload session expired or already used" });
     }
 
-    const file = await request.file();
-    if (!file) {
-      return reply.status(400).send({ error: "Missing photo" });
-    }
-
+    // `request.file()` itself can throw (malformed multipart, size limit,
+    // aborted upload, etc.) — kept inside the try/catch (unlike before) so
+    // every failure mode is logged and reported the same way, instead of
+    // some falling through to Fastify's generic unhandled-rejection 500.
     try {
+      const file = await request.file();
+      if (!file) {
+        return reply.status(400).send({ error: "Missing photo" });
+      }
+
       const rawBuffer = await file.toBuffer();
-      const resized = await sharp(rawBuffer)
+      app.log.info(
+        { filename: file.filename, mimetype: file.mimetype, bytes: rawBuffer.length },
+        "Received phone photo upload",
+      );
+
+      const sharpInput = looksLikeHeic(rawBuffer, file.filename, file.mimetype)
+        ? await convertHeicToJpeg(rawBuffer)
+        : rawBuffer;
+      const resized = await sharp(sharpInput)
         .rotate()
         .resize(MAX_PHOTO_DIMENSION_PX, MAX_PHOTO_DIMENSION_PX, { fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 85 })
@@ -48,7 +61,10 @@ export async function uploadRelayRoutes(app: FastifyInstance) {
       return reply.send({ ok: true });
     } catch (err) {
       app.log.error(err, "Failed to process uploaded photo");
-      return reply.status(500).send({ error: "Failed to process photo" });
+      // Surfaced verbatim on the phone's upload page (see `uploadPage.ts`)
+      // so failures can be diagnosed from the field without server log access.
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(500).send({ error: "Failed to process photo", message });
     }
   });
 }
