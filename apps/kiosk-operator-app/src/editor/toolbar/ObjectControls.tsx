@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { Canvas } from "fabric";
 import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "../mockup/garmentShape.js";
 import { useEditorStore } from "../store.js";
+import { recordHistoryEntry } from "../history.js";
 
 export interface ObjectControlsProps {
   canvas: Canvas | null;
@@ -79,14 +80,20 @@ export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
     active.setCoords();
     canvas.requestRenderAll();
     setPosition(readPanelPosition(canvas, printArea));
+    recordHistoryEntry(canvas);
   }
 
   function handleDelete() {
     if (!canvas) return;
-    const active = canvas.getActiveObject();
-    if (!active) return;
-    canvas.remove(active);
+    // `getActiveObject()` returns the temporary `ActiveSelection` wrapper when
+    // multiple objects are selected, and that wrapper never lives in the
+    // canvas's own object list — `canvas.remove(wrapper)` silently no-ops on
+    // it. `getActiveObjects()` unwraps it back to the real objects so a
+    // multi-selection actually gets deleted.
+    const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length === 0) return;
     canvas.discardActiveObject();
+    canvas.remove(...activeObjects);
     canvas.requestRenderAll();
     setPosition(null);
   }
@@ -104,6 +111,7 @@ export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
   return (
     <div
       className="pointer-events-none absolute z-10"
+      data-editor-selection-ui
       style={{
         left: position.left,
         top: position.top,

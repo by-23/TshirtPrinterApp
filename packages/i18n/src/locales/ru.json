@@ -68,13 +68,64 @@
       "uploadPhoto": "Загрузить",
       "filters": "Фильтры",
       "effects": "Эффекты",
-      "shapes": "Фигуры",
       "crop": "Обрезать",
       "undo": "Отменить",
       "redo": "Повторить",
       "flipHorizontal": "Отразить гориз.",
       "flipVertical": "Отразить верт.",
-      "delete": "Удалить"
+      "delete": "Удалить",
+      "moreColors": "Другие цвета",
+      "imagePicker": {
+        "title": "Выберите картинку",
+        "popular": "Популярное"
+      },
+      "uploadQr": {
+        "subtitle": "Отсканируйте QR-код камерой телефона",
+        "waiting": "Ожидание фото с телефона…",
+        "received": "Фото получено!"
+      },
+      "filtersList": {
+        "grayscale": "Ч/Б",
+        "sepia": "Сепия",
+        "invert": "Инверсия",
+        "brightness": "Яркость",
+        "contrast": "Контраст",
+        "saturation": "Насыщенность",
+        "blur": "Блюр",
+        "pixelate": "Пикселизация",
+        "off": "Выкл",
+        "reset": "Сбросить",
+        "selectImageHint": "Выберите картинку, чтобы применить фильтр"
+      },
+      "effectsList": {
+        "selectObjectHint": "Выберите текст или картинку, чтобы применить эффект",
+        "presetNeon": "Неон",
+        "presetVintage": "Винтаж",
+        "presetMetallic": "Металлик",
+        "shadow": "Тень",
+        "color": "Цвет",
+        "shadowBlur": "Размытие",
+        "shadowOffsetX": "Смещение X",
+        "shadowOffsetY": "Смещение Y",
+        "stroke": "Обводка",
+        "strokeWidth": "Толщина",
+        "strokeImageHint": "Для картинок обводка — цветной контур по силуэту",
+        "opacity": "Прозрачность",
+        "gradient": "Градиент текста",
+        "from": "От",
+        "to": "До",
+        "direction": {
+          "horizontal": "Гориз.",
+          "vertical": "Верт.",
+          "diagonal": "Диаг."
+        },
+        "reset": "Сбросить"
+      },
+      "stickersList": {
+        "searchPlaceholder": "Поиск стикеров",
+        "noApiKey": "Поиск стикеров недоступен — не настроен ключ Giphy API",
+        "trendingEmpty": "Не удалось загрузить популярные стикеры"
+      }
     },
     "controls": {
       "size": "Размер",
@@ -100,6 +151,7 @@
     "preview": "Предпросмотр",
     "fullscreen": "Полный экран",
     "exitPreview": "Выйти из предпросмотра",
+    "closeFullscreen": "Закрыть",
     "printError": "Не удалось создать заказ. Проверьте соединение с сервером точки."
   },
   "checkout": {

@@ -25,6 +25,7 @@ import {
   type PriceConfig,
   type PrintAreaConfig,
   type SetDesignIsolatedInput,
+  type StickerSearchResponse,
   type StylizeResponse,
   type UpdateCatalogScrapeConfigInput,
   type UpdatePrintAreaConfigInput,
@@ -534,4 +535,38 @@ export async function regenerateAiStylePreview(id: number): Promise<void> {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? `Failed to regenerate AI style preview: ${res.status}`);
   }
+}
+
+// --- Стикеры (editor "Стикеры" tool) — live Giphy Stickers search, proxied through point-server ---
+
+export async function searchStickers(query: string): Promise<StickerSearchResponse> {
+  const url = new URL(`${POINT_SERVER_URL}/stickers/search`);
+  url.searchParams.set("q", query);
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to search stickers: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchTrendingStickers(): Promise<StickerSearchResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/stickers/trending`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch trending stickers: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Downloads + caches the picked sticker as a PNG on the point, returning a stable `/files/...` URL for `addImageFromUrl`. */
+export async function selectSticker(giphyId: string, previewUrl: string): Promise<string> {
+  const res = await fetch(`${POINT_SERVER_URL}/stickers/select`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ giphyId, previewUrl }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to select sticker: ${res.status}`);
+  }
+  const body = (await res.json()) as { url: string };
+  return resolveDesignImageUrl(body.url);
 }

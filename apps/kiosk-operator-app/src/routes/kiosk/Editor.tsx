@@ -7,6 +7,10 @@ import { getPriceBreakdown } from "@tshirt/shared-pricing";
 import { createOrder, fetchDesign, markDesignUsed, resolveDesignImageUrl } from "../../lib/pointServer.js";
 import { initPricingConfig, usePricingConfigStore } from "../../lib/pricingConfigStore.js";
 import { initPrintAreaConfig, usePrintAreaStore } from "../../lib/printAreaStore.js";
+import {
+  deselectCanvasSelection,
+  shouldDeselectCanvasOnPointerDown,
+} from "../../editor/canvasSelectionStyle.js";
 import { useEditorStore } from "../../editor/store.js";
 import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
@@ -21,6 +25,7 @@ import { ObjectControls } from "../../editor/toolbar/ObjectControls.js";
 import { CanvasControlStrip } from "../../editor/toolbar/CanvasControlStrip.js";
 import { PopularElementsStrip } from "../../editor/toolbar/PopularElementsStrip.js";
 import { TipsBar } from "../../editor/toolbar/TipsBar.js";
+import { FullscreenPreview } from "../../editor/FullscreenPreview.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { ArrowLeft } from "../../components/icons.js";
 import { CATEGORY_LABEL_KEYS, getEditorBackRoute } from "../../lib/categoryLabels.js";
@@ -48,7 +53,9 @@ export function Editor() {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [printError, setPrintError] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
+  const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const printAreaRef = useRef<HTMLDivElement>(null);
   const appliedDesignIdRef = useRef<string | null>(null);
   const appliedAiImageRef = useRef<string | null>(null);
 
@@ -127,12 +134,9 @@ export function Editor() {
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const mockupPixelHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
 
-  function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      void containerRef.current?.requestFullscreen();
-    } else {
-      void document.exitFullscreen();
-    }
+  function handleEditorPointerDownCapture(event: React.PointerEvent) {
+    if (!shouldDeselectCanvasOnPointerDown(event.target, printAreaRef.current)) return;
+    deselectCanvasSelection(canvas);
   }
 
   async function handlePrint() {
@@ -197,6 +201,7 @@ export function Editor() {
   return (
     <div
       ref={containerRef}
+      onPointerDownCapture={handleEditorPointerDownCapture}
       className="editor-theme-root flex h-full w-full flex-col overflow-hidden px-4 py-8 text-white"
       style={{ backgroundColor: "var(--editor-page-bg)", gap: "var(--editor-page-section-gap)" }}
     >
@@ -251,11 +256,14 @@ export function Editor() {
           style={{ gap: "var(--editor-center-column-gap)" }}
         >
           <div className="flex flex-col lg:flex-row lg:items-start" style={{ gap: "var(--editor-main-columns-gap)" }}>
-            {!isPreview && (
-              <aside style={{ width: "var(--editor-rail-width)", flexShrink: 0 }}>
-                <ToolRail canvas={canvas} />
-              </aside>
-            )}
+            <aside
+              className={isPreview ? "editor-preview-dimmed" : undefined}
+              aria-hidden={isPreview}
+              data-editor-selection-ui
+              style={{ width: "var(--editor-rail-width)", flexShrink: 0 }}
+            >
+              <ToolRail canvas={canvas} />
+            </aside>
 
             <div className="flex min-w-0 flex-1 flex-col items-center" style={{ gap: "var(--editor-center-column-gap)" }}>
               <div
@@ -284,6 +292,7 @@ export function Editor() {
                     className="absolute inset-0 h-full w-full"
                   />
                   <div
+                    ref={printAreaRef}
                     className="absolute overflow-visible"
                     style={{
                       left: printArea.x * MOCKUP_DISPLAY_SCALE,
@@ -307,74 +316,84 @@ export function Editor() {
                 </div>
               </div>
 
-              {!isPreview && <CanvasControlStrip canvas={canvas} />}
+              <div className={isPreview ? "editor-preview-dimmed w-full" : "w-full"} aria-hidden={isPreview}>
+                <CanvasControlStrip canvas={canvas} />
+              </div>
             </div>
           </div>
         </div>
 
-        {!isPreview && (
-          <aside
-            className="flex w-full flex-shrink-0 flex-col lg:w-[var(--editor-right-panel-width)]"
-            style={{ gap: "var(--editor-right-panel-gap)" }}
-          >
-            <GarmentPicker />
+        <aside
+          className={`flex w-full flex-shrink-0 flex-col lg:w-[var(--editor-right-panel-width)] ${isPreview ? "editor-preview-dimmed" : ""}`}
+          aria-hidden={isPreview}
+          style={{ gap: "var(--editor-right-panel-gap)" }}
+        >
+          <GarmentPicker />
 
-            <div
-              className="flex flex-col overflow-hidden"
-              style={{ gap: "var(--editor-secondary-btn-gap)", ...blockBorderStyle("secondary-block") }}
+          <div
+            className="flex flex-col overflow-hidden"
+            style={{ gap: "var(--editor-secondary-btn-gap)", ...blockBorderStyle("secondary-block") }}
+          >
+            <button
+              type="button"
+              onClick={() => setIsPreview(true)}
+              className="flex w-full flex-shrink-0 items-center justify-center gap-1.5 px-3 font-semibold uppercase tracking-wide text-ink-200 transition-colors hover:brightness-125 hover:text-white"
+              style={{
+                height: "var(--editor-secondary-btn-height)",
+                borderRadius: "var(--editor-secondary-btn-radius)",
+                backgroundColor: "var(--editor-secondary-btn-bg)",
+                fontSize: "var(--editor-secondary-btn-font-size)",
+              }}
             >
-              <button
-                type="button"
-                onClick={() => setIsPreview(true)}
-                className="flex w-full flex-shrink-0 items-center justify-center gap-1.5 px-3 font-semibold uppercase tracking-wide text-ink-200 transition-colors hover:brightness-125 hover:text-white"
-                style={{
-                  height: "var(--editor-secondary-btn-height)",
-                  borderRadius: "var(--editor-secondary-btn-radius)",
-                  backgroundColor: "var(--editor-secondary-btn-bg)",
-                  fontSize: "var(--editor-secondary-btn-font-size)",
-                }}
-              >
-                <span aria-hidden style={{ fontSize: "var(--editor-secondary-btn-icon-size)" }}>
-                  👁
-                </span>
-                {t("editor.preview")}
-              </button>
-              <div aria-hidden style={dividerStyle("secondary")} />
-              <button
-                type="button"
-                onClick={toggleFullscreen}
-                className="flex w-full flex-shrink-0 items-center justify-center gap-1.5 px-3 font-semibold uppercase tracking-wide text-ink-200 transition-colors hover:brightness-125 hover:text-white"
-                style={{
-                  height: "var(--editor-secondary-btn-height)",
-                  borderRadius: "var(--editor-secondary-btn-radius)",
-                  backgroundColor: "var(--editor-secondary-btn-bg)",
-                  fontSize: "var(--editor-secondary-btn-font-size)",
-                }}
-              >
-                <span aria-hidden style={{ fontSize: "var(--editor-secondary-btn-icon-size)" }}>
-                  ⛶
-                </span>
-                {t("editor.fullscreen")}
-              </button>
-            </div>
+              <span aria-hidden style={{ fontSize: "var(--editor-secondary-btn-icon-size)" }}>
+                👁
+              </span>
+              {t("editor.preview")}
+            </button>
+            <div aria-hidden style={dividerStyle("secondary")} />
+            <button
+              type="button"
+              onClick={() => setIsFullscreenPreview(true)}
+              className="flex w-full flex-shrink-0 items-center justify-center gap-1.5 px-3 font-semibold uppercase tracking-wide text-ink-200 transition-colors hover:brightness-125 hover:text-white"
+              style={{
+                height: "var(--editor-secondary-btn-height)",
+                borderRadius: "var(--editor-secondary-btn-radius)",
+                backgroundColor: "var(--editor-secondary-btn-bg)",
+                fontSize: "var(--editor-secondary-btn-font-size)",
+              }}
+            >
+              <span aria-hidden style={{ fontSize: "var(--editor-secondary-btn-icon-size)" }}>
+                ⛶
+              </span>
+              {t("editor.fullscreen")}
+            </button>
+          </div>
 
-            <PriceAndPrint onPrint={() => void handlePrint()} isSubmitting={isCreatingOrder} />
-          </aside>
-        )}
-
-        {isPreview && (
-          <button
-            type="button"
-            onClick={() => setIsPreview(false)}
-            className="rounded-full bg-ink-800 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-ink-700"
-          >
-            ✕ {t("editor.exitPreview")}
-          </button>
-        )}
+          <PriceAndPrint onPrint={() => void handlePrint()} isSubmitting={isCreatingOrder} />
+        </aside>
       </div>
 
-      {!isPreview && <PopularElementsStrip canvas={canvas} />}
-      {!isPreview && <TipsBar />}
+      <div className={isPreview ? "editor-preview-dimmed" : undefined} aria-hidden={isPreview}>
+        <PopularElementsStrip canvas={canvas} />
+      </div>
+      <div className={isPreview ? "editor-preview-dimmed" : undefined} aria-hidden={isPreview}>
+        <TipsBar />
+      </div>
+
+      {isPreview && (
+        <button
+          type="button"
+          onClick={() => setIsPreview(false)}
+          aria-label={t("editor.exitPreview")}
+          className="fixed inset-0 z-50 cursor-pointer border-0 bg-transparent p-0"
+        >
+          <span className="pointer-events-none fixed bottom-8 right-8 rounded-full bg-ink-800 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-2xl">
+            ✕ {t("editor.exitPreview")}
+          </span>
+        </button>
+      )}
+
+      {isFullscreenPreview && <FullscreenPreview canvas={canvas} onClose={() => setIsFullscreenPreview(false)} />}
 
       {printError && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-ink-800 px-5 py-3 text-sm font-semibold text-white shadow-xl">

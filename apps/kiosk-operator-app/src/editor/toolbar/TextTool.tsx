@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { IText, type Canvas } from "fabric";
 import { TouchButton } from "@tshirt/ui-kit";
 import { FONTS, TEXT_COLORS } from "../types.js";
+import { ColorPickerPopover } from "./ColorPickerPopover.js";
+import { recordHistoryEntry } from "../history.js";
 
 export interface TextToolProps {
   canvas: Canvas | null;
@@ -19,6 +21,7 @@ export function TextTool({ canvas }: TextToolProps) {
     if (active && active instanceof IText) {
       active.set(props);
       canvas.requestRenderAll();
+      recordHistoryEntry(canvas);
     }
   }
 
@@ -49,17 +52,15 @@ export function TextTool({ canvas }: TextToolProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-200">
-        {t("editor.toolbar.text")}
-      </h4>
+    <div className="editor-tool-panel">
+      <h4 className="editor-tool-title">{t("editor.toolbar.text")}</h4>
       <TouchButton
         onClick={addText}
-        className="rounded-full bg-neon-pink px-4 py-2 text-sm font-semibold text-white shadow-neon-pink transition-transform hover:scale-105"
+        className="editor-tool-btn bg-neon-pink text-white shadow-neon-pink transition-transform hover:scale-105"
       >
         {t("editor.toolbar.addText")}
       </TouchButton>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-2">
         {FONTS.map((font) => (
           <button
             key={font.id}
@@ -67,7 +68,7 @@ export function TextTool({ canvas }: TextToolProps) {
             onClick={() => handleFontChange(font.family)}
             aria-pressed={fontFamily === font.family}
             style={{ fontFamily: font.family }}
-            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+            className={`editor-tool-font-chip transition-colors ${
               fontFamily === font.family
                 ? "bg-neon-pink text-white"
                 : "bg-ink-800 text-ink-200 hover:bg-ink-700 hover:text-white"
@@ -77,17 +78,18 @@ export function TextTool({ canvas }: TextToolProps) {
           </button>
         ))}
       </div>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap items-center gap-2">
         {TEXT_COLORS.map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => handleColorChange(option)}
             aria-pressed={color === option}
-            className={`h-7 w-7 rounded-full border-2 ${color === option ? "border-neon-pink" : "border-ink-600"}`}
+            className={`editor-tool-swatch rounded-full border-2 ${color === option ? "border-neon-pink" : "border-ink-600"}`}
             style={{ backgroundColor: option }}
           />
         ))}
+        <ColorPickerPopover color={color} onChange={handleColorChange} />
       </div>
     </div>
   );

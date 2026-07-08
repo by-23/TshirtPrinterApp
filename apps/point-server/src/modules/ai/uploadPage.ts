@@ -68,7 +68,7 @@ export function renderUploadPage(token: string): string {
 </style>
 </head>
 <body>
-  <h1>Загрузите фото для ИИ-стиля</h1>
+  <h1>Загрузите фото</h1>
   <p>Выберите фото — оно появится на экране киоска</p>
   <img id="preview" alt="" />
   <label id="picker">

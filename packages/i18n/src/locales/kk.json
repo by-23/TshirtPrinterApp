@@ -68,13 +68,64 @@
       "uploadPhoto": "Жүктеу",
       "filters": "Сүзгілер",
       "effects": "Эффектілер",
-      "shapes": "Фигуралар",
       "crop": "Кесу",
       "undo": "Болдырмау",
       "redo": "Қайталау",
       "flipHorizontal": "Көлденең айналдыру",
       "flipVertical": "Тік айналдыру",
-      "delete": "Жою"
+      "delete": "Жою",
+      "moreColors": "Басқа түстер",
+      "imagePicker": {
+        "title": "Суретті таңдаңыз",
+        "popular": "Танымал"
+      },
+      "uploadQr": {
+        "subtitle": "Телефон камерасымен QR-кодты сканерлеңіз",
+        "waiting": "Телефоннан фото күтілуде…",
+        "received": "Фото алынды!"
+      },
+      "filtersList": {
+        "grayscale": "Ақ-қара",
+        "sepia": "Сепия",
+        "invert": "Инверсия",
+        "brightness": "Жарықтық",
+        "contrast": "Контраст",
+        "saturation": "Қанықтық",
+        "blur": "Бұлдырлату",
+        "pixelate": "Пикселдеу",
+        "off": "Өшірулі",
+        "reset": "Тастау",
+        "selectImageHint": "Сүзгі қолдану үшін суретті таңдаңыз"
+      },
+      "effectsList": {
+        "selectObjectHint": "Эффект қолдану үшін мәтін немесе суретті таңдаңыз",
+        "presetNeon": "Неон",
+        "presetVintage": "Винтаж",
+        "presetMetallic": "Металл",
+        "shadow": "Көлеңке",
+        "color": "Түс",
+        "shadowBlur": "Бұлдырлату",
+        "shadowOffsetX": "X ығысу",
+        "shadowOffsetY": "Y ығысу",
+        "stroke": "Контур",
+        "strokeWidth": "Қалыңдығы",
+        "strokeImageHint": "Суреттер үшін контур — силуэт бойымен түсті контур",
+        "opacity": "Мөлдірлік",
+        "gradient": "Мәтін градиенті",
+        "from": "Бастап",
+        "to": "Дейін",
+        "direction": {
+          "horizontal": "Көлд.",
+          "vertical": "Тік",
+          "diagonal": "Диаг."
+        },
+        "reset": "Тастау"
+      },
+      "stickersList": {
+        "searchPlaceholder": "Стикерлерді іздеу",
+        "noApiKey": "Стикерлерді іздеу қолжетімсіз — Giphy API кілті орнатылмаған",
+        "trendingEmpty": "Танымал стикерлерді жүктеу мүмкін болмады"
+      }
     },
     "controls": {
       "size": "Өлшемі",
@@ -100,6 +151,7 @@
     "preview": "Алдын ала қарау",
     "fullscreen": "Толық экран",
     "exitPreview": "Алдын ала қараудан шығу",
+    "closeFullscreen": "Жабу",
     "printError": "Тапсырысты жасау мүмкін болмады. Нүкте серверімен байланысты тексеріңіз."
   },
   "checkout": {

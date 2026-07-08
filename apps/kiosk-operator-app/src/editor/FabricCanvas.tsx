@@ -16,6 +16,7 @@ import { getGarmentClipMaskStyle } from "./mockup/garmentClipMask.js";
 import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "./mockup/garmentShape.js";
 import { useEditorStore } from "./store.js";
 import { computePrintSize } from "./printSize.js";
+import { initHistoryForSide, recordHistoryEntry, setHistorySuspended } from "./history.js";
 
 export interface FabricCanvasProps {
   side: GarmentSide;
@@ -72,6 +73,15 @@ export function FabricCanvas({
     canvas.on("selection:updated", () => setHasSelection(true));
     canvas.on("selection:cleared", () => setHasSelection(false));
 
+    // Deselect on empty-canvas clicks — clicking an object itself already
+    // sets `e.target`, so this only fires for genuine background clicks.
+    canvas.on("mouse:down", (event) => {
+      if (!event.target) {
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+      }
+    });
+
     function recomputePrintSize() {
       useEditorStore.getState().setPrintSize(loadedSideRef.current, computePrintSize(canvas));
     }
@@ -81,19 +91,31 @@ export function FabricCanvas({
         applySelectionStyleToObject(event.target);
       }
       recomputePrintSize();
+      recordHistoryEntry(canvas);
     });
-    canvas.on("object:removed", recomputePrintSize);
-    canvas.on("object:modified", recomputePrintSize);
+    canvas.on("object:removed", () => {
+      recomputePrintSize();
+      recordHistoryEntry(canvas);
+    });
+    canvas.on("object:modified", () => {
+      recomputePrintSize();
+      recordHistoryEntry(canvas);
+    });
 
     const initialSnapshot = useEditorStore.getState().canvasSnapshots[side];
+    setHistorySuspended(true);
     if (initialSnapshot) {
       void canvas.loadFromJSON(initialSnapshot).then(() => {
         applySelectionStyleToAllObjects(canvas);
         syncGarmentClip(canvas);
         recomputePrintSize();
+        setHistorySuspended(false);
+        initHistoryForSide(side, snapshotCanvasJson(canvas));
       });
     } else {
       syncGarmentClip(canvas);
+      setHistorySuspended(false);
+      initHistoryForSide(side, snapshotCanvasJson(canvas));
     }
 
     return () => {
@@ -125,6 +147,7 @@ export function FabricCanvas({
     useEditorStore.getState().setCanvasSnapshot(previousSide, snapshotCanvasJson(canvas));
     loadedSideRef.current = side;
 
+    setHistorySuspended(true);
     canvas.clear();
     const snapshot = useEditorStore.getState().canvasSnapshots[side];
     if (snapshot) {
@@ -132,10 +155,14 @@ export function FabricCanvas({
         applySelectionStyleToAllObjects(canvas);
         syncGarmentClip(canvas);
         useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
+        setHistorySuspended(false);
+        initHistoryForSide(side, snapshotCanvasJson(canvas));
       });
     } else {
       syncGarmentClip(canvas);
       useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
+      setHistorySuspended(false);
+      initHistoryForSide(side, snapshotCanvasJson(canvas));
     }
   }, [side]);
 

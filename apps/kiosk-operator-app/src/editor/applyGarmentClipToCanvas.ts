@@ -66,6 +66,8 @@ export function clearGarmentClipFromCanvas(canvas: Canvas) {
 type CanvasWithInternals = Canvas & {
   _groupSelector?: unknown;
   isDrawingMode?: boolean;
+  /** `protected` in fabric's own types (meant for subclasses), but this is exactly the documented way to opt out of the default controls pass — see fabric's own `Canvas#renderControls`. */
+  skipControlsDrawing?: boolean;
 };
 
 /**
@@ -74,12 +76,11 @@ type CanvasWithInternals = Canvas & {
  * paint controls onto the upper canvas after each lower-canvas render.
  */
 export function installUnmaskedControlsRenderer(canvas: Canvas) {
-  canvas.skipControlsDrawing = true;
+  const internal = canvas as CanvasWithInternals;
+  internal.skipControlsDrawing = true;
 
   const renderControlsOnTop = ({ ctx }: { ctx: CanvasRenderingContext2D }) => {
     if (ctx !== canvas.getContext()) return;
-
-    const internal = canvas as CanvasWithInternals;
     if (internal._groupSelector || internal.isDrawingMode) return;
 
     const topCtx = canvas.contextTop;
@@ -91,7 +92,7 @@ export function installUnmaskedControlsRenderer(canvas: Canvas) {
 
   return () => {
     canvas.off("after:render", renderControlsOnTop);
-    canvas.skipControlsDrawing = false;
+    internal.skipControlsDrawing = false;
   };
 }
 

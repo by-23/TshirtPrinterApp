@@ -1,4 +1,4 @@
-import { Fragment, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Canvas } from "fabric";
 import {
@@ -6,7 +6,6 @@ import {
   Crop,
   RAIL_ICON_CLASS,
   Redo2,
-  Shapes,
   SlidersHorizontal,
   Sparkles,
   Type,
@@ -18,13 +17,30 @@ import {
 import { TextTool } from "./TextTool.js";
 import { StickerPicker } from "./StickerPicker.js";
 import { UploadTool } from "./UploadTool.js";
+import { FiltersTool } from "./FiltersTool.js";
+import { EffectsTool } from "./EffectsTool.js";
+import { ImagePickerModal } from "./ImagePickerModal.js";
+import { EDITOR_TOOL_UI_SELECTOR } from "../canvasSelectionStyle.js";
 import { blockBorderStyle, dividerStyle } from "../borderStyle.js";
+import { useHistoryStore, undoLastEntry, redoLastEntry } from "../history.js";
 
 export interface ToolRailProps {
   canvas: Canvas | null;
 }
 
-type PopoverTool = "text" | "upload" | "stickers";
+type PopoverTool = "text" | "upload" | "stickers" | "filters" | "effects";
+
+const POPOVER_CONTENT: Record<PopoverTool, (canvas: Canvas | null) => ReactNode> = {
+  text: (canvas) => <TextTool canvas={canvas} />,
+  upload: (canvas) => <UploadTool canvas={canvas} />,
+  stickers: (canvas) => <StickerPicker canvas={canvas} />,
+  filters: (canvas) => <FiltersTool canvas={canvas} />,
+  effects: (canvas) => <EffectsTool canvas={canvas} />,
+};
+
+function isPopoverTool(key: string): key is PopoverTool {
+  return key in POPOVER_CONTENT;
+}
 
 interface RailButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: ReactNode;
@@ -67,20 +83,30 @@ function RailButton({ icon, label, active = false, className = "", disabled, sty
   );
 }
 
-/**
- * Left vertical icon rail from `docs/ui-mockups/editor.png`. Tools already
- * implemented in Stage 2 (Text/Upload/Stickers) open as a floating popover
- * reusing the existing tool components; tools outside Stage 2's scope
- * (Filters/Effects/Shapes/Crop/Undo/Redo) are shown per the mockup layout
- * but disabled until their own stage lands.
- */
+/** Left vertical icon rail from `docs/ui-mockups/editor.png` — all tools are fully wired up (see docs/PLAN.md). */
 export function ToolRail({ canvas }: ToolRailProps) {
   const { t } = useTranslation();
   const [openTool, setOpenTool] = useState<PopoverTool | null>(null);
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const canUndo = useHistoryStore((state) => state.canUndo);
+  const canRedo = useHistoryStore((state) => state.canRedo);
 
   function toggle(tool: PopoverTool) {
     setOpenTool((current) => (current === tool ? null : tool));
   }
+
+  useEffect(() => {
+    if (!openTool) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Element && target.closest(EDITOR_TOOL_UI_SELECTOR)) return;
+      setOpenTool(null);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [openTool]);
 
   const buttons: { key: string; node: ReactNode }[] = [
     {
@@ -107,7 +133,13 @@ export function ToolRail({ canvas }: ToolRailProps) {
     },
     {
       key: "image",
-      node: <RailButton icon={<ImageIcon className={RAIL_ICON_CLASS} />} label={t("editor.toolbar.image")} disabled />,
+      node: (
+        <RailButton
+          icon={<ImageIcon className={RAIL_ICON_CLASS} />}
+          label={t("editor.toolbar.image")}
+          onClick={() => setImagePickerOpen(true)}
+        />
+      ),
     },
     {
       key: "upload",
@@ -123,12 +155,24 @@ export function ToolRail({ canvas }: ToolRailProps) {
     {
       key: "filters",
       node: (
-        <RailButton icon={<SlidersHorizontal className={RAIL_ICON_CLASS} />} label={t("editor.toolbar.filters")} disabled />
+        <RailButton
+          icon={<SlidersHorizontal className={RAIL_ICON_CLASS} />}
+          label={t("editor.toolbar.filters")}
+          active={openTool === "filters"}
+          onClick={() => toggle("filters")}
+        />
       ),
     },
     {
       key: "effects",
-      node: <RailButton icon={<Sparkles className={RAIL_ICON_CLASS} />} label={t("editor.toolbar.effects")} disabled />,
+      node: (
+        <RailButton
+          icon={<Sparkles className={RAIL_ICON_CLASS} />}
+          label={t("editor.toolbar.effects")}
+          active={openTool === "effects"}
+          onClick={() => toggle("effects")}
+        />
+      ),
     },
     {
       key: "stickers",
@@ -142,39 +186,58 @@ export function ToolRail({ canvas }: ToolRailProps) {
       ),
     },
     {
-      key: "shapes",
-      node: <RailButton icon={<Shapes className={RAIL_ICON_CLASS} />} label={t("editor.toolbar.shapes")} disabled />,
-    },
-    {
       key: "crop",
       node: <RailButton icon={<Crop className={RAIL_ICON_CLASS} />} label={t("editor.toolbar.crop")} disabled />,
     },
     {
       key: "undo",
-      node: <RailButton icon={<Undo2 className={RAIL_ICON_CLASS} />} label={t("editor.toolbar.undo")} disabled />,
+      node: (
+        <RailButton
+          icon={<Undo2 className={RAIL_ICON_CLASS} />}
+          label={t("editor.toolbar.undo")}
+          disabled={!canUndo}
+          onClick={() => canvas && void undoLastEntry(canvas)}
+        />
+      ),
     },
     {
       key: "redo",
-      node: <RailButton icon={<Redo2 className={RAIL_ICON_CLASS} />} label={t("editor.toolbar.redo")} disabled />,
+      node: (
+        <RailButton
+          icon={<Redo2 className={RAIL_ICON_CLASS} />}
+          label={t("editor.toolbar.redo")}
+          disabled={!canRedo}
+          onClick={() => canvas && void redoLastEntry(canvas)}
+        />
+      ),
     },
   ];
 
   return (
-    <div className="relative flex flex-col" style={{ gap: "var(--editor-rail-gap)", ...blockBorderStyle("rail-block") }}>
+    <div
+      data-editor-tool-ui
+      className="relative flex flex-col"
+      style={{ gap: "var(--editor-rail-gap)", ...blockBorderStyle("rail-block") }}
+    >
       {buttons.map((button, index) => (
         <Fragment key={button.key}>
           {index > 0 && <div aria-hidden style={dividerStyle("rail")} />}
-          {button.node}
+          {isPopoverTool(button.key) ? (
+            <div className="relative">
+              {button.node}
+              {openTool === button.key && (
+                <div className="editor-tool-popover absolute left-full top-0 z-20 ml-4 border border-ink-600 bg-ink-900 shadow-xl">
+                  {POPOVER_CONTENT[button.key](canvas)}
+                </div>
+              )}
+            </div>
+          ) : (
+            button.node
+          )}
         </Fragment>
       ))}
 
-      {openTool && (
-        <div className="absolute left-full top-0 z-20 ml-3 w-64 rounded-2xl border border-ink-600 bg-ink-900 p-4 shadow-xl">
-          {openTool === "text" && <TextTool canvas={canvas} />}
-          {openTool === "upload" && <UploadTool canvas={canvas} />}
-          {openTool === "stickers" && <StickerPicker canvas={canvas} />}
-        </div>
-      )}
+      {imagePickerOpen && <ImagePickerModal canvas={canvas} onClose={() => setImagePickerOpen(false)} />}
     </div>
   );
 }

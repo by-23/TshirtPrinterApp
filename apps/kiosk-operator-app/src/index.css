@@ -39,6 +39,93 @@ textarea {
 .ai-theme-root {
   font-family: var(--font-family);
 }
+
+/* Tool popovers next to the left rail (text, upload, filters, effects, stickers). */
+.editor-theme-root .editor-tool-popover {
+  width: var(--editor-tool-popover-width);
+  padding: var(--editor-tool-popover-padding);
+  border-radius: var(--editor-tool-popover-radius);
+}
+
+.editor-theme-root .editor-tool-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-tool-gap);
+}
+
+.editor-theme-root .editor-tool-title {
+  font-size: var(--editor-tool-title-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #cac9cb;
+}
+
+.editor-theme-root .editor-tool-body {
+  font-size: var(--editor-tool-body-size);
+}
+
+.editor-theme-root .editor-tool-caption {
+  font-size: var(--editor-tool-caption-size);
+}
+
+.editor-theme-root .editor-tool-label {
+  font-size: var(--editor-tool-label-size);
+}
+
+.editor-theme-root .editor-tool-btn {
+  border-radius: 9999px;
+  padding: var(--editor-tool-btn-padding-y) var(--editor-tool-btn-padding-x);
+  font-size: var(--editor-tool-btn-font-size);
+  font-weight: 600;
+}
+
+.editor-theme-root .editor-tool-chip {
+  border-radius: 9999px;
+  padding: var(--editor-tool-chip-padding-y) var(--editor-tool-chip-padding-x);
+  font-size: var(--editor-tool-chip-font-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.editor-theme-root .editor-tool-font-chip {
+  border-radius: 0.5rem;
+  padding: var(--editor-tool-font-chip-padding-y) var(--editor-tool-font-chip-padding-x);
+  font-size: var(--editor-tool-font-chip-size);
+}
+
+.editor-theme-root .editor-tool-swatch {
+  width: var(--editor-tool-swatch-size);
+  height: var(--editor-tool-swatch-size);
+}
+
+.editor-theme-root .editor-tool-checkbox {
+  width: var(--editor-tool-checkbox-size);
+  height: var(--editor-tool-checkbox-size);
+}
+
+.editor-theme-root .editor-tool-qr-box {
+  width: var(--editor-tool-qr-size);
+  height: var(--editor-tool-qr-size);
+}
+
+.editor-theme-root .editor-tool-search {
+  padding: var(--editor-tool-search-padding-y) var(--editor-tool-search-padding-x);
+}
+
+.editor-theme-root .editor-tool-search input {
+  font-size: var(--editor-tool-search-font-size);
+}
+
+.editor-theme-root .editor-tool-search-icon {
+  width: var(--editor-tool-search-icon-size);
+  height: var(--editor-tool-search-icon-size);
+}
+
+.editor-theme-root .editor-tool-sticker-grid {
+  min-height: var(--editor-tool-sticker-grid-min-height);
+}
 /* ==========================================================================
    Live theme tokens
    --------------------------------------------------------------------------
@@ -421,6 +508,32 @@ textarea {
   --editor-tips-block-padding: 16px;
   --editor-tips-block-height: auto;
   --editor-tips-block-width: 100%;
+
+  --editor-tool-popover-width: 500px;
+  --editor-tool-popover-padding: 30px;
+  --editor-tool-popover-radius: 28px;
+  --editor-tool-gap: 22px;
+  --editor-tool-title-size: 20px;
+  --editor-tool-body-size: 22px;
+  --editor-tool-caption-size: 19px;
+  --editor-tool-label-size: 19px;
+  --editor-tool-btn-font-size: 22px;
+  --editor-tool-btn-padding-x: 28px;
+  --editor-tool-btn-padding-y: 16px;
+  --editor-tool-chip-font-size: 19px;
+  --editor-tool-chip-padding-x: 18px;
+  --editor-tool-chip-padding-y: 14px;
+  --editor-tool-font-chip-size: 20px;
+  --editor-tool-font-chip-padding-x: 18px;
+  --editor-tool-font-chip-padding-y: 14px;
+  --editor-tool-swatch-size: 58px;
+  --editor-tool-checkbox-size: 32px;
+  --editor-tool-qr-size: 290px;
+  --editor-tool-search-font-size: 22px;
+  --editor-tool-search-padding-x: 20px;
+  --editor-tool-search-padding-y: 16px;
+  --editor-tool-search-icon-size: 30px;
+  --editor-tool-sticker-grid-min-height: 256px;
 /* ========================================================================
      Checkout screen ("/kiosk/checkout") — own independent token set, tuned
      from CheckoutThemePanel.tsx the same way the editor tokens above are
@@ -3036,4 +3149,52 @@ textarea {
   color: color-mix(in srgb,
       var(--ai-result-info-icon-color) calc(var(--ai-result-info-icon-color-opacity) * 100%),
       transparent);
+}
+
+/* Editor "Предпросмотр" mode — dims the UI chrome, leaves the shirt/canvas fully opaque (docs/PLAN.md, п.10). */
+.editor-preview-dimmed {
+  opacity: var(--editor-preview-dim-opacity, 0.2);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Kiosk on-screen keyboard (react-simple-keyboard) — dark theme to match the rest of the kiosk chrome. */
+.kiosk-keyboard .simple-keyboard.kiosk-keyboard-theme {
+  max-width: 100%;
+  background: transparent;
+  padding: 0;
+}
+
+.kiosk-keyboard .simple-keyboard.kiosk-keyboard-theme .hg-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.kiosk-keyboard .simple-keyboard.kiosk-keyboard-theme .hg-row:last-child {
+  margin-bottom: 0;
+}
+
+.kiosk-keyboard .simple-keyboard.kiosk-keyboard-theme .hg-button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: #2a2a35;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.kiosk-keyboard .simple-keyboard.kiosk-keyboard-theme .hg-button:active {
+  background: #ff2d95;
+}
+
+.kiosk-keyboard .simple-keyboard.kiosk-keyboard-theme .hg-button.hg-functionBtn {
+  flex: 1.6;
+  background: #1a1a22;
 }

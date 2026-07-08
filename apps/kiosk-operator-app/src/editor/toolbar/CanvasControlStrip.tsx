@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Canvas, FabricObject } from "fabric";
 import { useEditorStore } from "../store.js";
+import { recordHistoryEntry } from "../history.js";
 
 export interface CanvasControlStripProps {
   canvas: Canvas | null;
@@ -68,6 +69,7 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
     active.setCoords();
     canvas.requestRenderAll();
     setSnapshot(readSnapshot(canvas));
+    recordHistoryEntry(canvas);
   }
 
   const display = snapshot ?? { scalePercent: 0, rotationDeg: 0, opacityPercent: 0, layerIndex: 0, layerTotal: 0 };
@@ -113,6 +115,7 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
         canvas.sendObjectBackwards(active);
         canvas.requestRenderAll();
         setSnapshot(readSnapshot(canvas));
+        recordHistoryEntry(canvas);
       },
       onIncrease: () => {
         if (!canvas) return;
@@ -121,6 +124,7 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
         canvas.bringObjectForward(active);
         canvas.requestRenderAll();
         setSnapshot(readSnapshot(canvas));
+        recordHistoryEntry(canvas);
       },
     },
   ];
@@ -134,6 +138,7 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
 
   return (
     <div
+      data-editor-selection-ui
       className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4"
       style={{
         borderStyle: "solid",

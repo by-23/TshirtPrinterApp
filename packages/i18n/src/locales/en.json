@@ -68,13 +68,64 @@
       "uploadPhoto": "Upload",
       "filters": "Filters",
       "effects": "Effects",
-      "shapes": "Shapes",
       "crop": "Crop",
       "undo": "Undo",
       "redo": "Redo",
       "flipHorizontal": "Flip horiz.",
       "flipVertical": "Flip vert.",
-      "delete": "Delete"
+      "delete": "Delete",
+      "moreColors": "More colors",
+      "imagePicker": {
+        "title": "Choose an image",
+        "popular": "Popular"
+      },
+      "uploadQr": {
+        "subtitle": "Scan the QR code with your phone's camera",
+        "waiting": "Waiting for a photo from your phone…",
+        "received": "Photo received!"
+      },
+      "filtersList": {
+        "grayscale": "B&W",
+        "sepia": "Sepia",
+        "invert": "Invert",
+        "brightness": "Brightness",
+        "contrast": "Contrast",
+        "saturation": "Saturation",
+        "blur": "Blur",
+        "pixelate": "Pixelate",
+        "off": "Off",
+        "reset": "Reset",
+        "selectImageHint": "Select an image to apply a filter"
+      },
+      "effectsList": {
+        "selectObjectHint": "Select text or an image to apply an effect",
+        "presetNeon": "Neon",
+        "presetVintage": "Vintage",
+        "presetMetallic": "Metallic",
+        "shadow": "Shadow",
+        "color": "Color",
+        "shadowBlur": "Blur",
+        "shadowOffsetX": "X offset",
+        "shadowOffsetY": "Y offset",
+        "stroke": "Outline",
+        "strokeWidth": "Thickness",
+        "strokeImageHint": "For images, the outline is a colored silhouette contour",
+        "opacity": "Opacity",
+        "gradient": "Text gradient",
+        "from": "From",
+        "to": "To",
+        "direction": {
+          "horizontal": "Horiz.",
+          "vertical": "Vert.",
+          "diagonal": "Diag."
+        },
+        "reset": "Reset"
+      },
+      "stickersList": {
+        "searchPlaceholder": "Search stickers",
+        "noApiKey": "Sticker search unavailable — no Giphy API key configured",
+        "trendingEmpty": "Couldn't load trending stickers"
+      }
     },
     "controls": {
       "size": "Size",
@@ -100,6 +151,7 @@
     "preview": "Preview",
     "fullscreen": "Fullscreen",
     "exitPreview": "Exit preview",
+    "closeFullscreen": "Close",
     "printError": "Couldn't create the order. Check the connection to the point server."
   },
   "checkout": {

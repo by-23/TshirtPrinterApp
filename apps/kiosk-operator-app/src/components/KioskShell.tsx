@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { LanguageSwitcher } from "./LanguageSwitcher.js";
+import { KioskKeyboardOverlay } from "./KioskKeyboardOverlay.js";
 import { usePageTransitionStore } from "../lib/pageTransitionStore.js";
 import { initPointStatus, usePointStatusStore } from "../lib/pointStatusStore.js";
 import { ClosedScreen } from "../routes/kiosk/ClosedScreen.js";
@@ -45,6 +46,14 @@ export function KioskShell() {
           <Outlet />
         </div>
       )}
+
+      <KioskKeyboardOverlay />
+
+      {/* Full-screen modals (image picker, etc.) portal here so `absolute inset-0`
+          covers the kiosk canvas, not the browser viewport — the canvas lives
+          inside KioskFrame's CSS transform, so portalling to `document.body`
+          makes overlays spill outside the simulated device bezel. */}
+      <div id="kiosk-overlay-root" className="pointer-events-none absolute inset-0 z-[800]" />
     </div>
   );
 }
