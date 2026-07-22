@@ -25,7 +25,6 @@ import { ObjectControls } from "../../editor/toolbar/ObjectControls.js";
 import { CanvasControlStrip } from "../../editor/toolbar/CanvasControlStrip.js";
 import { PopularElementsStrip } from "../../editor/toolbar/PopularElementsStrip.js";
 import { TipsBar } from "../../editor/toolbar/TipsBar.js";
-import { FullscreenPreview } from "../../editor/FullscreenPreview.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { ArrowLeft } from "../../components/icons.js";
 import { CATEGORY_LABEL_KEYS, getEditorBackRoute } from "../../lib/categoryLabels.js";
@@ -53,7 +52,6 @@ export function Editor() {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [printError, setPrintError] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
-  const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const printAreaRef = useRef<HTMLDivElement>(null);
   const appliedDesignIdRef = useRef<string | null>(null);
@@ -330,10 +328,7 @@ export function Editor() {
         >
           <GarmentPicker />
 
-          <div
-            className="flex flex-col overflow-hidden"
-            style={{ gap: "var(--editor-secondary-btn-gap)", ...blockBorderStyle("secondary-block") }}
-          >
+          <div className="flex flex-col overflow-hidden" style={blockBorderStyle("secondary-block")}>
             <button
               type="button"
               onClick={() => setIsPreview(true)}
@@ -349,23 +344,6 @@ export function Editor() {
                 👁
               </span>
               {t("editor.preview")}
-            </button>
-            <div aria-hidden style={dividerStyle("secondary")} />
-            <button
-              type="button"
-              onClick={() => setIsFullscreenPreview(true)}
-              className="flex w-full flex-shrink-0 items-center justify-center gap-1.5 px-3 font-semibold uppercase tracking-wide text-ink-200 transition-colors hover:brightness-125 hover:text-white"
-              style={{
-                height: "var(--editor-secondary-btn-height)",
-                borderRadius: "var(--editor-secondary-btn-radius)",
-                backgroundColor: "var(--editor-secondary-btn-bg)",
-                fontSize: "var(--editor-secondary-btn-font-size)",
-              }}
-            >
-              <span aria-hidden style={{ fontSize: "var(--editor-secondary-btn-icon-size)" }}>
-                ⛶
-              </span>
-              {t("editor.fullscreen")}
             </button>
           </div>
 
@@ -392,8 +370,6 @@ export function Editor() {
           </span>
         </button>
       )}
-
-      {isFullscreenPreview && <FullscreenPreview canvas={canvas} onClose={() => setIsFullscreenPreview(false)} />}
 
       {printError && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-ink-800 px-5 py-3 text-sm font-semibold text-white shadow-xl">

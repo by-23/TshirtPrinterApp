@@ -149,9 +149,7 @@
     },
     "orderSavedNote": "Your order is saved after payment",
     "preview": "Preview",
-    "fullscreen": "Fullscreen",
     "exitPreview": "Exit preview",
-    "closeFullscreen": "Close",
     "printError": "Couldn't create the order. Check the connection to the point server."
   },
   "checkout": {

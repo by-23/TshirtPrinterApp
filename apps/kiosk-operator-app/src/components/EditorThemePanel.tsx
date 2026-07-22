@@ -580,16 +580,14 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "Кнопки «Предпросмотр» / «Полный экран»",
+    title: "Кнопка «Предпросмотр»",
     tokens: [
       { key: "--editor-secondary-btn-height", label: "Высота кнопки", defaultValue: 48, ...SIZE_RANGE },
       { key: "--editor-secondary-btn-radius", label: "Скругление", defaultValue: 999, ...RADIUS_FULL },
-      { key: "--editor-secondary-btn-gap", label: "Зазор между кнопками", defaultValue: 12, ...GAP_RANGE },
       { key: "--editor-secondary-btn-bg", label: "Фон", type: "color", defaultValue: "#131a2e" },
       { key: "--editor-secondary-btn-font-size", label: "Текст — размер", defaultValue: 14, ...FONT_RANGE },
       { key: "--editor-secondary-btn-icon-size", label: "Иконка — размер", defaultValue: 18, ...FONT_RANGE },
       ...blockBorderTokens("secondary-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 12 }),
-      ...dividerTokens("secondary", DIVIDER_DEFAULT_SUBTLE),
     ],
   },
   {
@@ -742,7 +740,7 @@ const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
       "Цвет изделия (плитки)",
       "Размер (кнопки)",
       "Материал (кнопки)",
-      "Кнопки «Предпросмотр» / «Полный экран»",
+      "Кнопка «Предпросмотр»",
       "Цена и печать",
       "«Заказ сохраняется после оплаты» (сноска)",
     ],

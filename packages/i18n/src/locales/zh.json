@@ -149,9 +149,7 @@
     },
     "orderSavedNote": "订单将在付款后保存",
     "preview": "预览",
-    "fullscreen": "全屏",
     "exitPreview": "退出预览",
-    "closeFullscreen": "关闭",
     "printError": "无法创建订单，请检查与门店服务器的连接。"
   },
   "checkout": {
