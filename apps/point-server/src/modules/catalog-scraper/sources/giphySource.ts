@@ -1,6 +1,7 @@
 import path from "node:path";
 import sharp from "sharp";
 import { downloadToFile } from "./download.js";
+import { noteGiphyRateLimited, RateLimitError } from "../rateLimit.js";
 import type { ScraperSource, SourceCandidate } from "./types.js";
 
 const GIPHY_SEARCH_URL = "https://api.giphy.com/v1/stickers/search";
@@ -37,25 +38,46 @@ function pickRendition(images: Record<string, GiphyRendition>): GiphyRendition |
 }
 
 /**
+ * Giphy's sticker index is English-biased and ignores "png" as a format
+ * hint — strip it so queries like "memes png" / "мемы png" search the
+ * subject, not a nonexistent "png" sticker tag.
+ */
+function normalizeGiphyQuery(query: string): string {
+  const cleaned = query.replace(/\bpng\b/gi, " ").replace(/\s+/g, " ").trim();
+  return cleaned || query;
+}
+
+/**
  * Official, free (API-key-gated) JSON API — no browser, no rate-limit
  * roulette like Pinterest scraping. Stickers are the closest match GIPHY has
  * to "meme/anime/game png" (many are transparent cut-outs already).
  * Silently contributes nothing if no API key is configured — see
  * `config.resolveGiphyApiKey` and the operator panel's "Настройки автозаполнения".
+ *
+ * Supports `offset` so the background cache filler can walk past the first
+ * page of results (without it every tick re-fetched the same stickers, all
+ * already in the DB, and downloaded 0 forever). Throws `RateLimitError` on
+ * HTTP 429 so the orchestrator can back off instead of treating it as an
+ * empty result page.
  */
 export const giphySource: ScraperSource = {
   id: "giphy",
   label: "Giphy Stickers",
-  async search({ query, outputDir, limit, minResolutionPx, giphyApiKey }) {
+  async search({ query, outputDir, limit, minResolutionPx, giphyApiKey, offset = 0 }) {
     if (!giphyApiKey) return [];
 
     const url = new URL(GIPHY_SEARCH_URL);
     url.searchParams.set("api_key", giphyApiKey);
-    url.searchParams.set("q", query);
+    url.searchParams.set("q", normalizeGiphyQuery(query));
     url.searchParams.set("limit", String(Math.min(Math.max(limit, 1), 50)));
+    url.searchParams.set("offset", String(Math.max(0, offset)));
     url.searchParams.set("rating", "g");
 
     const res = await fetch(url);
+    if (res.status === 429) {
+      noteGiphyRateLimited();
+      throw new RateLimitError("Giphy API rate limit exceeded");
+    }
     if (!res.ok) {
       throw new Error(`Giphy search failed: ${res.status}`);
     }

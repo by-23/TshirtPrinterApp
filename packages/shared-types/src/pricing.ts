@@ -28,7 +28,7 @@ export type PartialPriceConfig = z.infer<typeof partialPriceConfigSchema>;
 
 /** Seed value for central-relay's `global_price_config` row — matches shared-pricing's current constants. */
 export const DEFAULT_PRICE_CONFIG: PriceConfig = {
-  basePriceTenge: { tshirt: 6990, hoodie: 11990 },
+  basePriceTenge: { tshirt: 6990, sweatshirt: 11990, cap: 4990, shopper: 3990 },
   fabricSurchargeTenge: { cotton: 0, premium: 1500 },
   sizeSurchargeTenge: { S: 0, M: 0, L: 0, XL: 500, XXL: 1000, "3XL": 1500 },
   printSizeSurchargeTenge: { small: 0, medium: 1000, large: 2000 },

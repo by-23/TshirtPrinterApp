@@ -22,7 +22,7 @@ export interface FabricCanvasProps {
   side: GarmentSide;
   printArea: PrintAreaRect;
   garmentType: GarmentType;
-  tshirtImageUrl?: string;
+  imageUrl?: string;
   className?: string;
   onReady: (canvas: Canvas | null) => void;
 }
@@ -31,7 +31,7 @@ export function FabricCanvas({
   side,
   printArea,
   garmentType,
-  tshirtImageUrl,
+  imageUrl,
   className,
   onReady,
 }: FabricCanvasProps) {
@@ -46,7 +46,7 @@ export function FabricCanvas({
       garmentType,
       side: loadedSideRef.current,
       printArea,
-      tshirtImageUrl,
+      imageUrl,
     });
     applyGarmentClipMaskToLowerCanvas(canvas, maskStyle);
     canvas.requestRenderAll();
@@ -137,7 +137,7 @@ export function FabricCanvas({
       height: printArea.height * MOCKUP_DISPLAY_SCALE,
     });
     syncGarmentClip(canvas);
-  }, [printArea.width, printArea.height, printArea.x, printArea.y, garmentType, tshirtImageUrl, side]);
+  }, [printArea.width, printArea.height, printArea.x, printArea.y, garmentType, imageUrl, side]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

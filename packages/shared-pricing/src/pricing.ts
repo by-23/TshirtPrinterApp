@@ -1,4 +1,11 @@
-import { DEFAULT_PRICE_CONFIG, type GarmentFabric, type GarmentType, type PriceConfig, type PrintSize } from "@tshirt/shared-types";
+import {
+  DEFAULT_PRICE_CONFIG,
+  garmentUsesSizeFabric,
+  type GarmentFabric,
+  type GarmentType,
+  type PriceConfig,
+  type PrintSize,
+} from "@tshirt/shared-types";
 
 export interface PriceInput {
   garmentType: GarmentType;
@@ -47,11 +54,16 @@ export function getPriceBreakdown(
   input: PriceInput,
   config: PriceConfig = DEFAULT_PRICE_CONFIG,
 ): PriceBreakdownLine[] {
+  // Cap/shopper are one-size/one-material (see `garmentUsesSizeFabric`) — the
+  // editor pins `size`/`fabric` to fixed values for them, so their surcharges
+  // must stay excluded here too, or a leftover t-shirt selection would leak
+  // into the price.
+  const usesSizeFabric = garmentUsesSizeFabric(input.garmentType);
   const garmentAmount =
     (config.basePriceTenge[input.garmentType] ?? DEFAULT_PRICE_CONFIG.basePriceTenge.tshirt ?? 0) +
-    (config.fabricSurchargeTenge[input.fabric] ?? 0);
+    (usesSizeFabric ? config.fabricSurchargeTenge[input.fabric] ?? 0 : 0);
   const designAmount = config.printSizeSurchargeTenge[input.printSize] ?? 0;
-  const sizeAmount = config.sizeSurchargeTenge[input.size] ?? 0;
+  const sizeAmount = usesSizeFabric ? config.sizeSurchargeTenge[input.size] ?? 0 : 0;
 
   return [
     { key: "garment", amountTenge: garmentAmount },

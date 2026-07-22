@@ -11,8 +11,23 @@ const CONFIG_ID = 1;
 
 type ConfigRow = typeof printAreaConfig.$inferSelect;
 
+/**
+ * Self-heals older rows saved before a garment type existed (e.g. the
+ * `hoodie` → `sweatshirt` rename, or `cap`/`shopper` being added later) by
+ * filling any missing type with its default rectangles, rather than
+ * requiring a one-off data migration.
+ */
+function withDefaults(stored: Partial<PrintAreaConfig>): PrintAreaConfig {
+  return {
+    tshirt: stored.tshirt ?? DEFAULT_PRINT_AREAS.tshirt,
+    sweatshirt: stored.sweatshirt ?? DEFAULT_PRINT_AREAS.sweatshirt,
+    cap: stored.cap ?? DEFAULT_PRINT_AREAS.cap,
+    shopper: stored.shopper ?? DEFAULT_PRINT_AREAS.shopper,
+  };
+}
+
 function serialize(row: ConfigRow): { areas: PrintAreaConfig; updatedAt: string } {
-  return { areas: row.areasJson, updatedAt: row.updatedAt };
+  return { areas: withDefaults(row.areasJson), updatedAt: row.updatedAt };
 }
 
 /**

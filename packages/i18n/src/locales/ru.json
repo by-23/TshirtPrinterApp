@@ -29,10 +29,14 @@
   "editor": {
     "title": "Редактирование дизайна",
     "printSide": "Сторона печати",
+    "garmentType": "Изделие",
     "garmentTypes": {
       "tshirt": "Футболка",
-      "hoodie": "Толстовка"
+      "sweatshirt": "Свитшот",
+      "cap": "Кепка",
+      "shopper": "Шоппер"
     },
+    "confirmGarmentTypeChange": "При смене изделия дизайн на текущем макете будет сброшен. Продолжить?",
     "sides": {
       "front": "Передняя",
       "back": "Задняя"

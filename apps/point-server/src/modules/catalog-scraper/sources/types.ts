@@ -18,6 +18,11 @@ export interface SourceSearchOptions {
   minResolutionPx?: number;
   /** Set by `scrapeService` from `catalog_scrape_config` (panel or `.env` fallback). */
   giphyApiKey?: string;
+  /**
+   * Pagination offset for sources that support it (Giphy). Ignored by
+   * Pinterest/CleanPNG — those always return their first page of results.
+   */
+  offset?: number;
 }
 
 export interface ScraperSource {

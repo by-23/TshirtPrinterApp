@@ -7,7 +7,9 @@ import { GARMENT_COLORS, type GarmentSide, type GarmentType, type OrderStatus } 
  */
 export const GARMENT_TYPE_LABELS: Record<GarmentType, string> = {
   tshirt: "Футболка",
-  hoodie: "Худи",
+  sweatshirt: "Свитшот",
+  cap: "Кепка",
+  shopper: "Шоппер",
 };
 
 export const GARMENT_SIDE_LABELS: Record<GarmentSide, string> = {

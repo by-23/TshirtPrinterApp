@@ -53,37 +53,43 @@ export function AiCameraCapture() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center gap-6 px-4 py-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-extrabold uppercase tracking-wide text-white">{t("ai.camera.title")}</h1>
-        <p className="mt-1 text-sm text-ink-200">{t("ai.camera.subtitle")}</p>
+    <div className="flex h-full w-full flex-col items-center bg-black px-4 py-6">
+      <div className="flex-shrink-0 text-center">
+        <h1 className="text-4xl font-extrabold uppercase tracking-wide text-white">{t("ai.camera.title")}</h1>
+        <p className="mt-2 text-xl text-ink-200">{t("ai.camera.subtitle")}</p>
       </div>
 
-      <div className="relative flex w-full max-w-md flex-1 items-center justify-center overflow-hidden rounded-3xl border-2 border-neon-pink bg-ink-900 shadow-neon-pink">
-        {error ? (
-          <p className="px-6 text-center text-sm text-ink-200">{t("ai.camera.error")}</p>
-        ) : (
-          <video ref={videoRef} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover" />
-        )}
+      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center">
+        <div className="relative aspect-square w-[min(100%,72vmin)] overflow-hidden rounded-3xl border-2 border-neon-pink bg-ink-900 shadow-neon-pink">
+          {error ? (
+            <div className="flex h-full w-full items-center justify-center px-6">
+              <p className="text-center text-sm text-ink-200">{t("ai.camera.error")}</p>
+            </div>
+          ) : (
+            <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 h-full w-full -scale-x-100 object-cover" />
+          )}
+        </div>
+
+        <div className="mt-8 flex flex-shrink-0 flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={handleCapture}
+            disabled={error}
+            aria-label={t("ai.camera.capture")}
+            className="flex h-28 w-28 items-center justify-center rounded-pill border-4 border-white bg-neon-pink shadow-neon-pink transition-transform active:scale-95 disabled:opacity-40"
+          >
+            <Camera aria-hidden className="h-12 w-12 text-white" strokeWidth={2} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStep("source")}
+            className="text-2xl font-semibold uppercase tracking-wide text-ink-200 underline-offset-4 hover:text-white hover:underline"
+          >
+            {t("common.back")}
+          </button>
+        </div>
       </div>
-
-      <button
-        type="button"
-        onClick={handleCapture}
-        disabled={error}
-        aria-label={t("ai.camera.capture")}
-        className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-pill border-4 border-white bg-neon-pink shadow-neon-pink transition-transform active:scale-95 disabled:opacity-40"
-      >
-        <Camera aria-hidden className="h-8 w-8 text-white" strokeWidth={2} />
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setStep("source")}
-        className="text-sm font-semibold uppercase tracking-wide text-ink-200 underline-offset-4 hover:text-white hover:underline"
-      >
-        {t("common.back")}
-      </button>
     </div>
   );
 }

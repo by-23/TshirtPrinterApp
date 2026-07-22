@@ -2,7 +2,8 @@ import { runMigrations } from "./db/migrate.js";
 import { buildServer } from "./server.js";
 import { connectToCentralRelay } from "./modules/sync/client.js";
 import { drainSyncQueue } from "./modules/sync/queue.js";
-import { ensureAllCategoriesStocked, startCacheFiller } from "./modules/catalog-scraper/job.js";
+import { ensureAllCategoriesStocked, startCacheFiller, GALLERY_CATEGORIES } from "./modules/catalog-scraper/job.js";
+import { clearInterruptedRuns } from "./modules/catalog-scraper/state.js";
 import { ensurePortAvailable } from "./lib/ensurePort.js";
 import { env } from "./env.js";
 import { ensureAiModelsDownloaded } from "./modules/ai/local/downloadModels.js";
@@ -77,12 +78,16 @@ app
     }
     // Eagerly top up the gallery categories from Pinterest, in the
     // background — docs/PLAN.md Этап 3 "Наполнение и подгрузка".
-    ensureAllCategoriesStocked(app.log);
-    // Then keep slowly growing the on-disk cache (evenly across categories)
-    // up to the operator's configured GB limit — docs/PLAN.md "кэш картинок
-    // по ГБ". Independent of the eager fill above: this one paces itself
-    // indefinitely instead of stopping at the gallery's minimum stock.
-    startCacheFiller(app.log);
+    // Drop any `running` flags left by a killed previous process first,
+    // otherwise every top-up no-ops for up to 10 minutes.
+    void clearInterruptedRuns(GALLERY_CATEGORIES).then(() => {
+      ensureAllCategoriesStocked(app.log);
+      // Then keep slowly growing the on-disk cache (evenly across categories)
+      // up to the operator's configured GB limit — docs/PLAN.md "кэш картинок
+      // по ГБ". Independent of the eager fill above: this one paces itself
+      // indefinitely instead of stopping at the gallery's minimum stock.
+      startCacheFiller(app.log);
+    });
     // Hybrid AI stylization (Pollinations + local fallback) — downloads any
     // missing .onnx weights, then pre-renders every style's preview
     // thumbnail from the local engine, so the "Выберите стиль" screen never

@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
+import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
 import tshirtWhite from "../assets/tshirt-white.png";
 import tshirtWhiteBack from "../assets/tshirt-white-back.png";
 import tshirtPopularWhite from "../assets/tshirt-popular-white.png";
 import tshirtPopularBlack from "../assets/tshirt-popular-black.png";
+import sweatshirtWhite from "../assets/sweatshirt-white.png";
+import sweatshirtWhiteBack from "../assets/sweatshirt-white-back.png";
+import capWhite from "../assets/cap-white.png";
+import capWhiteBack from "../assets/cap-white-back.png";
+import shopperWhite from "../assets/shopper-white.png";
+import shopperWhiteBack from "../assets/shopper-white-back.png";
 import { getCategoryHomeLabel } from "./homeLabels.js";
 import {
   clearAllImageOverrides,
@@ -55,6 +62,16 @@ const POPULAR_IMAGES: KioskImageDefinition[] = [
   })),
 ];
 
+/** Editor mockup photos for the other garment types (home preview stays t-shirt-only). */
+const GARMENT_MOCKUP_IMAGES: KioskImageDefinition[] = [
+  { key: "sweatshirt-white", label: "Свитшот белый (перед)", defaultUrl: sweatshirtWhite },
+  { key: "sweatshirt-white-back", label: "Свитшот белый (спина)", defaultUrl: sweatshirtWhiteBack },
+  { key: "cap-white", label: "Кепка белая (перед)", defaultUrl: capWhite },
+  { key: "cap-white-back", label: "Кепка белая (спина)", defaultUrl: capWhiteBack },
+  { key: "shopper-white", label: "Шоппер белый (перед)", defaultUrl: shopperWhite },
+  { key: "shopper-white-back", label: "Шоппер белый (спина)", defaultUrl: shopperWhiteBack },
+];
+
 const CATEGORY_IMAGES: KioskImageDefinition[] = CATEGORY_IMAGE_IDS.map((id) => ({
   key: `category-${id}`,
   label: getCategoryHomeLabel(id, "ru").main,
@@ -64,6 +81,7 @@ const CATEGORY_IMAGES: KioskImageDefinition[] = CATEGORY_IMAGE_IDS.map((id) => (
 
 export const KIOSK_IMAGE_SECTIONS: KioskImageSection[] = [
   { title: "Популярные принты", images: POPULAR_IMAGES },
+  { title: "Другие изделия", images: GARMENT_MOCKUP_IMAGES },
   { title: "Категории", images: CATEGORY_IMAGES },
 ];
 
@@ -143,6 +161,28 @@ export const DEFAULT_TSHIRT_WHITE_BACK = tshirtWhiteBack;
 /** Home "Популярные принты" carousel mockups — separate white/black photos. */
 export const DEFAULT_TSHIRT_POPULAR_WHITE = tshirtPopularWhite;
 export const DEFAULT_TSHIRT_POPULAR_BLACK = tshirtPopularBlack;
+
+/** Built-in per-type white flat-lay key, e.g. `sweatshirt-white-back` — mirrors `GARMENT_MOCKUP_IMAGES`/`POPULAR_IMAGES` keys above. */
+export function garmentImageKey(type: GarmentType, side: GarmentSide): string {
+  return side === "back" ? `${type}-white-back` : `${type}-white`;
+}
+
+const DEFAULT_GARMENT_IMAGE_BY_KEY: Record<string, string> = {
+  "tshirt-white": tshirtWhite,
+  "tshirt-white-back": tshirtWhiteBack,
+  "sweatshirt-white": sweatshirtWhite,
+  "sweatshirt-white-back": sweatshirtWhiteBack,
+  "cap-white": capWhite,
+  "cap-white-back": capWhiteBack,
+  "shopper-white": shopperWhite,
+  "shopper-white-back": shopperWhiteBack,
+};
+
+/** Re-render when the operator overrides this garment's mockup photo, same as `useKioskImage`. */
+export function useGarmentMockupImage(type: GarmentType, side: GarmentSide): string {
+  const key = garmentImageKey(type, side);
+  return useKioskImage(key) || DEFAULT_GARMENT_IMAGE_BY_KEY[key] || "";
+}
 
 export function hasKioskImageOverride(key: string): boolean {
   return hasCachedOverride(key);

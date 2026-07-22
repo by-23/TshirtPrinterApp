@@ -8,8 +8,7 @@ import {
   useKioskImage,
 } from "../../lib/kioskImages.js";
 import { computeCenteredImageScale } from "../canvasImage.js";
-import { TshirtMockup } from "./TshirtMockup.js";
-import { HoodieMockup } from "./HoodieMockup.js";
+import { PhotoGarmentMockup } from "./PhotoGarmentMockup.js";
 import {
   TSHIRT_POPULAR_PHOTO_HEIGHT,
   TSHIRT_POPULAR_PHOTO_WIDTH,
@@ -19,11 +18,6 @@ import { useGarmentClipMaskStyle } from "./useGarmentClipMaskStyle.js";
 
 const WHITE_HEX = "#ffffff";
 const POPULAR_TSHIRT_ASPECT_RATIO = `${TSHIRT_POPULAR_PHOTO_WIDTH} / ${TSHIRT_POPULAR_PHOTO_HEIGHT}`;
-
-const MOCKUP_BY_TYPE = {
-  tshirt: TshirtMockup,
-  hoodie: HoodieMockup,
-} as const;
 
 export interface GarmentClippedPrintPreviewProps {
   printImageUrl?: string;
@@ -118,9 +112,9 @@ export function GarmentClippedPrintPreview({
   const silhouetteOptions =
     garmentType === "tshirt"
       ? {
-          tshirtImageUrl: popularShirt,
-          tshirtPhotoWidth: TSHIRT_POPULAR_PHOTO_WIDTH,
-          tshirtPhotoHeight: TSHIRT_POPULAR_PHOTO_HEIGHT,
+          imageUrl: popularShirt,
+          photoWidth: TSHIRT_POPULAR_PHOTO_WIDTH,
+          photoHeight: TSHIRT_POPULAR_PHOTO_HEIGHT,
         }
       : undefined;
 
@@ -137,7 +131,6 @@ export function GarmentClippedPrintPreview({
     printArea,
     silhouetteOptions,
   );
-  const Mockup = MOCKUP_BY_TYPE[garmentType];
 
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const mockupPixelHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
@@ -159,7 +152,8 @@ export function GarmentClippedPrintPreview({
           transformOrigin: "center center",
         }}
       >
-        <Mockup
+        <PhotoGarmentMockup
+          garmentType={garmentType}
           side={side}
           color={WHITE_HEX}
           className="absolute inset-0 h-full w-full"

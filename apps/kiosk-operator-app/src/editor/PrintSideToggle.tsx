@@ -1,18 +1,22 @@
 import { useTranslation } from "react-i18next";
-import { garmentSideSchema } from "@tshirt/shared-types";
+import { garmentSideSchema, garmentHasSelectableBackSide } from "@tshirt/shared-types";
 import { PillButton } from "@tshirt/ui-kit";
 import { RAIL_ICON_CLASS, TshirtIcon } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
 
 /**
  * Print side (front/back) switch shown below the editor header, matching
- * the reference mockup exactly — no garment-type (t-shirt/hoodie) switch
- * on this screen.
+ * the reference mockup exactly — the garment-type switch lives in its own
+ * row above this one (`GarmentTypeToggle`). The "Спина" pill is
+ * disabled + dimmed (not hidden, to keep the row's layout stable) for
+ * garment types with no real back side, e.g. the shopper.
  */
 export function PrintSideToggle() {
   const { t } = useTranslation();
+  const garmentType = useEditorStore((state) => state.garmentType);
   const side = useEditorStore((state) => state.side);
   const setSide = useEditorStore((state) => state.setSide);
+  const hasBackSide = garmentHasSelectableBackSide(garmentType);
 
   return (
     <div className="flex items-center justify-center" style={{ gap: "var(--editor-toggle-gap)" }}>
@@ -25,10 +29,12 @@ export function PrintSideToggle() {
       <div className="flex" style={{ gap: "var(--editor-toggle-gap)" }}>
         {garmentSideSchema.options.map((sideOption) => {
           const active = side === sideOption;
+          const disabled = sideOption === "back" && !hasBackSide;
           return (
             <PillButton
               key={sideOption}
               active={active}
+              disabled={disabled}
               onClick={() => setSide(sideOption)}
               icon={<TshirtIcon className={RAIL_ICON_CLASS} />}
               className="px-6"

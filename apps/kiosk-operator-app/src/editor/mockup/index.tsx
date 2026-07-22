@@ -1,6 +1,5 @@
 import type { GarmentType } from "@tshirt/shared-types";
-import { TshirtMockup } from "./TshirtMockup.js";
-import { HoodieMockup } from "./HoodieMockup.js";
+import { PhotoGarmentMockup } from "./PhotoGarmentMockup.js";
 import type { GarmentMockupProps } from "./garmentShape.js";
 
 export {
@@ -11,26 +10,19 @@ export {
   MOCKUP_DISPLAY_SCALE,
 } from "./garmentShape.js";
 export type { PrintAreaRect, GarmentMockupProps } from "./garmentShape.js";
-export { TshirtMockup } from "./TshirtMockup.js";
-export { HoodieMockup } from "./HoodieMockup.js";
+export { PhotoGarmentMockup } from "./PhotoGarmentMockup.js";
 export { getFabricShadingOverlayStyle, getGarmentClipMaskStyle } from "./garmentClipMask.js";
 export {
   useFabricShadingOverlayStyle,
   useGarmentClipMaskStyle,
-  useTshirtSilhouetteUrl,
+  useGarmentSilhouetteUrl,
 } from "./useGarmentClipMaskStyle.js";
 export { GarmentClippedPrintPreview } from "./GarmentClippedPrintPreview.js";
 export type { GarmentClippedPrintPreviewProps } from "./GarmentClippedPrintPreview.js";
-
-const MOCKUP_BY_TYPE: Record<GarmentType, (props: GarmentMockupProps) => JSX.Element> = {
-  tshirt: TshirtMockup,
-  hoodie: HoodieMockup,
-};
 
 export function GarmentMockup({
   garmentType,
   ...props
 }: GarmentMockupProps & { garmentType: GarmentType }) {
-  const Mockup = MOCKUP_BY_TYPE[garmentType];
-  return <Mockup {...props} />;
+  return <PhotoGarmentMockup garmentType={garmentType} {...props} />;
 }

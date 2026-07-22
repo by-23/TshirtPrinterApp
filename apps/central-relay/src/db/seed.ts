@@ -60,7 +60,7 @@ async function seedDemoPointAndStats() {
 
   console.log(`Created demo point "${point!.name}" (id: ${point!.id}, syncToken: ${point!.syncToken})`);
 
-  const garmentTypes = ["tshirt", "hoodie"] as const;
+  const garmentTypes = ["tshirt", "sweatshirt", "cap", "shopper"] as const;
   const printSizes = ["small", "medium", "large"] as const;
   const prices = [6990, 7990, 8990, 11990, 12990];
 

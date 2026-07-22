@@ -18,6 +18,7 @@ import { placeImageCentered } from "../../editor/canvasImage.js";
 import { computePrintSize } from "../../editor/printSize.js";
 import { FabricCanvas } from "../../editor/FabricCanvas.js";
 import { GarmentPicker } from "../../editor/GarmentPicker.js";
+import { GarmentTypeToggle } from "../../editor/GarmentTypeToggle.js";
 import { PrintSideToggle } from "../../editor/PrintSideToggle.js";
 import { PriceAndPrint } from "../../editor/PriceAndPrint.js";
 import { ToolRail } from "../../editor/toolbar/ToolRail.js";
@@ -35,7 +36,7 @@ import {
   MOCKUP_HEIGHT,
   MOCKUP_WIDTH,
   useFabricShadingOverlayStyle,
-  useTshirtSilhouetteUrl,
+  useGarmentSilhouetteUrl,
 } from "../../editor/mockup/index.js";
 
 export function Editor() {
@@ -127,7 +128,7 @@ export function Editor() {
 
   const printAreas = usePrintAreaStore((state) => state.areas);
   const printArea = printAreas[garmentType][side];
-  const tshirtImageUrl = useTshirtSilhouetteUrl(color, side);
+  const garmentImageUrl = useGarmentSilhouetteUrl(garmentType, side);
   const fabricShadingOverlayStyle = useFabricShadingOverlayStyle(garmentType, side, color, printArea);
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const mockupPixelHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
@@ -243,6 +244,7 @@ export function Editor() {
 
       <div aria-hidden style={dividerStyle("header")} />
 
+      <GarmentTypeToggle canvas={canvas} />
       <PrintSideToggle />
 
       <div
@@ -303,7 +305,7 @@ export function Editor() {
                       side={side}
                       printArea={printArea}
                       garmentType={garmentType}
-                      tshirtImageUrl={garmentType === "tshirt" ? tshirtImageUrl : undefined}
+                      imageUrl={garmentImageUrl}
                       className="h-full w-full"
                       onReady={setCanvas}
                     />

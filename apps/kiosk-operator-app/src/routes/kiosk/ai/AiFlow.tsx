@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAiFlowStore, type AiFlowStep } from "../../../lib/aiFlowStore.js";
-import { warmBackgroundRemoval } from "../../../lib/backgroundRemoval.js";
 import { LanguageSwitcherSlot } from "../../../components/KioskShell.js";
 import { KioskPageTransition } from "../../../components/KioskPageTransition.js";
 import { ArrowLeft } from "../../../components/icons.js";
@@ -43,7 +42,7 @@ export function AiFlow() {
   const reset = useAiFlowStore((state) => state.reset);
   const isSourceStep = step === "source";
   const isThemedHeaderStep =
-    isSourceStep || step === "qr" || step === "style" || step === "processing" || step === "result";
+    isSourceStep || step === "camera" || step === "qr" || step === "style" || step === "processing" || step === "result";
 
   const prevStepRef = useRef(step);
   const directionRef = useRef<PageTransitionDirection>("forward");
@@ -59,10 +58,6 @@ export function AiFlow() {
     }
     prevStepRef.current = step;
   }
-
-  useEffect(() => {
-    warmBackgroundRemoval();
-  }, []);
 
   function handleBack() {
     if (step === "source") {

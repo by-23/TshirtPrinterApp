@@ -29,10 +29,14 @@
   "editor": {
     "title": "Design Editor",
     "printSide": "Print side",
+    "garmentType": "Garment",
     "garmentTypes": {
       "tshirt": "T-Shirt",
-      "hoodie": "Hoodie"
+      "sweatshirt": "Sweatshirt",
+      "cap": "Cap",
+      "shopper": "Tote bag"
     },
+    "confirmGarmentTypeChange": "Switching the garment will reset the design on the current layout. Continue?",
     "sides": {
       "front": "Front",
       "back": "Back"

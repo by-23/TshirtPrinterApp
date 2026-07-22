@@ -17,7 +17,9 @@ const LABEL_STYLE = { color: "var(--operator-text-muted)" };
 
 const GARMENT_LABELS: Record<GarmentType, string> = {
   tshirt: "Футболка",
-  hoodie: "Худи",
+  sweatshirt: "Свитшот",
+  cap: "Кепка",
+  shopper: "Шоппер",
 };
 
 const SIDE_LABELS: Record<GarmentSide, string> = {

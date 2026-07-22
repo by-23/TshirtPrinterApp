@@ -1,11 +1,8 @@
 import type { CSSProperties } from "react";
-import type { GarmentSide, GarmentType, PrintAreaRect } from "@tshirt/shared-types";
-import { bodyPolygonPoints, MOCKUP_DISPLAY_SCALE, MOCKUP_HEIGHT, MOCKUP_WIDTH } from "./garmentShape.js";
+import { GARMENT_PHOTO_HEIGHT, GARMENT_PHOTO_WIDTH, type GarmentSide, type GarmentType, type PrintAreaRect } from "@tshirt/shared-types";
+import { MOCKUP_DISPLAY_SCALE, MOCKUP_HEIGHT, MOCKUP_WIDTH } from "./garmentShape.js";
 
-/** Native editor flat-lay asset size — must match `TshirtMockup.tsx` / point-server compositing. */
-export const TSHIRT_PHOTO_WIDTH = 640;
-export const TSHIRT_PHOTO_HEIGHT = 677;
-/** Home "Популярные принты" mockups (`tshirt-popular-white/black.png`) — near-identical size. */
+/** Home "Популярные принты" mockups (`tshirt-popular-white/black.png`) — a separate, larger t-shirt-only render. */
 export const TSHIRT_POPULAR_PHOTO_WIDTH = 768;
 export const TSHIRT_POPULAR_PHOTO_HEIGHT = 892;
 
@@ -13,14 +10,14 @@ export interface GarmentClipMaskInput {
   garmentType: GarmentType;
   side: GarmentSide;
   printArea: PrintAreaRect;
-  /** Alpha silhouette source for t-shirt clipping (white flat-lay PNG). */
-  tshirtImageUrl?: string;
-  /** Native photo size for letterbox math (defaults to editor flat-lay). */
-  tshirtPhotoWidth?: number;
-  tshirtPhotoHeight?: number;
+  /** Alpha silhouette source for clipping (white flat-lay PNG for this garment type/side). */
+  imageUrl?: string;
+  /** Native photo size for letterbox math (defaults to the shared square garment photo size). */
+  photoWidth?: number;
+  photoHeight?: number;
 }
 
-function getTshirtLetterboxMetrics(photoWidth = TSHIRT_PHOTO_WIDTH, photoHeight = TSHIRT_PHOTO_HEIGHT) {
+function getGarmentLetterboxMetrics(photoWidth = GARMENT_PHOTO_WIDTH, photoHeight = GARMENT_PHOTO_HEIGHT) {
   const boxWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const boxHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
   const containScale = Math.min(boxWidth / photoWidth, boxHeight / photoHeight);
@@ -29,17 +26,6 @@ function getTshirtLetterboxMetrics(photoWidth = TSHIRT_PHOTO_WIDTH, photoHeight 
   const offsetX = (boxWidth - renderedWidth) / 2;
   const offsetY = (boxHeight - renderedHeight) / 2;
   return { renderedWidth, renderedHeight, offsetX, offsetY };
-}
-
-function hoodieSilhouetteSvgDataUrl(side: GarmentSide): string {
-  const bodyPoints = bodyPolygonPoints(side);
-  const hoodPath = "M90,45 Q150,-15 210,45 Q190,65 150,58 Q110,65 90,45 Z";
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${MOCKUP_WIDTH} ${MOCKUP_HEIGHT}">` +
-    `<path d="${hoodPath}" fill="white"/>` +
-    `<polygon points="${bodyPoints}" fill="white"/>` +
-    `</svg>`;
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
 export interface GarmentClipLayout {
@@ -51,39 +37,18 @@ export interface GarmentClipLayout {
 }
 
 function resolveGarmentClipLayout(input: GarmentClipMaskInput): GarmentClipLayout | null {
-  const scale = MOCKUP_DISPLAY_SCALE;
+  if (!input.imageUrl) return null;
   const { x, y } = input.printArea;
-  const mockupWidthPx = MOCKUP_WIDTH * scale;
-  const mockupHeightPx = MOCKUP_HEIGHT * scale;
+  const scale = MOCKUP_DISPLAY_SCALE;
 
-  let maskUrl: string;
-  let maskWidth: number;
-  let maskHeight: number;
-  let offsetX: number;
-  let offsetY: number;
-
-  if (input.garmentType === "tshirt") {
-    if (!input.tshirtImageUrl) return null;
-    const metrics = getTshirtLetterboxMetrics(input.tshirtPhotoWidth, input.tshirtPhotoHeight);
-    maskUrl = input.tshirtImageUrl;
-    maskWidth = metrics.renderedWidth;
-    maskHeight = metrics.renderedHeight;
-    offsetX = metrics.offsetX;
-    offsetY = metrics.offsetY;
-  } else {
-    maskUrl = hoodieSilhouetteSvgDataUrl(input.side);
-    maskWidth = mockupWidthPx;
-    maskHeight = mockupHeightPx;
-    offsetX = 0;
-    offsetY = 0;
-  }
+  const metrics = getGarmentLetterboxMetrics(input.photoWidth, input.photoHeight);
 
   return {
-    maskUrl,
-    left: offsetX - x * scale,
-    top: offsetY - y * scale,
-    width: maskWidth,
-    height: maskHeight,
+    maskUrl: input.imageUrl,
+    left: metrics.offsetX - x * scale,
+    top: metrics.offsetY - y * scale,
+    width: metrics.renderedWidth,
+    height: metrics.renderedHeight,
   };
 }
 
@@ -119,11 +84,9 @@ export function getGarmentClipMaskStyle(input: GarmentClipMaskInput): CSSPropert
  * flat fabric. Self-contained (bundles its own garment-silhouette mask using
  * the same alignment math as `getGarmentClipMaskStyle`), so it can be
  * dropped in as a standalone absolutely-positioned overlay `div` above the
- * design layer. Only meaningful for the photographed t-shirt garment — the
- * hoodie mockup is a flat vector shape with no real shading to borrow.
+ * design layer.
  */
 export function getFabricShadingOverlayStyle(input: GarmentClipMaskInput): CSSProperties {
-  if (input.garmentType !== "tshirt" || !input.tshirtImageUrl) return {};
   const layout = resolveGarmentClipLayout(input);
   if (!layout) return {};
 

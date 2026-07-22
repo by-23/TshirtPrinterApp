@@ -2,18 +2,20 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
-import { MOCKUP_HEIGHT, MOCKUP_WIDTH, getPrintAreas, hoodieSvg } from "./garmentGeometry.js";
+import { MOCKUP_HEIGHT, MOCKUP_WIDTH, getPrintAreas } from "./garmentGeometry.js";
 
 /** Everything generated at runtime (per-order PNGs) lives under this dir, relative to cwd (same convention as `env.DATABASE_PATH`). */
 const DATA_DIR = path.resolve("data");
 const ORDERS_DIR = path.join(DATA_DIR, "orders");
 const ASSETS_DIR = path.resolve("assets", "garments");
 
-const TSHIRT_WHITE_PATH = path.join(ASSETS_DIR, "tshirt-white.png");
-const TSHIRT_WHITE_BACK_PATH = path.join(ASSETS_DIR, "tshirt-white-back.png");
-
 /** Matches the client's `MOCKUP_DISPLAY_SCALE` — arbitrary (cancels out in the math below) but kept for readability/parity. */
 const RENDER_SCALE = 2;
+
+function garmentPhotoPath(type: GarmentType, side: GarmentSide): string {
+  const suffix = side === "back" ? "-back" : "";
+  return path.join(ASSETS_DIR, `${type}-white${suffix}.png`);
+}
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const normalized = hex.replace("#", "");
@@ -33,8 +35,8 @@ interface Rect {
  * Maps the print-area rect (defined in the shared 300×340 mockup viewBox
  * space) into the native pixel space of a raster garment photo that's been
  * letterboxed into that box via `object-contain` — mirrors what the CSS in
- * `TshirtMockup.tsx` does visually, so the composited design lands in the
- * same place the customer saw on the kiosk screen.
+ * `PhotoGarmentMockup.tsx` does visually, so the composited design lands in
+ * the same place the customer saw on the kiosk screen.
  */
 function printAreaToPhotoPixels(
   photoWidth: number,
@@ -73,12 +75,22 @@ function clampRect(rect: Rect, maxWidth: number, maxHeight: number): Rect {
   return { left, top, width, height };
 }
 
-async function tintedTshirtBase(
+/**
+ * Every garment type is a photographed flat-lay (white PNG with real alpha
+ * silhouette) — tinting a non-white color multiplies a solid-color layer
+ * over the white photo, then re-masks with the original alpha so the
+ * transparent background stays transparent (sharp's `tint()` alone looks
+ * washed out on a near-white base since it preserves per-pixel luminance).
+ * Mirrors the client's CSS `mix-blend-mode: multiply` overlay in
+ * `PhotoGarmentMockup.tsx`.
+ */
+async function tintedGarmentBase(
+  type: GarmentType,
   color: string,
   side: GarmentSide,
 ): Promise<{ buffer: Buffer; width: number; height: number }> {
   const isWhite = color.toLowerCase() === "#ffffff";
-  const basePath = side === "back" ? TSHIRT_WHITE_BACK_PATH : TSHIRT_WHITE_PATH;
+  const basePath = garmentPhotoPath(type, side);
 
   const base = sharp(basePath).ensureAlpha();
   const metadata = await base.metadata();
@@ -89,11 +101,6 @@ async function tintedTshirtBase(
     return { buffer: await base.png().toBuffer(), width, height };
   }
 
-  // Mirrors the client's CSS `mix-blend-mode: multiply` overlay (see
-  // TshirtMockup.tsx): a solid color multiplied over the white photo, then
-  // re-masked with the original photo's alpha so the transparent background
-  // stays transparent (sharp's `tint()` alone looks washed out on a
-  // near-white base since it preserves per-pixel luminance).
   const { r, g, b } = hexToRgb(color);
   const solid = await sharp({
     create: { width, height, channels: 4, background: { r, g, b, alpha: 1 } },
@@ -112,22 +119,6 @@ async function tintedTshirtBase(
   return { buffer, width, height };
 }
 
-async function garmentBase(
-  type: GarmentType,
-  color: string,
-  side: GarmentSide,
-): Promise<{ buffer: Buffer; width: number; height: number }> {
-  if (type === "tshirt") {
-    return tintedTshirtBase(color, side);
-  }
-
-  const width = MOCKUP_WIDTH * RENDER_SCALE;
-  const height = MOCKUP_HEIGHT * RENDER_SCALE;
-  const svg = hoodieSvg(color, side, RENDER_SCALE);
-  const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
-  return { buffer, width, height };
-}
-
 async function designRect(
   type: GarmentType,
   side: GarmentSide,
@@ -135,21 +126,7 @@ async function designRect(
   baseHeight: number,
 ): Promise<Rect> {
   const printAreas = await getPrintAreas();
-  if (type === "tshirt") {
-    return printAreaToPhotoPixels(baseWidth, baseHeight, side, type, printAreas);
-  }
-  // Hoodie base is rendered 1:1 in the same coordinate space as PRINT_AREAS — no object-contain offset needed.
-  const printArea = printAreas[type][side];
-  return clampRect(
-    {
-      left: Math.round(printArea.x * RENDER_SCALE),
-      top: Math.round(printArea.y * RENDER_SCALE),
-      width: Math.round(printArea.width * RENDER_SCALE),
-      height: Math.round(printArea.height * RENDER_SCALE),
-    },
-    baseWidth,
-    baseHeight,
-  );
+  return printAreaToPhotoPixels(baseWidth, baseHeight, side, type, printAreas);
 }
 
 /**
@@ -158,8 +135,6 @@ async function designRect(
  * being pasted on top of it. `linear(1, SHADING_BRIGHTEN)` pushes the
  * photo's near-white lit areas to true white first, so the highlight zones
  * of the design aren't darkened — only the real shadow creases are.
- * Skipped for the hoodie, which is a flat vector render with no real photo
- * shading to borrow.
  */
 const SHADING_BRIGHTEN = 25;
 
@@ -204,8 +179,8 @@ export interface GenerateOrderImagesResult {
 /**
  * Saves the customer's design PNG and composites it onto a garment template
  * via `sharp`, producing the two files Stage 5 requires: a clean design PNG
- * and a photorealistic (t-shirt) / flat-vector (hoodie) mockup PNG. Paths
- * returned are relative to `data/`, ready to be served under `/files`.
+ * and a photorealistic mockup PNG. Paths returned are relative to `data/`,
+ * ready to be served under `/files`.
  */
 export async function generateOrderImages(input: GenerateOrderImagesInput): Promise<GenerateOrderImagesResult> {
   const orderDir = path.join(ORDERS_DIR, input.orderId);
@@ -215,11 +190,14 @@ export async function generateOrderImages(input: GenerateOrderImagesInput): Prom
   const designPngPath = path.join(orderDir, "design.png");
   await writeFile(designPngPath, designBuffer);
 
-  const { buffer: baseBuffer, width, height } = await garmentBase(input.garmentType, input.garmentColor, input.side);
+  const { buffer: baseBuffer, width, height } = await tintedGarmentBase(
+    input.garmentType,
+    input.garmentColor,
+    input.side,
+  );
   const rect = await designRect(input.garmentType, input.side, width, height);
   const resizedDesign = await sharp(designBuffer).resize(rect.width, rect.height, { fit: "fill" }).png().toBuffer();
-  const finalDesignLayer =
-    input.garmentType === "tshirt" ? await applyFabricShading(baseBuffer, resizedDesign, rect) : resizedDesign;
+  const finalDesignLayer = await applyFabricShading(baseBuffer, resizedDesign, rect);
 
   const mockupPngPath = path.join(orderDir, "mockup.png");
   await sharp(baseBuffer)

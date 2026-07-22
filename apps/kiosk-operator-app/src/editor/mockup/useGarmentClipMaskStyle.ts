@@ -1,47 +1,28 @@
 import { useMemo } from "react";
 import type { GarmentSide, GarmentType, PrintAreaRect } from "@tshirt/shared-types";
-import {
-  DEFAULT_TSHIRT_WHITE,
-  DEFAULT_TSHIRT_WHITE_BACK,
-  useKioskImage,
-} from "../../lib/kioskImages.js";
+import { useGarmentMockupImage } from "../../lib/kioskImages.js";
 import { getFabricShadingOverlayStyle, getGarmentClipMaskStyle } from "./garmentClipMask.js";
 
-/** Alpha silhouette for clipping — always uses the white flat-lay photo (colors are tinted separately). */
-export function useTshirtSilhouetteUrl(_color: string, side: GarmentSide): string {
-  const whiteFront = useKioskImage("tshirt-white") || DEFAULT_TSHIRT_WHITE;
-  const whiteBack = useKioskImage("tshirt-white-back") || DEFAULT_TSHIRT_WHITE_BACK;
-  return side === "back" ? whiteBack : whiteFront;
+/** Alpha silhouette for clipping — always the white flat-lay photo for this type/side (colors are tinted separately). */
+export function useGarmentSilhouetteUrl(garmentType: GarmentType, side: GarmentSide): string {
+  return useGarmentMockupImage(garmentType, side);
 }
 
-function useTshirtSilhouetteUrlForClip(
-  garmentType: GarmentType,
-  color: string,
-  side: GarmentSide,
-  overrideUrl?: string,
-): string | undefined {
-  const tshirtImageUrl = useTshirtSilhouetteUrl(color, side);
-  if (garmentType !== "tshirt") return undefined;
-  return overrideUrl || tshirtImageUrl;
+interface GarmentClipStyleOptions {
+  imageUrl?: string;
+  photoWidth?: number;
+  photoHeight?: number;
 }
 
 export function useGarmentClipMaskStyle(
   garmentType: GarmentType,
   side: GarmentSide,
-  color: string,
+  _color: string,
   printArea: PrintAreaRect,
-  options?: {
-    tshirtImageUrl?: string;
-    tshirtPhotoWidth?: number;
-    tshirtPhotoHeight?: number;
-  },
+  options?: GarmentClipStyleOptions,
 ) {
-  const tshirtImageUrl = useTshirtSilhouetteUrlForClip(
-    garmentType,
-    color,
-    side,
-    options?.tshirtImageUrl,
-  );
+  const silhouetteUrl = useGarmentSilhouetteUrl(garmentType, side);
+  const imageUrl = options?.imageUrl || silhouetteUrl;
 
   return useMemo(
     () =>
@@ -49,18 +30,11 @@ export function useGarmentClipMaskStyle(
         garmentType,
         side,
         printArea,
-        tshirtImageUrl: garmentType === "tshirt" ? tshirtImageUrl : undefined,
-        tshirtPhotoWidth: options?.tshirtPhotoWidth,
-        tshirtPhotoHeight: options?.tshirtPhotoHeight,
+        imageUrl,
+        photoWidth: options?.photoWidth,
+        photoHeight: options?.photoHeight,
       }),
-    [
-      garmentType,
-      side,
-      printArea,
-      tshirtImageUrl,
-      options?.tshirtPhotoWidth,
-      options?.tshirtPhotoHeight,
-    ],
+    [garmentType, side, printArea, imageUrl, options?.photoWidth, options?.photoHeight],
   );
 }
 
@@ -68,20 +42,12 @@ export function useGarmentClipMaskStyle(
 export function useFabricShadingOverlayStyle(
   garmentType: GarmentType,
   side: GarmentSide,
-  color: string,
+  _color: string,
   printArea: PrintAreaRect,
-  options?: {
-    tshirtImageUrl?: string;
-    tshirtPhotoWidth?: number;
-    tshirtPhotoHeight?: number;
-  },
+  options?: GarmentClipStyleOptions,
 ) {
-  const tshirtImageUrl = useTshirtSilhouetteUrlForClip(
-    garmentType,
-    color,
-    side,
-    options?.tshirtImageUrl,
-  );
+  const silhouetteUrl = useGarmentSilhouetteUrl(garmentType, side);
+  const imageUrl = options?.imageUrl || silhouetteUrl;
 
   return useMemo(
     () =>
@@ -89,17 +55,10 @@ export function useFabricShadingOverlayStyle(
         garmentType,
         side,
         printArea,
-        tshirtImageUrl: garmentType === "tshirt" ? tshirtImageUrl : undefined,
-        tshirtPhotoWidth: options?.tshirtPhotoWidth,
-        tshirtPhotoHeight: options?.tshirtPhotoHeight,
+        imageUrl,
+        photoWidth: options?.photoWidth,
+        photoHeight: options?.photoHeight,
       }),
-    [
-      garmentType,
-      side,
-      printArea,
-      tshirtImageUrl,
-      options?.tshirtPhotoWidth,
-      options?.tshirtPhotoHeight,
-    ],
+    [garmentType, side, printArea, imageUrl, options?.photoWidth, options?.photoHeight],
   );
 }

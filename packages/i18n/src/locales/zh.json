@@ -29,10 +29,14 @@
   "editor": {
     "title": "设计编辑",
     "printSide": "打印面",
+    "garmentType": "商品",
     "garmentTypes": {
       "tshirt": "T恤",
-      "hoodie": "卫衣"
+      "sweatshirt": "卫衣",
+      "cap": "帽子",
+      "shopper": "帆布袋"
     },
+    "confirmGarmentTypeChange": "切换商品类型将重置当前版面上的设计。是否继续？",
     "sides": {
       "front": "正面",
       "back": "背面"

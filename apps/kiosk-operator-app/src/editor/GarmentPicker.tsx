@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { GARMENT_COLORS, GARMENT_SIZES, GARMENT_FABRICS, type GarmentFabric } from "@tshirt/shared-types";
+import {
+  GARMENT_COLORS,
+  GARMENT_SIZES,
+  GARMENT_FABRICS,
+  garmentUsesSizeFabric,
+  type GarmentFabric,
+} from "@tshirt/shared-types";
 import { PillButton } from "@tshirt/ui-kit";
 import { Diamond, RAIL_ICON_CLASS } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
@@ -17,12 +23,17 @@ const FABRIC_ICONS: Partial<Record<GarmentFabric, ReactNode>> = {
  */
 export function GarmentPicker() {
   const { t } = useTranslation();
+  const garmentType = useEditorStore((state) => state.garmentType);
   const color = useEditorStore((state) => state.color);
   const size = useEditorStore((state) => state.size);
   const fabricName = useEditorStore((state) => state.fabricName);
   const setColor = useEditorStore((state) => state.setColor);
   const setSize = useEditorStore((state) => state.setSize);
   const setFabricName = useEditorStore((state) => state.setFabricName);
+  // Cap/shopper are one-size/one-material — the pills stay visible (so the
+  // panel's layout doesn't shift) but disabled + dimmed, per the editor's
+  // decision to never show empty gaps for unavailable options.
+  const sizeFabricEnabled = garmentUsesSizeFabric(garmentType);
 
   return (
     <div className="flex flex-col" style={{ gap: "var(--editor-garment-blocks-gap)" }}>
@@ -65,6 +76,7 @@ export function GarmentPicker() {
               <PillButton
                 key={sizeOption}
                 active={active}
+                disabled={!sizeFabricEnabled}
                 onClick={() => setSize(sizeOption)}
                 className="flex-shrink-0 px-0"
                 style={{
@@ -93,6 +105,7 @@ export function GarmentPicker() {
               <PillButton
                 key={fabricOption}
                 active={active}
+                disabled={!sizeFabricEnabled}
                 onClick={() => setFabricName(fabricOption)}
                 icon={FABRIC_ICONS[fabricOption]}
                 className="flex-shrink-0"

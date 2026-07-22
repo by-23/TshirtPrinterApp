@@ -15,15 +15,21 @@ function slugify(query: string): string {
   return query
     .trim()
     .toLowerCase()
+    // CleanPNG URLs are English-only — Cyrillic queries used to collapse to
+    // a useless "png" slug and burn a Playwright launch for nothing.
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-+|-+$)/g, "");
+}
+
+function isUsableCleanPngSlug(slug: string): boolean {
+  return slug.length >= 3 && slug !== "png";
 }
 
 async function collectListings(browser: Browser, query: string, limit: number): Promise<CleanPngListing[]> {
   const page = await browser.newPage();
   try {
     const slug = slugify(query);
-    if (!slug) return [];
+    if (!isUsableCleanPngSlug(slug)) return [];
     await page.goto(`https://www.cleanpng.com/free/${slug}.html`, {
       waitUntil: "domcontentloaded",
       timeout: NAV_TIMEOUT_MS,

@@ -1,6 +1,7 @@
 import type { FastifyBaseLogger } from "fastify";
 import type { GalleryCategory } from "@tshirt/shared-types";
 import { getScrapeConfig } from "./config.js";
+import { getEmptyStreak, noteFillResult } from "./rateLimit.js";
 import { topUpCategory, topUpCategoryBy } from "./scrapeService.js";
 import { getCategoryStorageStats } from "./storage.js";
 
@@ -17,16 +18,20 @@ async function runExclusive(
   category: GalleryCategory,
   run: () => Promise<number>,
   log?: FastifyBaseLogger,
-): Promise<void> {
-  if (pending.has(category)) return;
+): Promise<number> {
+  if (pending.has(category)) return 0;
   pending.add(category);
   try {
     const downloaded = await run();
+    noteFillResult(category, downloaded);
     if (downloaded > 0) {
       log?.info({ category, downloaded }, "Catalog scraper topped up category");
     }
+    return downloaded;
   } catch (error) {
+    noteFillResult(category, 0);
     log?.warn({ category, err: error }, "Catalog scraper run failed");
+    return 0;
   } finally {
     pending.delete(category);
   }
@@ -95,16 +100,24 @@ async function totalCacheBytes(): Promise<number> {
  * Picks the gallery category with the *least* on-disk usage right now
  * (skipping any already mid-run) so the slow filler below grows all 3
  * categories evenly instead of one racing ahead of the others.
+ *
+ * Categories that recently returned 0 downloads are deprioritized — otherwise
+ * an exhausted least-bytes category monopolizes every tick and the other two
+ * never grow, even though the cache is still well under its GB limit.
  */
 async function pickFillerCategory(): Promise<GalleryCategory | null> {
   const idle = GALLERY_CATEGORIES.filter((category) => !pending.has(category));
   if (idle.length === 0) return null;
 
-  const withBytes = await Promise.all(
-    idle.map(async (category) => ({ category, bytes: (await getCategoryStorageStats(category)).bytes })),
+  const withScore = await Promise.all(
+    idle.map(async (category) => ({
+      category,
+      bytes: (await getCategoryStorageStats(category)).bytes,
+      streak: getEmptyStreak(category),
+    })),
   );
-  withBytes.sort((a, b) => a.bytes - b.bytes);
-  return withBytes[0]!.category;
+  withScore.sort((a, b) => a.streak - b.streak || a.bytes - b.bytes);
+  return withScore[0]!.category;
 }
 
 let fillerStarted = false;

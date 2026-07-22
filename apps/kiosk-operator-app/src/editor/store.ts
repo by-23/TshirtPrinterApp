@@ -1,8 +1,12 @@
 import { create } from "zustand";
 import {
+  FIXED_GARMENT_FABRIC,
+  FIXED_GARMENT_SIZE,
   GARMENT_COLORS,
   GARMENT_FABRICS,
   GARMENT_SIZES,
+  garmentHasSelectableBackSide,
+  garmentUsesSizeFabric,
   type GarmentSide,
   type GarmentType,
   type PrintSize,
@@ -50,7 +54,21 @@ const initialState = {
 
 export const useEditorStore = create<EditorState>((set) => ({
   ...initialState,
-  setGarmentType: (garmentType) => set({ garmentType }),
+  // Every garment type has its own print area/mockup, so a type switch
+  // always clears both side canvases (the caller — `GarmentTypeToggle` —
+  // is responsible for confirming with the customer first when there's an
+  // actual design to lose). Cap/shopper also pin size/fabric to fixed,
+  // zero-surcharge values since they're one-size/one-material; switching
+  // back to t-shirt/sweatshirt restores the normal editable defaults.
+  setGarmentType: (garmentType) =>
+    set((state) => ({
+      garmentType,
+      side: garmentHasSelectableBackSide(garmentType) ? state.side : "front",
+      size: garmentUsesSizeFabric(garmentType) ? GARMENT_SIZES[1] : FIXED_GARMENT_SIZE,
+      fabricName: garmentUsesSizeFabric(garmentType) ? GARMENT_FABRICS[0] : FIXED_GARMENT_FABRIC,
+      canvasSnapshots: { front: null, back: null },
+      printSizeBySide: { front: "small", back: "small" },
+    })),
   setSide: (side) => set({ side }),
   setColor: (color) => set({ color }),
   setSize: (size) => set({ size }),

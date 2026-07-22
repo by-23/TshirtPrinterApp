@@ -143,7 +143,7 @@ export const orders = sqliteTable("orders", {
   status: text("status", { enum: ["new", "accepted", "printing", "done", "cancelled"] })
     .notNull()
     .default("new"),
-  garmentType: text("garment_type", { enum: ["tshirt", "hoodie"] }).notNull(),
+  garmentType: text("garment_type", { enum: ["tshirt", "sweatshirt", "cap", "shopper"] }).notNull(),
   garmentColor: text("garment_color").notNull(),
   garmentSize: text("garment_size").notNull(),
   garmentFabric: text("garment_fabric").notNull(),

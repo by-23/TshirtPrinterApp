@@ -1,24 +1,36 @@
-import { removeBackground } from "@imgly/background-removal";
-
 let warmed = false;
-
-/** 1x1 transparent PNG — cheap enough to not matter, just forces the WASM/model download+init ahead of the real first use. */
-const TINY_PNG =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
 /**
  * Best-effort warm-up of `@imgly/background-removal`'s WASM/model bundle —
- * call once when entering `/kiosk/ai` so the model is (hopefully) already
- * loaded by the time the user reaches the result step, instead of eating
- * that latency mid-flow (docs/PLAN.md risk: "Первый запуск
- * @imgly/background-removal медленный").
+ * called once when the kiosk shell boots (see `KioskShell.tsx`) so the model
+ * is (hopefully) already cached by the time the user reaches the AI-style
+ * flow, instead of eating that latency on `/kiosk/ai` entry or mid-flow
+ * (docs/PLAN.md risk: "Первый запуск @imgly/background-removal медленный").
+ *
+ * Uses the library's own `preload()` — which only downloads/initializes the
+ * WASM+ONNX assets — rather than running a real `removeBackground()` pass,
+ * since inference itself is a further multi-second main-thread cost that
+ * warm-up doesn't need to pay. Deferred to `requestIdleCallback` and dynamic
+ * `import()` so neither the module nor the download compete with whatever
+ * the kiosk is rendering right after boot.
  */
 export function warmBackgroundRemoval(): void {
   if (warmed) return;
   warmed = true;
-  void removeBackground(TINY_PNG).catch(() => {
-    // Best-effort only — a failed warm-up just means the first real removal pays the init cost instead.
-  });
+
+  const run = () => {
+    void import("@imgly/background-removal")
+      .then(({ preload }) => preload())
+      .catch(() => {
+        // Best-effort only — a failed warm-up just means the first real removal pays the init cost instead.
+      });
+  };
+
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(run);
+  } else {
+    setTimeout(run, 0);
+  }
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -32,6 +44,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 
 /** Runs client-side background removal (WASM/ONNX, entirely offline — see docs/PLAN.md) on a data URL, returning a transparent-background PNG data URL. */
 export async function removeImageBackground(dataUrl: string): Promise<string> {
+  const { removeBackground } = await import("@imgly/background-removal");
   const blob = await removeBackground(dataUrl);
   return blobToDataUrl(blob);
 }

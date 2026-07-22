@@ -5,6 +5,7 @@ import { KioskKeyboardOverlay } from "./KioskKeyboardOverlay.js";
 import { KioskAmbientBackdrop } from "./KioskAmbientBackdrop.js";
 import { KioskPageTransition } from "./KioskPageTransition.js";
 import { initPointStatus, usePointStatusStore } from "../lib/pointStatusStore.js";
+import { warmBackgroundRemoval } from "../lib/backgroundRemoval.js";
 import {
   resolveKioskNavDirection,
   type PageTransitionDirection,
@@ -42,6 +43,9 @@ export function KioskShell() {
 
   useEffect(() => {
     initPointStatus();
+    // Warm the AI-style background-removal model as soon as the kiosk boots
+    // (idle-deferred), so entering `/kiosk/ai` later doesn't pay the cold-start cost.
+    warmBackgroundRemoval();
   }, []);
 
   return (

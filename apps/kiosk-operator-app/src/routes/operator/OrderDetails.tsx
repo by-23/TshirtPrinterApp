@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Order } from "@tshirt/shared-types";
 import { TshirtIcon } from "../../components/icons.js";
 import { updateOrderStatus } from "../../lib/pointServer.js";
+import { printOrderDesign } from "../../lib/printOrder.js";
 import { StatusBadge } from "./StatusBadge.js";
 import {
   FABRIC_LABELS,
@@ -24,7 +25,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export function OrderDetails({ order, onUpdated }: { order: Order | null; onUpdated: (order: Order) => void }) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!order) {
     return (
@@ -34,23 +35,40 @@ export function OrderDetails({ order, onUpdated }: { order: Order | null; onUpda
     );
   }
 
+  const isNew = order.status === "new";
+  const isInProgress = order.status === "accepted" || order.status === "printing";
+  const isFinal = order.status === "done" || order.status === "cancelled";
+
   async function applyStatus(status: "accepted" | "done" | "cancelled") {
-    if (status === "cancelled" && !window.confirm(`Отменить заказ №${order!.id}?`)) return;
-    setError(false);
+    if (status === "cancelled" && !window.confirm(`Отменить заказ №${order.id}?`)) return;
+    if (status === "accepted" && isFinal) {
+      const message =
+        order.status === "cancelled"
+          ? `Заказ №${order.id} отменён. Отправить на печать повторно?`
+          : `Заказ №${order.id} уже выполнен. Отправить на печать повторно?`;
+      if (!window.confirm(message)) return;
+    }
+    setError(null);
     setIsUpdating(true);
     try {
-      const updated = await updateOrderStatus(order!.id, status);
+      if (status === "accepted") {
+        if (!order.designImageUrl) {
+          throw new Error("no design");
+        }
+        await printOrderDesign(order.designImageUrl, `Заказ №${order.id}`);
+      }
+      const updated = await updateOrderStatus(order.id, status);
       onUpdated(updated);
     } catch {
-      setError(true);
+      setError(
+        status === "accepted"
+          ? "Не удалось отправить на печать. Проверьте файл дизайна и попробуйте ещё раз."
+          : "Не удалось обновить заказ. Попробуйте ещё раз.",
+      );
     } finally {
       setIsUpdating(false);
     }
   }
-
-  const isNew = order.status === "new";
-  const isInProgress = order.status === "accepted" || order.status === "printing";
-  const isFinal = order.status === "done" || order.status === "cancelled";
 
   return (
     <div
@@ -129,7 +147,7 @@ export function OrderDetails({ order, onUpdated }: { order: Order | null; onUpda
             >
               Детали заказа
             </h3>
-            <DetailRow label="Футболка" value={`${GARMENT_TYPE_LABELS[order.garment.type]}, ${garmentColorLabel(order.garment.color)}`} />
+            <DetailRow label="Изделие" value={`${GARMENT_TYPE_LABELS[order.garment.type]}, ${garmentColorLabel(order.garment.color)}`} />
             <DetailRow label="Размер" value={order.garment.size} />
             <DetailRow label="Сторона печати" value={GARMENT_SIDE_LABELS[order.side]} />
             <DetailRow label="Дизайнов" value="1" />
@@ -194,9 +212,9 @@ export function OrderDetails({ order, onUpdated }: { order: Order | null; onUpda
       </div>
 
       <div className="mt-auto flex flex-shrink-0 flex-col gap-3 pt-5">
-        {error && <p className="text-sm font-semibold text-red-400">Не удалось обновить заказ. Попробуйте ещё раз.</p>}
+        {error && <p className="text-sm font-semibold text-red-400">{error}</p>}
         <div className="flex flex-row" style={{ gap: "var(--operator-details-buttons-gap)" }}>
-          {isNew && (
+          {(isNew || isFinal) && (
             <button
               type="button"
               disabled={isUpdating}
@@ -209,7 +227,7 @@ export function OrderDetails({ order, onUpdated }: { order: Order | null; onUpda
                 backgroundColor: "var(--operator-details-accept-bg)",
               }}
             >
-              Отправить на печать
+              {isFinal ? "Повторить печать" : "Отправить на печать"}
             </button>
           )}
           {isInProgress && (

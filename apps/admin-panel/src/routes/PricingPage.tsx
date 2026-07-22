@@ -11,7 +11,12 @@ import {
 } from "@tshirt/shared-types";
 import { apiClient, ApiError } from "../lib/apiClient.js";
 
-const GARMENT_TYPE_LABELS: Record<string, string> = { tshirt: "Футболка", hoodie: "Толстовка" };
+const GARMENT_TYPE_LABELS: Record<string, string> = {
+  tshirt: "Футболка",
+  sweatshirt: "Свитшот",
+  cap: "Кепка",
+  shopper: "Шоппер",
+};
 const FABRIC_LABELS: Record<string, string> = { cotton: "Хлопок", premium: "Премиум" };
 const PRINT_SIZE_LABELS: Record<string, string> = {
   small: "Маленький",
