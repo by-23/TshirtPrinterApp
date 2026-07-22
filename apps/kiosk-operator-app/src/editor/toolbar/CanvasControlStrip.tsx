@@ -139,7 +139,7 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
   return (
     <div
       data-editor-selection-ui
-      className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4"
+      className="relative z-20 grid w-full grid-cols-2 gap-3 sm:grid-cols-4"
       style={{
         borderStyle: "solid",
         borderWidth: "var(--editor-strip-border-width)",
@@ -149,6 +149,7 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
         backgroundColor: "var(--editor-strip-bg)",
         padding: "var(--editor-strip-padding)",
         height: "var(--editor-strip-height, auto)",
+        marginTop: "var(--editor-strip-offset-y, 0px)",
         boxSizing: "border-box",
         overflow: "hidden",
       }}

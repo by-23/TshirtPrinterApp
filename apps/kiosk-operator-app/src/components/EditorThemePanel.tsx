@@ -492,6 +492,16 @@ const SECTIONS: Section[] = [
       { key: "--editor-strip-border-opacity", label: "Обводка — прозрачность", defaultValue: 1, ...OPACITY_RANGE },
       { key: "--editor-strip-height", label: "Высота блока (0 = авто)", defaultValue: 0, ...BLOCK_HEIGHT_RANGE },
       {
+        key: "--editor-strip-offset-y",
+        label: "Смещение по высоте (− вверх)",
+        defaultValue: 0,
+        type: "range",
+        min: -400,
+        max: 200,
+        step: 1,
+        unit: "px",
+      },
+      {
         key: "--editor-strip-padding",
         label: "Внутренний отступ",
         defaultValue: 16,

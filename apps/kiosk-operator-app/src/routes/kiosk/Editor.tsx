@@ -244,7 +244,7 @@ export function Editor() {
 
       <div aria-hidden style={dividerStyle("header")} />
 
-      <GarmentTypeToggle canvas={canvas} />
+      <GarmentTypeToggle />
       <PrintSideToggle />
 
       <div
@@ -316,7 +316,10 @@ export function Editor() {
                 </div>
               </div>
 
-              <div className={isPreview ? "editor-preview-dimmed w-full" : "w-full"} aria-hidden={isPreview}>
+              <div
+                className={isPreview ? "editor-preview-dimmed relative z-20 w-full" : "relative z-20 w-full"}
+                aria-hidden={isPreview}
+              >
                 <CanvasControlStrip canvas={canvas} />
               </div>
             </div>

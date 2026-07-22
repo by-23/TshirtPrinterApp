@@ -23,17 +23,22 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function OrderDetails({ order, onUpdated }: { order: Order | null; onUpdated: (order: Order) => void }) {
+export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | null; onUpdated: (order: Order) => void }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!order) {
+  if (!orderProp) {
     return (
       <div className="flex min-w-0 flex-1 items-center justify-center text-lg" style={{ color: "var(--operator-text-muted)" }}>
         Выберите заказ из списка слева
       </div>
     );
   }
+
+  // Rebound as a plain local const (rather than relying on narrowing of the
+  // `orderProp` parameter) so TypeScript keeps it non-null inside the
+  // `applyStatus` closure below.
+  const order = orderProp;
 
   const isNew = order.status === "new";
   const isInProgress = order.status === "accepted" || order.status === "printing";

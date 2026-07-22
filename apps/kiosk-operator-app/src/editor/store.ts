@@ -54,20 +54,16 @@ const initialState = {
 
 export const useEditorStore = create<EditorState>((set) => ({
   ...initialState,
-  // Every garment type has its own print area/mockup, so a type switch
-  // always clears both side canvases (the caller — `GarmentTypeToggle` —
-  // is responsible for confirming with the customer first when there's an
-  // actual design to lose). Cap/shopper also pin size/fabric to fixed,
-  // zero-surcharge values since they're one-size/one-material; switching
-  // back to t-shirt/sweatshirt restores the normal editable defaults.
+  // Switching type keeps the current design — only the mockup/print area
+  // change. Cap/shopper pin size/fabric to fixed zero-surcharge values
+  // (one-size/one-material); switching back to t-shirt/sweatshirt restores
+  // the normal editable defaults. Shopper also forces `front`.
   setGarmentType: (garmentType) =>
     set((state) => ({
       garmentType,
       side: garmentHasSelectableBackSide(garmentType) ? state.side : "front",
-      size: garmentUsesSizeFabric(garmentType) ? GARMENT_SIZES[1] : FIXED_GARMENT_SIZE,
-      fabricName: garmentUsesSizeFabric(garmentType) ? GARMENT_FABRICS[0] : FIXED_GARMENT_FABRIC,
-      canvasSnapshots: { front: null, back: null },
-      printSizeBySide: { front: "small", back: "small" },
+      size: garmentUsesSizeFabric(garmentType) ? state.size : FIXED_GARMENT_SIZE,
+      fabricName: garmentUsesSizeFabric(garmentType) ? state.fabricName : FIXED_GARMENT_FABRIC,
     })),
   setSide: (side) => set({ side }),
   setColor: (color) => set({ color }),

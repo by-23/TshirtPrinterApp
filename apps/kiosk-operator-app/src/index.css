@@ -428,6 +428,7 @@ textarea {
   --editor-strip-border-opacity: 1;
   --editor-strip-padding: 16px;
   --editor-strip-height: auto;
+  --editor-strip-offset-y: 0px;
   --editor-strip-btn-bg: #02060d;
   --editor-strip-btn-width: 24px;
   --editor-strip-btn-height: 32px;
