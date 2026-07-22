@@ -1,9 +1,14 @@
-import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useLocation, useNavigationType, useOutlet } from "react-router-dom";
 import { LanguageSwitcher } from "./LanguageSwitcher.js";
 import { KioskKeyboardOverlay } from "./KioskKeyboardOverlay.js";
-import { usePageTransitionStore } from "../lib/pageTransitionStore.js";
+import { KioskAmbientBackdrop } from "./KioskAmbientBackdrop.js";
+import { KioskPageTransition } from "./KioskPageTransition.js";
 import { initPointStatus, usePointStatusStore } from "../lib/pointStatusStore.js";
+import {
+  resolveKioskNavDirection,
+  type PageTransitionDirection,
+} from "../lib/pageTransitionStore.js";
 import { ClosedScreen } from "../routes/kiosk/ClosedScreen.js";
 
 /**
@@ -17,10 +22,23 @@ import { ClosedScreen } from "../routes/kiosk/ClosedScreen.js";
  */
 export function KioskShell() {
   const location = useLocation();
-  const transition = usePageTransitionStore((state) => state.type);
+  const navigationType = useNavigationType();
+  const outlet = useOutlet();
   const pointConfig = usePointStatusStore((state) => state.config);
   // `null` (not loaded yet) fails open as "open" — see `pointStatusStore.ts`.
   const isClosed = pointConfig?.status === "closed";
+
+  const prevPathRef = useRef(location.pathname);
+  const directionRef = useRef<PageTransitionDirection>("forward");
+
+  if (location.pathname !== prevPathRef.current) {
+    directionRef.current = resolveKioskNavDirection(
+      prevPathRef.current,
+      location.pathname,
+      navigationType,
+    );
+    prevPathRef.current = location.pathname;
+  }
 
   useEffect(() => {
     initPointStatus();
@@ -28,6 +46,8 @@ export function KioskShell() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
+      <KioskAmbientBackdrop />
+
       <div
         className="kiosk-theme-root pointer-events-auto absolute z-50"
         style={{ top: "var(--kiosk-lang-top)", right: "var(--kiosk-lang-right)" }}
@@ -36,16 +56,15 @@ export function KioskShell() {
         <LanguageSwitcher />
       </div>
 
-      {isClosed ? (
-        <ClosedScreen />
-      ) : (
-        <div
-          key={location.pathname}
-          className={`kiosk-page h-full w-full ${transition === "none" ? "" : `kiosk-page--${transition}`}`}
-        >
-          <Outlet />
-        </div>
-      )}
+      <div className="relative z-10 h-full w-full">
+        {isClosed ? (
+          <ClosedScreen />
+        ) : (
+          <KioskPageTransition animKey={location.pathname} direction={directionRef.current}>
+            {outlet}
+          </KioskPageTransition>
+        )}
+      </div>
 
       <KioskKeyboardOverlay />
 

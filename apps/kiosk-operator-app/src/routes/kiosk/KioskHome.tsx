@@ -6,8 +6,10 @@ import { CategorySelectBanner } from "../../components/CategorySelectBanner.js";
 export function KioskHome() {
   return (
     <div
+      // Background intentionally left transparent: KioskAmbientBackdrop
+      // (mounted in KioskShell, behind this page) paints the page color and
+      // the frosted glow layer — this div just lets that show through.
       className="kiosk-theme-root flex h-full w-full flex-col overflow-hidden px-10 pb-12 pt-12 text-white"
-      style={{ backgroundColor: "var(--kiosk-page-bg)" }}
     >
       <div className="mb-10 flex justify-end" aria-hidden>
         <LanguageSwitcherSlot />
@@ -15,7 +17,7 @@ export function KioskHome() {
 
       <Banner />
 
-      <div className="mt-14 flex flex-col gap-8">
+      <div className="flex flex-col gap-8">
         <CategoryGrid />
         <CategorySelectBanner />
       </div>

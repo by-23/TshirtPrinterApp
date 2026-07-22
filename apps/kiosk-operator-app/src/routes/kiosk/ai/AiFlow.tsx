@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAiFlowStore, type AiFlowStep } from "../../../lib/aiFlowStore.js";
 import { warmBackgroundRemoval } from "../../../lib/backgroundRemoval.js";
 import { LanguageSwitcherSlot } from "../../../components/KioskShell.js";
+import { KioskPageTransition } from "../../../components/KioskPageTransition.js";
 import { ArrowLeft } from "../../../components/icons.js";
+import type { PageTransitionDirection } from "../../../lib/pageTransitionStore.js";
 import { AiSourceSelect } from "./AiSourceSelect.js";
 import { AiCameraCapture } from "./AiCameraCapture.js";
 import { AiQrUpload } from "./AiQrUpload.js";
@@ -21,6 +23,12 @@ const PREVIOUS_STEP: Partial<Record<AiFlowStep, AiFlowStep>> = {
   result: "style",
 };
 
+const STEP_ORDER: AiFlowStep[] = ["source", "camera", "qr", "style", "processing", "result"];
+
+function stepIndex(step: AiFlowStep): number {
+  return STEP_ORDER.indexOf(step);
+}
+
 /**
  * `/kiosk/ai` — "ИИ-стиль" wizard container (Этап 9). Renders the current
  * step from `aiFlowStore` and owns the shared top bar (back button +
@@ -36,6 +44,21 @@ export function AiFlow() {
   const isSourceStep = step === "source";
   const isThemedHeaderStep =
     isSourceStep || step === "qr" || step === "style" || step === "processing" || step === "result";
+
+  const prevStepRef = useRef(step);
+  const directionRef = useRef<PageTransitionDirection>("forward");
+  if (step !== prevStepRef.current) {
+    const prevIdx = stepIndex(prevStepRef.current);
+    const nextIdx = stepIndex(step);
+    // camera/qr are siblings under source — treat either as forward from source,
+    // and back when returning to source.
+    if (nextIdx < prevIdx || (prevStepRef.current !== "source" && step === "source")) {
+      directionRef.current = "back";
+    } else {
+      directionRef.current = "forward";
+    }
+    prevStepRef.current = step;
+  }
 
   useEffect(() => {
     warmBackgroundRemoval();
@@ -93,13 +116,15 @@ export function AiFlow() {
         <LanguageSwitcherSlot />
       </header>
 
-      <div className="min-h-0 flex-1">
-        {step === "source" && <AiSourceSelect />}
-        {step === "camera" && <AiCameraCapture />}
-        {step === "qr" && <AiQrUpload />}
-        {step === "style" && <AiStyleSelect />}
-        {step === "processing" && <AiProcessing />}
-        {step === "result" && <AiResult />}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <KioskPageTransition animKey={step} direction={directionRef.current}>
+          {step === "source" && <AiSourceSelect />}
+          {step === "camera" && <AiCameraCapture />}
+          {step === "qr" && <AiQrUpload />}
+          {step === "style" && <AiStyleSelect />}
+          {step === "processing" && <AiProcessing />}
+          {step === "result" && <AiResult />}
+        </KioskPageTransition>
       </div>
     </div>
   );

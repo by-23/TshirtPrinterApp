@@ -1,8 +1,16 @@
 import { useEffect, useId, useState } from "react";
 import { GripVertical, Settings } from "./icons.js";
+import {
+  SettingsPanelGroup,
+  SettingsPanelSection,
+  pickSectionsByTitle,
+  settingsSectionId,
+  useOpenSections,
+} from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 import { DEFAULT_UI_FONT, THEME_FONT_OPTIONS } from "../lib/fonts.js";
 import {
+  PAGE_TRANSITION_DURATION_MS,
   PAGE_TRANSITION_LABELS,
   PAGE_TRANSITION_TYPES,
   usePageTransitionStore,
@@ -61,6 +69,8 @@ interface Section {
  * Every tunable design token, grouped the same way as the panel's UI.
  * Values here MUST match the defaults declared in `index.css` — this is the
  * single list the panel reads/writes, and what "Reset" restores.
+ *
+ * Order mirrors the panel: basics → chrome → home-screen blocks.
  */
 const SECTIONS: Section[] = [
   {
@@ -76,6 +86,63 @@ const SECTIONS: Section[] = [
         type: "select",
         defaultValue: DEFAULT_UI_FONT,
         options: THEME_FONT_SELECT_OPTIONS,
+      },
+    ],
+  },
+  {
+    title: "Бренд-градиент",
+    tokens: [
+      { key: "--brand-primary", label: "Цвет 1", type: "color", defaultValue: "#ff2d95" },
+      { key: "--brand-secondary", label: "Цвет 2", type: "color", defaultValue: "#22d3f5" },
+      { key: "--brand-tertiary", label: "Цвет 3", type: "color", defaultValue: "#8b5cf6" },
+    ],
+  },
+  {
+    title: "Скругления",
+    tokens: [
+      {
+        key: "--radius-card",
+        label: "Крупные карточки",
+        type: "range",
+        defaultValue: 32,
+        min: 0,
+        max: 60,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--radius-card-inner",
+        label: "Внутренние панели",
+        type: "range",
+        defaultValue: 30,
+        min: 0,
+        max: 60,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--radius-card-sm",
+        label: "Малые карточки",
+        type: "range",
+        defaultValue: 24,
+        min: 0,
+        max: 60,
+        step: 1,
+        unit: "px",
+      },
+    ],
+  },
+  {
+    title: "Свечение",
+    tokens: [
+      {
+        key: "--glow-strength",
+        label: "Интенсивность",
+        type: "range",
+        defaultValue: 1,
+        min: 0,
+        max: 2,
+        step: 0.1,
       },
     ],
   },
@@ -184,63 +251,6 @@ const SECTIONS: Section[] = [
         min: 1,
         max: 1.3,
         step: 0.05,
-      },
-    ],
-  },
-  {
-    title: "Бренд-градиент",
-    tokens: [
-      { key: "--brand-primary", label: "Цвет 1", type: "color", defaultValue: "#ff2d95" },
-      { key: "--brand-secondary", label: "Цвет 2", type: "color", defaultValue: "#22d3f5" },
-      { key: "--brand-tertiary", label: "Цвет 3", type: "color", defaultValue: "#8b5cf6" },
-    ],
-  },
-  {
-    title: "Скругления",
-    tokens: [
-      {
-        key: "--radius-card",
-        label: "Крупные карточки",
-        type: "range",
-        defaultValue: 32,
-        min: 0,
-        max: 60,
-        step: 1,
-        unit: "px",
-      },
-      {
-        key: "--radius-card-inner",
-        label: "Внутренние панели",
-        type: "range",
-        defaultValue: 30,
-        min: 0,
-        max: 60,
-        step: 1,
-        unit: "px",
-      },
-      {
-        key: "--radius-card-sm",
-        label: "Малые карточки",
-        type: "range",
-        defaultValue: 24,
-        min: 0,
-        max: 60,
-        step: 1,
-        unit: "px",
-      },
-    ],
-  },
-  {
-    title: "Свечение",
-    tokens: [
-      {
-        key: "--glow-strength",
-        label: "Интенсивность",
-        type: "range",
-        defaultValue: 1,
-        min: 0,
-        max: 2,
-        step: 0.1,
       },
     ],
   },
@@ -466,6 +476,22 @@ const SECTIONS: Section[] = [
     title: "Популярные принты",
     tokens: [
       {
+        key: "--popular-title-size",
+        label: "Заголовок — размер",
+        type: "range",
+        defaultValue: 26,
+        min: 12,
+        max: 64,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--popular-title-color",
+        label: "Заголовок — цвет",
+        type: "color",
+        defaultValue: "#ff2d95",
+      },
+      {
         key: "--popular-border-width",
         label: "Толщина обводки",
         type: "range",
@@ -473,6 +499,16 @@ const SECTIONS: Section[] = [
         min: 0,
         max: 8,
         step: 0.5,
+        unit: "px",
+      },
+      {
+        key: "--popular-border-radius",
+        label: "Скругление обводки",
+        type: "range",
+        defaultValue: 50,
+        min: 0,
+        max: 120,
+        step: 1,
         unit: "px",
       },
       {
@@ -504,6 +540,55 @@ const SECTIONS: Section[] = [
       { key: "--popular-bg-middle", label: "Градиент центр", type: "color", defaultValue: "#0b0f1e" },
       { key: "--popular-bg-end", label: "Градиент низ", type: "color", defaultValue: "#05060f" },
       {
+        key: "--popular-arrow-size",
+        label: "Стрелки — размер",
+        type: "range",
+        defaultValue: 40,
+        min: 16,
+        max: 96,
+        step: 2,
+        unit: "px",
+      },
+      {
+        key: "--popular-arrow-offset-y",
+        label: "Стрелки — высота",
+        type: "range",
+        defaultValue: 0,
+        min: -120,
+        max: 120,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--popular-arrow-stroke",
+        label: "Стрелки — толщина",
+        type: "range",
+        defaultValue: 2.6,
+        min: 1,
+        max: 6,
+        step: 0.1,
+      },
+      {
+        key: "--popular-dots-margin-top",
+        label: "Точки — отступ сверху",
+        type: "range",
+        defaultValue: 28,
+        min: 0,
+        max: 80,
+        step: 2,
+        unit: "px",
+      },
+      {
+        key: "--popular-dots-margin-bottom",
+        label: "Точки — отступ снизу",
+        type: "range",
+        defaultValue: 40,
+        min: 0,
+        max: 80,
+        step: 2,
+        unit: "px",
+      },
+      {
         key: "--popular-likes-heart-size",
         label: "Лайк — размер",
         type: "range",
@@ -524,20 +609,113 @@ const SECTIONS: Section[] = [
         unit: "px",
       },
       {
-        key: "--popular-likes-text-stroke-width",
-        label: "Текст — толщина обводки",
+        key: "--popular-likes-bg-color",
+        label: "Фон — цвет",
+        type: "color",
+        defaultValue: "#05060f",
+      },
+      {
+        key: "--popular-likes-bg-blur",
+        label: "Фон — размытие",
         type: "range",
-        defaultValue: 0,
+        defaultValue: 8,
         min: 0,
-        max: 8,
+        max: 32,
         step: 0.5,
         unit: "px",
       },
       {
-        key: "--popular-likes-text-stroke-color",
-        label: "Текст — цвет обводки",
-        type: "color",
-        defaultValue: "#05060f",
+        key: "--popular-border-spin-duration",
+        label: "Обводка — скорость вращения",
+        type: "range",
+        defaultValue: 10,
+        min: 2,
+        max: 40,
+        step: 0.5,
+        unit: "s",
+      },
+      { key: "--popular-border-c1", label: "Обводка — цвет 1", type: "color", defaultValue: "#ff2d95" },
+      { key: "--popular-border-c2", label: "Обводка — цвет 2", type: "color", defaultValue: "#22d3f5" },
+      { key: "--popular-border-c3", label: "Обводка — цвет 3", type: "color", defaultValue: "#8b5cf6" },
+    ],
+  },
+  {
+    title: "Ambient — фон главного экрана",
+    tokens: [
+      {
+        key: "--ambient-enabled",
+        label: "Включён",
+        type: "select",
+        defaultValue: "1",
+        options: [
+          { label: "Включён", value: "1" },
+          { label: "Выключен", value: "0" },
+        ],
+      },
+      {
+        key: "--ambient-blur",
+        label: "Блюр стекла",
+        type: "range",
+        defaultValue: 16,
+        min: 0,
+        max: 48,
+        step: 1,
+        unit: "px",
+      },
+      {
+        key: "--ambient-frost-opacity",
+        label: "Плотность стекла",
+        type: "range",
+        defaultValue: 0.35,
+        min: 0,
+        max: 1,
+        step: 0.05,
+      },
+      {
+        key: "--ambient-orb-count",
+        label: "Число огоньков",
+        type: "range",
+        defaultValue: 8,
+        min: 0,
+        max: 24,
+        step: 1,
+      },
+      {
+        key: "--ambient-orb-size",
+        label: "Размер огоньков",
+        type: "range",
+        defaultValue: 160,
+        min: 40,
+        max: 400,
+        step: 5,
+        unit: "px",
+      },
+      {
+        key: "--ambient-orb-speed",
+        label: "Скорость движения огоньков",
+        type: "range",
+        defaultValue: 1,
+        min: 0,
+        max: 4,
+        step: 0.1,
+      },
+      {
+        key: "--ambient-color-shift-speed",
+        label: "Скорость смены цвета",
+        type: "range",
+        defaultValue: 1,
+        min: 0,
+        max: 4,
+        step: 0.1,
+      },
+      {
+        key: "--ambient-color-shift-amp",
+        label: "Амплитуда смены цвета",
+        type: "range",
+        defaultValue: 0.25,
+        min: 0,
+        max: 1,
+        step: 0.05,
       },
     ],
   },
@@ -583,7 +761,7 @@ const IMAGE_SIZE_TOKENS: RangeToken[] = [
     key: "--popular-slide-height",
     label: "Высота блока",
     type: "range",
-    defaultValue: 310,
+    defaultValue: 330,
     min: 180,
     max: 600,
     step: 10,
@@ -593,25 +771,45 @@ const IMAGE_SIZE_TOKENS: RangeToken[] = [
     key: "--popular-slides-per-view",
     label: "Футболок в ряд",
     type: "range",
-    defaultValue: 5,
+    defaultValue: 3,
     min: 1,
     max: 10,
     step: 1,
   },
   {
     key: "--popular-shirt-scale",
-    label: "Футболки",
+    label: "Футболки — масштаб",
     type: "range",
-    defaultValue: 0.85,
+    defaultValue: 1.05,
     min: 0.5,
     max: 4,
     step: 0.05,
   },
   {
+    key: "--popular-shirt-offset-y",
+    label: "Футболки — вверх / вниз",
+    type: "range",
+    defaultValue: 0,
+    min: -120,
+    max: 120,
+    step: 1,
+    unit: "px",
+  },
+  {
+    key: "--popular-shirt-overlap",
+    label: "Футболки — наложение",
+    type: "range",
+    defaultValue: 48,
+    min: -400,
+    max: 400,
+    step: 2,
+    unit: "px",
+  },
+  {
     key: "--popular-print-scale-min",
     label: "Принты — мин. масштаб",
     type: "range",
-    defaultValue: 0.8,
+    defaultValue: 0.6,
     min: 0.3,
     max: 4,
     step: 0.05,
@@ -620,7 +818,7 @@ const IMAGE_SIZE_TOKENS: RangeToken[] = [
     key: "--popular-print-scale-max",
     label: "Принты — макс. масштаб",
     type: "range",
-    defaultValue: 1.3,
+    defaultValue: 0.9,
     min: 0.3,
     max: 4,
     step: 0.05,
@@ -769,6 +967,31 @@ function clearToken(key: string) {
   }
 }
 
+/** Titles of token sections in the «Основные» group. */
+const BASIC_SECTION_TITLES = [
+  "Общий фон страницы",
+  "Шрифт",
+  "Бренд-градиент",
+  "Скругления",
+  "Свечение",
+] as const;
+
+/** Titles of token sections in the «Навигация» group. */
+const NAV_SECTION_TITLES = ["Переключатель языка"] as const;
+
+/** Titles of token sections in the «Главный экран» group. */
+const HOME_SECTION_TITLES = [
+  "Карточки категорий",
+  "Плашка «Выберите категорию»",
+  "Популярные принты",
+  "Ambient — фон главного экрана",
+  "Градиенты категорий",
+] as const;
+
+function sectionsByTitles(titles: readonly string[]): Section[] {
+  return pickSectionsByTitle(SECTIONS, titles);
+}
+
 /**
  * Floating "design panel" for retuning the kiosk's brand colors, corner radii,
  * glow intensity and per-category accent colors live — no rebuild needed.
@@ -786,9 +1009,17 @@ export function ThemePanel() {
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("kiosk-theme-panel-open-sections");
   const imageOverrides = useKioskImageOverrides();
   const pageTransition = usePageTransitionStore((state) => state.type);
+  const pageTransitionDuration = usePageTransitionStore((state) => state.durationMs);
   const setPageTransition = usePageTransitionStore((state) => state.setType);
+  const setPageTransitionDuration = usePageTransitionStore((state) => state.setDurationMs);
+  const resetPageTransition = usePageTransitionStore((state) => state.reset);
+
+  const basicSections = sectionsByTitles(BASIC_SECTION_TITLES);
+  const navSections = sectionsByTitles(NAV_SECTION_TITLES);
+  const homeSections = sectionsByTitles(HOME_SECTION_TITLES);
 
   useEffect(() => {
     function applyAll() {
@@ -824,19 +1055,19 @@ export function ThemePanel() {
   }
 
   function handleReset() {
-    const defaults = defaultValues();
-    setValues(defaults);
+    // Clear inline overrides BEFORE reading baseline — getComputedStyle would
+    // otherwise return the still-active slider values as "defaults".
+    window.localStorage.removeItem(STORAGE_KEY);
     for (const token of ALL_TOKENS) {
       clearToken(token.key);
     }
-    window.localStorage.removeItem(STORAGE_KEY);
     resetAllKioskImages();
-    for (const [key, value] of Object.entries(defaults)) {
-      applyValue(key, value);
-    }
+    const defaults = defaultValues();
+    setValues(defaults);
   }
 
   function handleResetToken(token: Token) {
+    clearToken(token.key);
     const defaultValue = getBaselineValues()[token.key] ?? String(token.defaultValue);
     setValues((prev) => {
       const next = { ...prev, [token.key]: defaultValue };
@@ -947,7 +1178,7 @@ export function ThemePanel() {
       </button>
 
       {open ? (
-        <div className="settings-panel-scroll flex max-h-[90vh] w-[720px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
+        <div className="settings-panel-scroll flex max-h-[90vh] w-[720px] flex-col gap-6 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span
@@ -972,101 +1203,182 @@ export function ThemePanel() {
             </button>
           </div>
 
-          {SECTIONS.slice(0, 3).map((section) => (
-            <div key={section.title} className="flex flex-col gap-5">
-              <span className="text-base font-bold uppercase tracking-wider text-white/50">
-                {section.title}
-              </span>
-              {section.tokens.map((token) => renderToken(token))}
-            </div>
-          ))}
-
-          <div className="flex flex-col gap-5">
-            <span className="text-base font-bold uppercase tracking-wider text-white/50">
-              Переходы между экранами
-            </span>
-            <div className="flex items-center justify-between gap-6 text-xl">
-              <span className="min-w-[180px] text-white/80">Анимация</span>
-              <select
-                value={pageTransition}
-                onChange={(e) => setPageTransition(e.target.value as typeof pageTransition)}
-                className="min-w-[260px] rounded-xl border-2 border-white/15 bg-[#171a28] px-4 py-3 text-lg text-white outline-none transition-colors hover:border-white/30 focus:border-white/40"
-              >
-                {PAGE_TRANSITION_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {PAGE_TRANSITION_LABELS[type]}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => setPageTransition("slide-left")}
-                className="shrink-0 rounded-full border-2 border-white/10 px-3 py-1.5 text-sm font-semibold uppercase tracking-wide text-white/50 transition-colors hover:border-white/30 hover:text-white"
-              >
-                Сброс
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-8">
-            <span className="text-base font-bold uppercase tracking-wider text-white/50">
-              Изображения
-            </span>
-
-            <div className="flex flex-col gap-5 rounded-2xl border-2 border-white/10 bg-white/[0.03] p-5">
-              <span className="text-sm font-bold uppercase tracking-wider text-white/40">
-                Популярные принты — размеры
-              </span>
-              <p className="text-sm text-white/45">
-                Масштаб принта на каждом слайде выбирается случайно между мин. и макс.
-              </p>
-              {IMAGE_SIZE_TOKENS.map((token) => renderToken(token))}
-            </div>
-
-            <div className="flex flex-col gap-6 rounded-2xl border-2 border-white/10 bg-white/[0.03] p-5">
-              <span className="text-sm font-bold uppercase tracking-wider text-white/40">
-                Категории — размер и позиция
-              </span>
-              <p className="text-sm text-white/45">
-                Привязка к нижнему краю. X: минус — влево, плюс — вправо. Y: минус — вверх, плюс — вниз.
-              </p>
-              {CATEGORY_IMAGE_LAYOUT_SECTIONS.map((section) => (
-                <div key={section.title} className="flex flex-col gap-4 border-t border-white/10 pt-4 first:border-t-0 first:pt-0">
-                  <span className="text-sm font-bold uppercase tracking-wider text-white/35">
-                    {section.title}
-                  </span>
+          <SettingsPanelGroup label="Основные">
+            {basicSections.map((section) => {
+              const id = settingsSectionId(section.title);
+              return (
+                <SettingsPanelSection
+                  key={section.title}
+                  id={id}
+                  title={section.title}
+                  open={isSectionOpen(id)}
+                  onToggle={() => toggleSection(id)}
+                >
                   {section.tokens.map((token) => renderToken(token))}
+                </SettingsPanelSection>
+              );
+            })}
+          </SettingsPanelGroup>
+
+          <SettingsPanelGroup label="Навигация">
+            {navSections.map((section) => {
+              const id = settingsSectionId(section.title);
+              return (
+                <SettingsPanelSection
+                  key={section.title}
+                  id={id}
+                  title={section.title}
+                  open={isSectionOpen(id)}
+                  onToggle={() => toggleSection(id)}
+                >
+                  {section.tokens.map((token) => renderToken(token))}
+                </SettingsPanelSection>
+              );
+            })}
+            <SettingsPanelSection
+              id="section-page-transitions"
+              title="Переходы между экранами"
+              open={isSectionOpen("section-page-transitions")}
+              onToggle={() => toggleSection("section-page-transitions")}
+            >
+              <div className="flex flex-col gap-5">
+                <div className="flex items-center justify-between gap-6 text-xl">
+                  <span className="min-w-[180px] text-white/80">Анимация</span>
+                  <select
+                    value={pageTransition}
+                    onChange={(e) => setPageTransition(e.target.value as typeof pageTransition)}
+                    className="min-w-[260px] rounded-xl border-2 border-white/15 bg-[#171a28] px-4 py-3 text-lg text-white outline-none transition-colors hover:border-white/30 focus:border-white/40"
+                  >
+                    {PAGE_TRANSITION_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {PAGE_TRANSITION_LABELS[type]}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-            </div>
-
-            {KIOSK_IMAGE_SECTIONS.map((section) => (
-              <div key={section.title} className="flex flex-col gap-5">
-                <span className="text-sm font-bold uppercase tracking-wider text-white/40">
-                  {section.title}
-                </span>
-                {section.images.map((image) => (
-                  <KioskImagePickerRow
-                    key={image.key}
-                    image={image}
-                    previewUrl={getKioskImageUrl(image.key)}
-                    isOverridden={imageOverrides.has(image.key)}
-                    onPick={(file) => handleImagePick(image.key, file)}
-                    onReset={() => resetKioskImage(image.key)}
-                  />
-                ))}
+                <div className="flex items-center justify-between gap-6 text-xl">
+                  <span className="min-w-[180px] text-white/80">Длительность</span>
+                  <div className="flex min-w-[260px] flex-1 items-center gap-4">
+                    <input
+                      type="range"
+                      min={PAGE_TRANSITION_DURATION_MS.min}
+                      max={PAGE_TRANSITION_DURATION_MS.max}
+                      step={PAGE_TRANSITION_DURATION_MS.step}
+                      value={pageTransitionDuration}
+                      disabled={pageTransition === "none"}
+                      onChange={(e) => setPageTransitionDuration(Number(e.target.value))}
+                      className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-white disabled:cursor-not-allowed disabled:opacity-40"
+                    />
+                    <span className="w-16 shrink-0 text-right tabular-nums text-white/70">
+                      {pageTransitionDuration}мс
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-white/45">
+                  Вперёд — новый экран накрывает предыдущий. Назад — верхний уезжает и открывает тот, что был под ним.
+                </p>
+                <button
+                  type="button"
+                  onClick={resetPageTransition}
+                  className="self-start rounded-full border-2 border-white/10 px-3 py-1.5 text-sm font-semibold uppercase tracking-wide text-white/50 transition-colors hover:border-white/30 hover:text-white"
+                >
+                  Сброс
+                </button>
               </div>
-            ))}
-          </div>
+            </SettingsPanelSection>
+          </SettingsPanelGroup>
 
-          {SECTIONS.slice(3).map((section) => (
-            <div key={section.title} className="flex flex-col gap-5">
-              <span className="text-base font-bold uppercase tracking-wider text-white/50">
-                {section.title}
-              </span>
-              {section.tokens.map((token) => renderToken(token))}
-            </div>
-          ))}
+          <SettingsPanelGroup label="Главный экран">
+            <SettingsPanelSection
+              id="section-images"
+              title="Изображения"
+              open={isSectionOpen("section-images")}
+              onToggle={() => toggleSection("section-images")}
+            >
+              <SettingsPanelSection
+                nested
+                id="section-images-popular-size"
+                title="Популярные принты — размеры"
+                open={isSectionOpen("section-images-popular-size", true)}
+                onToggle={() => toggleSection("section-images-popular-size", true)}
+              >
+                <p className="text-sm text-white/45">
+                  Масштаб принта на каждом слайде выбирается случайно между мин. и макс.
+                  Смещение вверх/вниз: минус — вверх, плюс — вниз. Наложение: плюс —
+                  заходят друг на друга, минус — появляется зазор. Цвета чередуются:
+                  чёрная / белая.
+                </p>
+                {IMAGE_SIZE_TOKENS.map((token) => renderToken(token))}
+              </SettingsPanelSection>
+
+              <SettingsPanelSection
+                nested
+                id="section-images-category-layout"
+                title="Категории — размер и позиция"
+                open={isSectionOpen("section-images-category-layout")}
+                onToggle={() => toggleSection("section-images-category-layout")}
+              >
+                <p className="text-sm text-white/45">
+                  Привязка к нижнему краю. X: минус — влево, плюс — вправо. Y: минус — вверх, плюс — вниз.
+                </p>
+                {CATEGORY_IMAGE_LAYOUT_SECTIONS.map((section) => {
+                  const nestedId = `section-images-cat-${section.title}`;
+                  return (
+                    <SettingsPanelSection
+                      key={section.title}
+                      nested
+                      id={nestedId}
+                      title={section.title}
+                      open={isSectionOpen(nestedId)}
+                      onToggle={() => toggleSection(nestedId)}
+                    >
+                      {section.tokens.map((token) => renderToken(token))}
+                    </SettingsPanelSection>
+                  );
+                })}
+              </SettingsPanelSection>
+
+              {KIOSK_IMAGE_SECTIONS.map((section) => {
+                const nestedId = `section-images-files-${section.title}`;
+                return (
+                  <SettingsPanelSection
+                    key={section.title}
+                    nested
+                    id={nestedId}
+                    title={section.title}
+                    open={isSectionOpen(nestedId)}
+                    onToggle={() => toggleSection(nestedId)}
+                  >
+                    {section.images.map((image) => (
+                      <KioskImagePickerRow
+                        key={image.key}
+                        image={image}
+                        previewUrl={getKioskImageUrl(image.key)}
+                        isOverridden={imageOverrides.has(image.key)}
+                        onPick={(file) => handleImagePick(image.key, file)}
+                        onReset={() => resetKioskImage(image.key)}
+                      />
+                    ))}
+                  </SettingsPanelSection>
+                );
+              })}
+            </SettingsPanelSection>
+
+            {homeSections.map((section) => {
+              const id = settingsSectionId(section.title);
+              return (
+                <SettingsPanelSection
+                  key={section.title}
+                  id={id}
+                  title={section.title}
+                  open={isSectionOpen(id)}
+                  onToggle={() => toggleSection(id)}
+                >
+                  {section.tokens.map((token) => renderToken(token))}
+                </SettingsPanelSection>
+              );
+            })}
+          </SettingsPanelGroup>
 
           <button
             type="button"

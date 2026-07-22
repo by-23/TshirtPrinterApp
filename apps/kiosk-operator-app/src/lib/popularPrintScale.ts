@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 /** Default / fallback height for the home popular-prints carousel (see `--popular-slide-height`). */
-export const POPULAR_SLIDE_HEIGHT_PX = 310;
+export const POPULAR_SLIDE_HEIGHT_PX = 330;
 
 function getThemeStyleSource(): HTMLElement {
   const kioskRoot = document.querySelector(".kiosk-theme-root");

@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Local self-hosted faces (src/assets/fonts) — bundled by Vite. */
+@font-face {
+  font-family: "PT Sans Narrow";
+  src: url("./assets/fonts/PT_Sans-Narrow-Web-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PT Sans Narrow";
+  src: url("./assets/fonts/PT_Sans-Narrow-Web-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("./assets/fonts/BarlowCondensed-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Registers --popular-border-angle as an animatable <angle> so the conic
+   gradient border on .popular-frame can be spun with a plain CSS keyframe
+   (animating a custom property used inside conic-gradient() needs this). */
+@property --popular-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
 html,
 body,
 #root {
@@ -138,7 +171,7 @@ textarea {
    ========================================================================== */
 :root {
   /* Global UI typeface — every screen, panel and component inherits this. */
-    --font-family: 'Inter', system-ui, sans-serif;
+    --font-family: 'PT Sans Narrow', sans-serif;
   /* Main kiosk home screen page background — tuned from ThemePanel.tsx. */
     --kiosk-page-bg: #05060f;
   /* Fixed position of the global language switcher (KioskShell.tsx, ThemePanel). */
@@ -163,12 +196,12 @@ textarea {
   /* Corner rounding shared by every card/panel in the app. Radius scales with
      element size: big panels use --radius-card, nested/smaller ones use the
      smaller tokens, so everything still reads as one consistent language. */
-  --radius-card: 50px;
+  --radius-card: 30px;
   --radius-card-inner: 30px;
   --radius-card-sm: 24px;
 
   /* Multiplier applied to every card's outer glow (0 = off, 1 = default, 2 = intense). */
-  --glow-strength: 1;
+  --glow-strength: 2;
 
   /* Shared controls for category cards. These are exposed in the Design Panel:
      border width changes the light outline, gradient direction changes the
@@ -177,8 +210,8 @@ textarea {
   --category-gradient-direction: to top;
 
   /* Shared typography + position for category card labels (main + sub). */
-  --category-title-size: 34px;
-  --category-subtitle-size: 17px;
+  --category-title-size: 48px;
+    --category-subtitle-size: 24px;
   --category-text-offset-x: 0px;
   --category-text-offset-y: 10px;
   --category-text-gap: 6px;
@@ -191,8 +224,8 @@ textarea {
   --category-select-glow-strength: 3;
   --category-select-icon-size: 83px;
   --category-select-icon-color: #c0527a;
-  --category-select-title-size: 30px;
-  --category-select-subtitle-size: 16px;
+  --category-select-title-size: 40px;
+    --category-select-subtitle-size: 24px;
   --category-select-title-color: #ffffff;
   --category-select-subtitle-opacity: 0.55;
   --category-select-text-gap: 8px;
@@ -205,22 +238,51 @@ textarea {
   /* Background of the wide "Popular prints" carousel block, inside the bright
      brand frame. Kept separate from the frame colors so the panel can tune the
      dark fill without changing the outer neon border. */
-  --popular-border-width: 4px;
+  --popular-border-width: 7px;
+    --popular-border-radius: 36px;
   --popular-glow-strength: 3;
-  --popular-shirt-scale: 1.05;
-  --popular-slide-height: 330px;
-  --popular-slides-per-view: 3;
-  --popular-print-scale-min: 0.6;
-  --popular-print-scale-max: 0.9;
-  --popular-likes-heart-size: 40px;
-  --popular-likes-font-size: 32px;
-  --popular-likes-text-stroke-width: 2px;
-  --popular-likes-text-stroke-color: #ff0080;
+  --popular-title-size: 40px;
+    --popular-title-color: #ff2d95;
+    --popular-shirt-scale: 1;
+    --popular-shirt-offset-y: 14px;
+    --popular-shirt-overlap: -246px;
+    --popular-slide-height: 440px;
+    --popular-slides-per-view: 5;
+    --popular-print-scale-min: 1;
+    --popular-print-scale-max: 1;
+    --popular-likes-heart-size: 28px;
+    --popular-likes-font-size: 28px;
+    --popular-likes-bg-color: #05060f;
+    --popular-likes-bg-blur: 28px;
+    --popular-arrow-size: 56px;
+    --popular-arrow-offset-y: -42px;
+    --popular-arrow-stroke: 2.6;
+    --popular-dots-margin-top: 22px;
+    --popular-dots-margin-bottom: 24px;
   --popular-bg-direction: to left;
   --popular-bg-start: #2a1094;
   --popular-bg-middle: #0c2346;
   --popular-bg-end: #731146;
 
+  /* Rotating gradient border on the popular-prints frame (KioskAmbientPolish).
+           --popular-border-angle is animated by .popular-frame's keyframe below. */
+    --popular-border-spin-duration: 10s;
+    --popular-border-c1: #4d0004;
+    --popular-border-c2: #003b6b;
+    --popular-border-c3: #29008a;
+    --popular-border-angle: 0deg;
+  
+    /* Home-only ambient backdrop (KioskAmbientBackdrop.tsx) — frosted glass
+           over a canvas of slowly drifting, color-shifting glow orbs. Hidden (not
+           unmounted) outside /kiosk so it stays "warm" when the operator returns. */
+    --ambient-enabled: 1;
+    --ambient-blur: 48px;
+    --ambient-frost-opacity: 0.2;
+    --ambient-orb-count: 4;
+    --ambient-orb-size: 100px;
+    --ambient-orb-speed: 2.5;
+    --ambient-color-shift-speed: 4;
+    --ambient-color-shift-amp: 1;
   /* Direct gradient stops per category card. The panel exposes these as
      gradient controls (top / middle / bottom / border), not a single accent. */
   --cat-memes-start: #07408c;
@@ -233,10 +295,10 @@ textarea {
   --cat-anime-end: #852800;
   --cat-anime-border: #d14900;
 
-  --cat-games-start: #840606;
-  --cat-games-middle: #540303;
-  --cat-games-end: #410101;
-  --cat-games-border: #921111;
+  --cat-games-start: #111224;
+    --cat-games-middle: #131c34;
+    --cat-games-end: #12192b;
+    --cat-games-border: #007375;
 
   --cat-text-start: #00474a;
   --cat-text-middle: #004043;
@@ -254,24 +316,24 @@ textarea {
   --cat-ai-border: #6d338b;
 
   /* Per-category image layout (scale + vertical offset from card bottom). */
-  --cat-memes-image-scale: 2.95;
-  --cat-memes-image-offset-x: 0px;
-  --cat-memes-image-offset-y: 94px;
+  --cat-memes-image-scale: 2.5;
+    --cat-memes-image-offset-x: -6px;
+    --cat-memes-image-offset-y: 42px;
   --cat-anime-image-scale: 2.5;
-  --cat-anime-image-offset-x: 23px;
+  --cat-anime-image-offset-x: 0px;
   --cat-anime-image-offset-y: 40px;
   --cat-games-image-scale: 2.3;
   --cat-games-image-offset-x: 0px;
   --cat-games-image-offset-y: 32px;
-  --cat-text-image-scale: 1.55;
+  --cat-text-image-scale: 2;
   --cat-text-image-offset-x: 0px;
-  --cat-text-image-offset-y: -40px;
-  --cat-custom-image-scale: 1.55;
+  --cat-text-image-offset-y: -12px;
+    --cat-custom-image-scale: 2.35;
   --cat-custom-image-offset-x: 0px;
-  --cat-custom-image-offset-y: -40px;
-  --cat-ai-image-scale: 1.55;
+  --cat-custom-image-offset-y: 23px;
+    --cat-ai-image-scale: 2.2;
   --cat-ai-image-offset-x: 0px;
-  --cat-ai-image-offset-y: -40px;
+  --cat-ai-image-offset-y: 40px;
 
   /* Derived tokens — recompute automatically whenever the base variables
      above change, so components never need to duplicate this math. */
@@ -288,6 +350,9 @@ textarea {
       var(--popular-bg-start),
       var(--popular-bg-middle),
       var(--popular-bg-end));
+  /* Border gradient is inlined on .popular-frame (not via a derived token):
+           animating --popular-border-angle inside an intermediate custom property
+           often fails to invalidate background-image in Chromium. */
 /* ========================================================================
      Editor screen tokens — tuned from EditorThemePanel.tsx (gear button under
      the main Design Panel one, only visible on /kiosk/editor). Every block on
@@ -1512,18 +1577,83 @@ textarea {
   color: rgb(255 255 255 / 0.7);
 }
 
-/* Popular prints frame — one element, no nested radii. Gradient border uses the
-   padding-box / border-box clip trick so corners stay smooth at any border
-   width (nested inner divs often clip the ring when radii don't match exactly). */
+/* Popular prints frame — rotating border is a ::before ring (mask + conic).
+   No transparent CSS border: absolute ::before is positioned against the
+   padding edge, so a real border left a gap where shirt/slide pixels leaked
+   past the visible ring at the corners. Padding = ring thickness; overflow
+   clips everything (including Swiper's overflow-visible slides) to the radius. */
+.popular-banner-title {
+  font-size: var(--popular-title-size, 26px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--popular-title-color, #ff2d95);
+}
+
+.popular-banner-title__icon {
+  display: inline;
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: -0.12em;
+}
 .popular-frame {
-  border: var(--popular-border-width) solid transparent;
-  border-radius: var(--radius-card);
-  background-image: var(--popular-bg), var(--brand-frame);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
+  position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: none;
+    border-radius: var(--popular-border-radius);
+    /* Inset content by ring thickness so slides cannot cover the ::before border.
+           Do not override with Tailwind px/py — that zeroed vertical padding and let
+           shirts paint over / past the bottom edge of the ring. */
+    padding: var(--popular-border-width);
+    background-color: transparent;
+    background-image: var(--popular-bg);
   box-shadow: var(--popular-frame-glow);
 }
 
+/* Clips transformed shirts to the inner radius; slides stay overflow:visible
+   so neighboring mockups can still overlap each other horizontally. */
+.popular-frame-clip {
+  overflow: hidden;
+  border-radius: calc(var(--popular-border-radius) - var(--popular-border-width));
+}
+
+.popular-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  padding: var(--popular-border-width);
+  box-sizing: border-box;
+  pointer-events: none;
+  background: conic-gradient(from var(--popular-border-angle),
+      var(--popular-border-c1) 0deg,
+      var(--popular-border-c1) 70deg,
+      var(--popular-border-c2) 110deg,
+      var(--popular-border-c2) 180deg,
+      var(--popular-border-c3) 220deg,
+      var(--popular-border-c3) 290deg,
+      var(--popular-border-c1) 330deg,
+      var(--popular-border-c1) 360deg);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: popular-border-spin var(--popular-border-spin-duration) linear infinite;
+}
+
+@keyframes popular-border-spin {
+  to {
+    --popular-border-angle: 360deg;
+  }
+}
 .category-select-banner {
   translate: var(--category-select-offset-x, 0px) var(--category-select-offset-y, 0px);
   display: flex;
@@ -1642,11 +1772,27 @@ textarea {
 }
 
 .popular-likes-badge {
+  z-index: 1;
+    isolation: isolate;
   font-size: var(--popular-likes-font-size, 13px);
   font-weight: 700;
   color: #fff;
-  -webkit-text-stroke: var(--popular-likes-text-stroke-width, 0px) var(--popular-likes-text-stroke-color, #05060f);
-  paint-order: stroke fill;
+  padding: 0.2em 0.55em;
+    border-radius: 999px;
+  }
+  
+  /* Soft background pill — blur the fill itself (not backdrop-filter).
+         Swiper slide transforms break backdrop-filter sampling. */
+  .popular-likes-badge::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: var(--popular-likes-bg-color, #05060f);
+    opacity: 0.55;
+    filter: blur(var(--popular-likes-bg-blur, 0px));
+    transform: scale(1.05);
 }
 
 .popular-likes-badge .popular-likes-heart {
@@ -1657,6 +1803,12 @@ textarea {
 
 .popular-swiper {
   height: var(--popular-slide-height, 310px);
+  overflow: visible;
+  }
+  
+  /* Soft ease-out: quick start, long decelerate — feels more natural than default ease. */
+  .popular-swiper .swiper-wrapper {
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .popular-slide {
@@ -1665,46 +1817,63 @@ textarea {
 
 .popular-swiper .swiper-slide {
   height: auto;
+  overflow: visible;
 }
 
+/* Do not raise .swiper-slide-active — that flipped overlap depth mid-swipe. */
 /* Banner carousel chrome (custom external arrows + dots). */
 .popular-swiper-nav {
-  width: 44px;
-  height: 44px;
-  border: 1px solid color-mix(in srgb, var(--brand-primary) 70%, transparent);
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18), transparent 34%),
-    rgba(5, 6, 15, 0.72);
-  border-radius: 9999px;
-  color: #fff;
-  box-shadow: 0 0 calc(24px * var(--popular-glow-strength)) color-mix(in srgb, var(--brand-primary) 36%, transparent);
-  backdrop-filter: blur(8px);
+  top: calc(50% + var(--popular-arrow-offset-y, 0px));
+    width: calc(var(--popular-arrow-size, 40px) * 1.1);
+    height: calc(var(--popular-arrow-size, 40px) * 1.4);
+    border: none;
+    background: transparent;
+    color: var(--brand-primary);
+    box-shadow: none;
+    transform: translateY(-50%);
+    transition: transform 0.15s ease;
+  }
+  
+  .popular-swiper-nav:hover {
+    transform: translateY(-50%) scale(1.1);
+  }
+  
+  .popular-swiper-nav:active {
+    transform: translateY(-50%) scale(0.95);
 }
 
 .popular-swiper-nav svg {
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--brand-primary) 70%, transparent));
+  width: var(--popular-arrow-size, 40px);
+    height: var(--popular-arrow-size, 40px);
+    stroke-width: var(--popular-arrow-stroke, 2.6);
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--brand-primary) 55%, transparent));
 }
 
 .popular-swiper-pagination {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  min-height: 12px;
+  align-items: center;
+    gap: 10px;
+    margin-top: var(--popular-dots-margin-top, 28px);
+    margin-bottom: var(--popular-dots-margin-bottom, 40px);
+    min-height: 14px;
 }
 
 .popular-swiper-pagination .swiper-pagination-bullet {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+    height: 8px;
   margin: 0;
   opacity: 1;
-  background: #5b6690;
-  transition: width 0.2s ease;
+  border-radius: 9999px;
+    background: #3a3f55;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .popular-swiper-pagination .swiper-pagination-bullet-active {
-  width: 22px;
-  border-radius: 9999px;
+  width: 10px;
+    height: 10px;
   background: var(--brand-primary);
+  transform: scale(1.05);
 }
 @property --editor-popular-scroll-size {
   syntax: "<length>";
@@ -1772,34 +1941,147 @@ textarea {
   box-sizing: border-box;
 }
 /* ==========================================================================
-   Kiosk page transitions (KioskShell.tsx + pageTransitionStore.ts)
+                 Ambient home backdrop (KioskAmbientBackdrop.tsx, mounted in KioskShell.tsx) Stacking: __base (solid page color) < canvas (drifting glow orbs) < __frost (blurred glass on top) < page content,
+                 which sits above via .kiosk-page's own z-index below. Only visible on /kiosk (home); elsewhere
+         it stays mounted (so the canvas loop keeps running "warm") but faded out and non-interactive.==========================================================================*/ .kiosk-ambient {
+                   position: absolute;
+                   inset: 0;
+                   z-index: 0;
+                   overflow: hidden;
+                   pointer-events: none;
+                   opacity: 1;
+                   transition: opacity 0.4s ease;
+                 }
+        
+                 .kiosk-ambient--hidden {
+                   opacity: 0;
+                 }
+        
+                 .kiosk-ambient__base {
+                   position: absolute;
+                   inset: 0;
+                   background: var(--kiosk-page-bg);
+                 }
+        
+                 .kiosk-ambient__canvas {
+                   position: absolute;
+                   inset: 0;
+                   display: block;
+                   width: 100%;
+                   height: 100%;
+                 }
+        
+                 .kiosk-ambient__frost {
+                   position: absolute;
+                   inset: 0;
+                   backdrop-filter: blur(calc(var(--ambient-blur) * var(--ambient-enabled)));
+                   background: color-mix(in srgb,
+                       var(--kiosk-page-bg) calc(var(--ambient-frost-opacity) * var(--ambient-enabled) * 100%),
+                       transparent);
+                 }
+        
+/* ==========================================================================
+   Kiosk page transitions (KioskShell / AiFlow + pageTransitionStore.ts)
+
+   Stack model (KioskPageTransition):
+   - forward: over layer ENTERS on top of under (previous stays)
+   - back: over layer EXITS, revealing under (destination)
+   Duration: --kiosk-page-duration
    ========================================================================== */
 
+.kiosk-page-stack {
+  position: relative;
+  z-index: 10;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 .kiosk-page {
+  position: relative;
+  z-index: 10;
+  height: 100%;
+  width: 100%;
   will-change: opacity, transform, filter;
 }
 
-.kiosk-page--fade {
-  animation: kiosk-page-fade 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+.kiosk-page-stack > .kiosk-page {
+  position: absolute;
+  inset: 0;
 }
 
-.kiosk-page--slide-left {
-  animation: kiosk-page-slide-left 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+.kiosk-page--under {
+  z-index: 1;
+  pointer-events: none;
 }
 
-.kiosk-page--slide-up {
-  animation: kiosk-page-slide-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+.kiosk-page--over {
+  z-index: 2;
 }
 
-.kiosk-page--scale {
-  animation: kiosk-page-scale 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
+/* —— enter (forward) —— */
+
+.kiosk-page--enter-fade {
+  animation: kiosk-page-fade-in var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.kiosk-page--blur {
-  animation: kiosk-page-blur 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+.kiosk-page--enter-slide-left {
+  animation: kiosk-page-slide-in-x var(--kiosk-page-duration, 1440ms) cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
-@keyframes kiosk-page-fade {
+.kiosk-page--enter-slide-up,
+.kiosk-page--enter-cover {
+  animation: kiosk-page-slide-in-y var(--kiosk-page-duration, 1440ms) cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.kiosk-page--enter-scale {
+  animation: kiosk-page-scale-in var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--enter-blur {
+  animation: kiosk-page-blur-in var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--enter-zoom-blur {
+  animation: kiosk-page-zoom-blur-in var(--kiosk-page-duration, 1440ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.kiosk-page--enter-soft {
+  animation: kiosk-page-soft-in var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* —— exit (back) —— */
+
+.kiosk-page--exit-fade {
+  animation: kiosk-page-fade-out var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--exit-slide-left {
+  animation: kiosk-page-slide-out-x var(--kiosk-page-duration, 1440ms) cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.kiosk-page--exit-slide-up,
+.kiosk-page--exit-cover {
+  animation: kiosk-page-slide-out-y var(--kiosk-page-duration, 1440ms) cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.kiosk-page--exit-scale {
+  animation: kiosk-page-scale-out var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--exit-blur {
+  animation: kiosk-page-blur-out var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.kiosk-page--exit-zoom-blur {
+  animation: kiosk-page-zoom-blur-out var(--kiosk-page-duration, 1440ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.kiosk-page--exit-soft {
+  animation: kiosk-page-soft-out var(--kiosk-page-duration, 1440ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes kiosk-page-fade-in {
   from {
     opacity: 0;
   }
@@ -1809,34 +2091,60 @@ textarea {
   }
 }
 
-@keyframes kiosk-page-slide-left {
+@keyframes kiosk-page-fade-out {
   from {
-    opacity: 0;
-    transform: translateX(56px);
+    opacity: 1;
   }
 
   to {
-    opacity: 1;
+    opacity: 0;
+  }
+}
+
+@keyframes kiosk-page-slide-in-x {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
     transform: translateX(0);
   }
 }
 
-@keyframes kiosk-page-slide-up {
+@keyframes kiosk-page-slide-out-x {
   from {
-    opacity: 0;
-    transform: translateY(40px);
+    transform: translateX(0);
   }
 
   to {
-    opacity: 1;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes kiosk-page-slide-in-y {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
     transform: translateY(0);
   }
 }
 
-@keyframes kiosk-page-scale {
+@keyframes kiosk-page-slide-out-y {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes kiosk-page-scale-in {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.92);
   }
 
   to {
@@ -1845,15 +2153,102 @@ textarea {
   }
 }
 
-@keyframes kiosk-page-blur {
+@keyframes kiosk-page-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes kiosk-page-blur-in {
   from {
     opacity: 0;
-    filter: blur(10px);
+    filter: blur(12px);
   }
 
   to {
     opacity: 1;
     filter: blur(0);
+  }
+}
+
+@keyframes kiosk-page-blur-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+
+@keyframes kiosk-page-zoom-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(1.08);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+@keyframes kiosk-page-zoom-blur-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(1.08);
+  }
+}
+
+@keyframes kiosk-page-soft-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes kiosk-page-soft-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-page[class*="kiosk-page--enter-"],
+  .kiosk-page[class*="kiosk-page--exit-"] {
+    animation: kiosk-page-fade-in 0.2s ease both;
+  }
+
+  .kiosk-page[class*="kiosk-page--exit-"] {
+    animation-name: kiosk-page-fade-out;
   }
 }
 

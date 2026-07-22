@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAiFlowStore, type AiFlowStep } from "../lib/aiFlowStore.js";
 import { GripVertical, Palette } from "./icons.js";
+import {
+  SettingsPanelGroup,
+  SettingsPanelSection,
+  pickSectionsByTitle,
+  settingsSectionId,
+  useOpenSections,
+} from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
@@ -961,6 +968,47 @@ function isSectionVisible(title: string, step: AiFlowStep): boolean {
   return true;
 }
 
+const AI_COMMON_TITLES = ["Страница", "Шапка", "Кнопка «Назад»"] as const;
+
+const AI_SOURCE_TITLES = [
+  "Заголовок экрана",
+  "Сетка карточек",
+  "Карточка «Камера» — фон и рамка",
+  "Карточка «Камера» — акценты",
+  "Карточка «Телефон» — фон и рамка",
+  "Карточка «Телефон» — акценты",
+  "Иконки карточек",
+  "Бейдж AI",
+  "Инфо-бар",
+] as const;
+
+const AI_STEP_GROUPS: Array<{
+  label: string;
+  titles: readonly string[];
+  visibleOn: AiFlowStep[];
+}> = [
+  {
+    label: "Источник",
+    titles: AI_SOURCE_TITLES,
+    visibleOn: ["source"],
+  },
+  {
+    label: "QR-загрузка",
+    titles: SECTIONS.filter((section) => section.title.startsWith("QR —")).map((section) => section.title),
+    visibleOn: ["qr"],
+  },
+  {
+    label: "Выбор стиля",
+    titles: SECTIONS.filter((section) => section.title.startsWith("Стиль —")).map((section) => section.title),
+    visibleOn: ["style"],
+  },
+  {
+    label: "Результат",
+    titles: SECTIONS.filter((section) => section.title.startsWith("Результат —")).map((section) => section.title),
+    visibleOn: ["result", "processing"],
+  },
+];
+
 const ALL_TOKENS: Token[] = Array.from(
   new Map(SECTIONS.flatMap((section) => section.tokens).map((token) => [token.key, token])).values(),
 );
@@ -1065,6 +1113,7 @@ export function AiThemePanel() {
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("ai-theme-panel-open-sections");
 
   const isAiThemedScreen =
     location.pathname === "/kiosk/ai" &&
@@ -1221,7 +1270,7 @@ export function AiThemePanel() {
       </button>
 
       {open ? (
-        <div className="settings-panel-scroll flex max-h-[80vh] w-[760px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
+        <div className="settings-panel-scroll flex max-h-[80vh] w-[760px] flex-col gap-6 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span
@@ -1244,12 +1293,47 @@ export function AiThemePanel() {
             </button>
           </div>
 
-          {SECTIONS.filter((section) => isSectionVisible(section.title, step)).map((section) => (
-            <div key={section.title} className="flex flex-col gap-5">
-              <span className="text-base font-bold uppercase tracking-wider text-white/50">{section.title}</span>
-              {section.tokens.map((token) => renderToken(token))}
-            </div>
-          ))}
+          <SettingsPanelGroup label="Общие">
+            {pickSectionsByTitle(SECTIONS, AI_COMMON_TITLES).map((section) => {
+              const id = settingsSectionId(section.title);
+              return (
+                <SettingsPanelSection
+                  key={section.title}
+                  id={id}
+                  title={section.title}
+                  open={isSectionOpen(id)}
+                  onToggle={() => toggleSection(id)}
+                >
+                  {section.tokens.map((token) => renderToken(token))}
+                </SettingsPanelSection>
+              );
+            })}
+          </SettingsPanelGroup>
+
+          {AI_STEP_GROUPS.filter((group) => group.visibleOn.includes(step)).map((group) => {
+            const sections = pickSectionsByTitle(SECTIONS, group.titles).filter((section) =>
+              isSectionVisible(section.title, step),
+            );
+            if (sections.length === 0) return null;
+            return (
+              <SettingsPanelGroup key={group.label} label={group.label}>
+                {sections.map((section) => {
+                  const id = settingsSectionId(section.title);
+                  return (
+                    <SettingsPanelSection
+                      key={section.title}
+                      id={id}
+                      title={section.title}
+                      open={isSectionOpen(id)}
+                      onToggle={() => toggleSection(id)}
+                    >
+                      {section.tokens.map((token) => renderToken(token))}
+                    </SettingsPanelSection>
+                  );
+                })}
+              </SettingsPanelGroup>
+            );
+          })}
 
           <button
             type="button"

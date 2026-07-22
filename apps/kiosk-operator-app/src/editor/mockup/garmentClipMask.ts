@@ -2,9 +2,12 @@ import type { CSSProperties } from "react";
 import type { GarmentSide, GarmentType, PrintAreaRect } from "@tshirt/shared-types";
 import { bodyPolygonPoints, MOCKUP_DISPLAY_SCALE, MOCKUP_HEIGHT, MOCKUP_WIDTH } from "./garmentShape.js";
 
-/** Native flat-lay asset size — must match `TshirtMockup.tsx` / point-server compositing. */
-const TSHIRT_PHOTO_WIDTH = 640;
-const TSHIRT_PHOTO_HEIGHT = 677;
+/** Native editor flat-lay asset size — must match `TshirtMockup.tsx` / point-server compositing. */
+export const TSHIRT_PHOTO_WIDTH = 640;
+export const TSHIRT_PHOTO_HEIGHT = 677;
+/** Home "Популярные принты" mockups (`tshirt-popular-white/black.png`) — near-identical size. */
+export const TSHIRT_POPULAR_PHOTO_WIDTH = 768;
+export const TSHIRT_POPULAR_PHOTO_HEIGHT = 892;
 
 export interface GarmentClipMaskInput {
   garmentType: GarmentType;
@@ -12,14 +15,17 @@ export interface GarmentClipMaskInput {
   printArea: PrintAreaRect;
   /** Alpha silhouette source for t-shirt clipping (white flat-lay PNG). */
   tshirtImageUrl?: string;
+  /** Native photo size for letterbox math (defaults to editor flat-lay). */
+  tshirtPhotoWidth?: number;
+  tshirtPhotoHeight?: number;
 }
 
-function getTshirtLetterboxMetrics() {
+function getTshirtLetterboxMetrics(photoWidth = TSHIRT_PHOTO_WIDTH, photoHeight = TSHIRT_PHOTO_HEIGHT) {
   const boxWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const boxHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
-  const containScale = Math.min(boxWidth / TSHIRT_PHOTO_WIDTH, boxHeight / TSHIRT_PHOTO_HEIGHT);
-  const renderedWidth = TSHIRT_PHOTO_WIDTH * containScale;
-  const renderedHeight = TSHIRT_PHOTO_HEIGHT * containScale;
+  const containScale = Math.min(boxWidth / photoWidth, boxHeight / photoHeight);
+  const renderedWidth = photoWidth * containScale;
+  const renderedHeight = photoHeight * containScale;
   const offsetX = (boxWidth - renderedWidth) / 2;
   const offsetY = (boxHeight - renderedHeight) / 2;
   return { renderedWidth, renderedHeight, offsetX, offsetY };
@@ -58,7 +64,7 @@ function resolveGarmentClipLayout(input: GarmentClipMaskInput): GarmentClipLayou
 
   if (input.garmentType === "tshirt") {
     if (!input.tshirtImageUrl) return null;
-    const metrics = getTshirtLetterboxMetrics();
+    const metrics = getTshirtLetterboxMetrics(input.tshirtPhotoWidth, input.tshirtPhotoHeight);
     maskUrl = input.tshirtImageUrl;
     maskWidth = metrics.renderedWidth;
     maskHeight = metrics.renderedHeight;

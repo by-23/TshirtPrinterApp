@@ -18,9 +18,11 @@ function useTshirtSilhouetteUrlForClip(
   garmentType: GarmentType,
   color: string,
   side: GarmentSide,
+  overrideUrl?: string,
 ): string | undefined {
   const tshirtImageUrl = useTshirtSilhouetteUrl(color, side);
-  return garmentType === "tshirt" ? tshirtImageUrl : undefined;
+  if (garmentType !== "tshirt") return undefined;
+  return overrideUrl || tshirtImageUrl;
 }
 
 export function useGarmentClipMaskStyle(
@@ -28,8 +30,18 @@ export function useGarmentClipMaskStyle(
   side: GarmentSide,
   color: string,
   printArea: PrintAreaRect,
+  options?: {
+    tshirtImageUrl?: string;
+    tshirtPhotoWidth?: number;
+    tshirtPhotoHeight?: number;
+  },
 ) {
-  const tshirtImageUrl = useTshirtSilhouetteUrlForClip(garmentType, color, side);
+  const tshirtImageUrl = useTshirtSilhouetteUrlForClip(
+    garmentType,
+    color,
+    side,
+    options?.tshirtImageUrl,
+  );
 
   return useMemo(
     () =>
@@ -38,8 +50,17 @@ export function useGarmentClipMaskStyle(
         side,
         printArea,
         tshirtImageUrl: garmentType === "tshirt" ? tshirtImageUrl : undefined,
+        tshirtPhotoWidth: options?.tshirtPhotoWidth,
+        tshirtPhotoHeight: options?.tshirtPhotoHeight,
       }),
-    [garmentType, side, printArea, tshirtImageUrl],
+    [
+      garmentType,
+      side,
+      printArea,
+      tshirtImageUrl,
+      options?.tshirtPhotoWidth,
+      options?.tshirtPhotoHeight,
+    ],
   );
 }
 
@@ -49,8 +70,18 @@ export function useFabricShadingOverlayStyle(
   side: GarmentSide,
   color: string,
   printArea: PrintAreaRect,
+  options?: {
+    tshirtImageUrl?: string;
+    tshirtPhotoWidth?: number;
+    tshirtPhotoHeight?: number;
+  },
 ) {
-  const tshirtImageUrl = useTshirtSilhouetteUrlForClip(garmentType, color, side);
+  const tshirtImageUrl = useTshirtSilhouetteUrlForClip(
+    garmentType,
+    color,
+    side,
+    options?.tshirtImageUrl,
+  );
 
   return useMemo(
     () =>
@@ -59,7 +90,16 @@ export function useFabricShadingOverlayStyle(
         side,
         printArea,
         tshirtImageUrl: garmentType === "tshirt" ? tshirtImageUrl : undefined,
+        tshirtPhotoWidth: options?.tshirtPhotoWidth,
+        tshirtPhotoHeight: options?.tshirtPhotoHeight,
       }),
-    [garmentType, side, printArea, tshirtImageUrl],
+    [
+      garmentType,
+      side,
+      printArea,
+      tshirtImageUrl,
+      options?.tshirtPhotoWidth,
+      options?.tshirtPhotoHeight,
+    ],
   );
 }

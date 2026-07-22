@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import tshirtWhite from "../assets/tshirt-white.png";
 import tshirtWhiteBack from "../assets/tshirt-white-back.png";
+import tshirtPopularWhite from "../assets/tshirt-popular-white.png";
+import tshirtPopularBlack from "../assets/tshirt-popular-black.png";
 import { getCategoryHomeLabel } from "./homeLabels.js";
 import {
   clearAllImageOverrides,
@@ -42,6 +44,8 @@ export interface KioskImageSection {
 }
 
 const POPULAR_IMAGES: KioskImageDefinition[] = [
+  { key: "tshirt-popular-white", label: "Футболка белая (популярные принты)", defaultUrl: tshirtPopularWhite },
+  { key: "tshirt-popular-black", label: "Футболка чёрная (популярные принты)", defaultUrl: tshirtPopularBlack },
   { key: "tshirt-white", label: "Футболка белая (перед)", defaultUrl: tshirtWhite },
   { key: "tshirt-white-back", label: "Футболка белая (спина)", defaultUrl: tshirtWhiteBack },
   ...PRINT_CATALOG.map((print, index) => ({
@@ -136,6 +140,9 @@ export function getKioskImageUrl(key: string): string {
 /** Built-in shirt mockups — use as fallback if override/storage returns empty. */
 export const DEFAULT_TSHIRT_WHITE = tshirtWhite;
 export const DEFAULT_TSHIRT_WHITE_BACK = tshirtWhiteBack;
+/** Home "Популярные принты" carousel mockups — separate white/black photos. */
+export const DEFAULT_TSHIRT_POPULAR_WHITE = tshirtPopularWhite;
+export const DEFAULT_TSHIRT_POPULAR_BLACK = tshirtPopularBlack;
 
 export function hasKioskImageOverride(key: string): boolean {
   return hasCachedOverride(key);

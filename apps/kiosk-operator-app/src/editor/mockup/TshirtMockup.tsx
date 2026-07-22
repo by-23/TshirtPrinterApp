@@ -6,7 +6,7 @@ import {
 import type { GarmentMockupProps } from "./garmentShape.js";
 
 const WHITE_HEX = "#ffffff";
-/** Native flat-lay asset ratio — keeps the mockup proportional inside the print-area box. */
+/** Native editor flat-lay asset ratio — keeps the mockup proportional inside the print-area box. */
 const SHIRT_ASPECT_RATIO = "640 / 677";
 
 /**
@@ -14,19 +14,22 @@ const SHIRT_ASPECT_RATIO = "640 / 677";
  * `tshirt-white-back.png`) instead of a drawn shape. Non-white palette colors
  * are achieved by tinting the white photo with a `mix-blend-mode: multiply`
  * overlay clipped to the garment's own alpha silhouette, so folds/shadows stay
- * intact.
+ * intact. Pass `imageUrl` to use a different photo (home popular-prints mockup).
  */
-export function TshirtMockup({ color, side, className }: GarmentMockupProps) {
+export function TshirtMockup({ color, side, className, imageUrl, aspectRatio }: GarmentMockupProps) {
   const whiteFront = useKioskImage("tshirt-white") || DEFAULT_TSHIRT_WHITE;
   const whiteBack = useKioskImage("tshirt-white-back") || DEFAULT_TSHIRT_WHITE_BACK;
 
   const isWhite = color.toLowerCase() === WHITE_HEX;
-  const baseImage = side === "back" ? whiteBack : whiteFront;
+  const baseImage = imageUrl ?? (side === "back" ? whiteBack : whiteFront);
   const needsTint = !isWhite;
 
   return (
     <div className={`relative flex h-full w-full items-center justify-center ${className ?? ""}`} aria-hidden>
-      <div className="relative h-full max-h-full w-full max-w-full" style={{ aspectRatio: SHIRT_ASPECT_RATIO }}>
+      <div
+        className="relative h-full max-h-full w-full max-w-full"
+        style={{ aspectRatio: aspectRatio ?? SHIRT_ASPECT_RATIO }}
+      >
         <img
           src={baseImage}
           alt=""

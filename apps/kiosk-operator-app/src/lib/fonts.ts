@@ -105,6 +105,20 @@ const SYSTEM_FONT_OPTIONS: FontOption[] = [
   { id: "courier", label: "Courier", family: "'Courier New', Courier, monospace" },
 ];
 
+/** Self-hosted faces from `src/assets/fonts` (@font-face in index.css). */
+const LOCAL_FONT_OPTIONS: FontOption[] = [
+  {
+    id: "pt-sans-narrow",
+    label: "PT Sans Narrow",
+    family: "'PT Sans Narrow', sans-serif",
+  },
+  {
+    id: "barlow-condensed",
+    label: "Barlow Condensed",
+    family: "'Barlow Condensed', sans-serif",
+  },
+];
+
 /** Fonts loaded from Google Fonts CDN. */
 export const GOOGLE_FONT_OPTIONS: FontOption[] = GOOGLE_FONT_SPECS.map(({ id, label, family }) => ({
   id,
@@ -112,11 +126,17 @@ export const GOOGLE_FONT_OPTIONS: FontOption[] = GOOGLE_FONT_SPECS.map(({ id, la
   family,
 }));
 
-/** Theme panel + CSS token picker (system + Google). */
-export const THEME_FONT_OPTIONS: FontOption[] = [...SYSTEM_FONT_OPTIONS, ...GOOGLE_FONT_OPTIONS];
+/** Theme panel + CSS token picker (system + local + Google). */
+export const THEME_FONT_OPTIONS: FontOption[] = [
+  ...SYSTEM_FONT_OPTIONS,
+  ...LOCAL_FONT_OPTIONS,
+  ...GOOGLE_FONT_OPTIONS,
+];
 
 /** Canvas text tool — display faces suited for print designs. */
 export const EDITOR_FONTS: FontOption[] = [
+  LOCAL_FONT_OPTIONS.find((f) => f.id === "pt-sans-narrow")!,
+  LOCAL_FONT_OPTIONS.find((f) => f.id === "barlow-condensed")!,
   GOOGLE_FONT_OPTIONS.find((f) => f.id === "roboto")!,
   GOOGLE_FONT_OPTIONS.find((f) => f.id === "roboto-condensed")!,
   GOOGLE_FONT_OPTIONS.find((f) => f.id === "oswald")!,

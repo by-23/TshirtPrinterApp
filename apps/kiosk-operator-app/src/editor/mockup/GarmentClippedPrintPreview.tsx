@@ -2,13 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
 import { initPrintAreaConfig, usePrintAreaStore } from "../../lib/printAreaStore.js";
 import { POPULAR_SLIDE_HEIGHT_PX } from "../../lib/popularPrintScale.js";
+import {
+  DEFAULT_TSHIRT_POPULAR_BLACK,
+  DEFAULT_TSHIRT_POPULAR_WHITE,
+  useKioskImage,
+} from "../../lib/kioskImages.js";
 import { computeCenteredImageScale } from "../canvasImage.js";
 import { TshirtMockup } from "./TshirtMockup.js";
 import { HoodieMockup } from "./HoodieMockup.js";
+import {
+  TSHIRT_POPULAR_PHOTO_HEIGHT,
+  TSHIRT_POPULAR_PHOTO_WIDTH,
+} from "./garmentClipMask.js";
 import { MOCKUP_DISPLAY_SCALE, MOCKUP_HEIGHT, MOCKUP_WIDTH } from "./garmentShape.js";
-import { useFabricShadingOverlayStyle, useGarmentClipMaskStyle } from "./useGarmentClipMaskStyle.js";
+import { useGarmentClipMaskStyle } from "./useGarmentClipMaskStyle.js";
 
-const DEFAULT_GARMENT_COLOR = "#ffffff";
+const WHITE_HEX = "#ffffff";
+const POPULAR_TSHIRT_ASPECT_RATIO = `${TSHIRT_POPULAR_PHOTO_WIDTH} / ${TSHIRT_POPULAR_PHOTO_HEIGHT}`;
 
 const MOCKUP_BY_TYPE = {
   tshirt: TshirtMockup,
@@ -19,6 +29,7 @@ export interface GarmentClippedPrintPreviewProps {
   printImageUrl?: string;
   garmentType?: GarmentType;
   side?: GarmentSide;
+  /** Selects popular white vs black photo (`#ffffff` → white, anything else → black). */
   color?: string;
   /** CSS var that scales the fitted mockup (default: `--popular-shirt-scale`). */
   mockupScaleVar?: string;
@@ -84,26 +95,48 @@ function CenteredPrintImage({
 /**
  * Read-only garment mockup with a print clipped to the operator-configured
  * print area and garment silhouette — same rules as the editor canvas.
+ * Home "Популярные принты" uses dedicated white/black flat-lays, separate
+ * from the editor's `tshirt-white` / `tshirt-white-back`.
  */
 export function GarmentClippedPrintPreview({
   printImageUrl,
   garmentType = "tshirt",
   side = "front",
-  color = DEFAULT_GARMENT_COLOR,
+  color = WHITE_HEX,
   mockupScaleVar = "--popular-shirt-scale",
   printScale = 1,
   containerHeightPx = POPULAR_SLIDE_HEIGHT_PX,
   className,
 }: GarmentClippedPrintPreviewProps) {
   const printAreas = usePrintAreaStore((state) => state.areas);
+  const popularWhite =
+    useKioskImage("tshirt-popular-white") || DEFAULT_TSHIRT_POPULAR_WHITE;
+  const popularBlack =
+    useKioskImage("tshirt-popular-black") || DEFAULT_TSHIRT_POPULAR_BLACK;
+  const useWhitePhoto = color.toLowerCase() === WHITE_HEX;
+  const popularShirt = useWhitePhoto ? popularWhite : popularBlack;
+  const silhouetteOptions =
+    garmentType === "tshirt"
+      ? {
+          tshirtImageUrl: popularShirt,
+          tshirtPhotoWidth: TSHIRT_POPULAR_PHOTO_WIDTH,
+          tshirtPhotoHeight: TSHIRT_POPULAR_PHOTO_HEIGHT,
+        }
+      : undefined;
 
   useEffect(() => {
     initPrintAreaConfig();
   }, []);
 
   const printArea = printAreas[garmentType][side];
-  const garmentClipMaskStyle = useGarmentClipMaskStyle(garmentType, side, color, printArea);
-  const fabricShadingOverlayStyle = useFabricShadingOverlayStyle(garmentType, side, color, printArea);
+  // Clip mask only needs the silhouette photo; pass white so hooks stay simple.
+  const garmentClipMaskStyle = useGarmentClipMaskStyle(
+    garmentType,
+    side,
+    WHITE_HEX,
+    printArea,
+    silhouetteOptions,
+  );
   const Mockup = MOCKUP_BY_TYPE[garmentType];
 
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
@@ -113,17 +146,27 @@ export function GarmentClippedPrintPreview({
   const mockupFitScale = containerHeightPx / mockupPixelHeight;
 
   return (
-    <div className={`flex h-full w-full items-center justify-center overflow-hidden ${className ?? ""}`}>
+    <div className={`flex h-full w-full items-center justify-center overflow-visible ${className ?? ""}`}>
       <div
         className="relative shrink-0"
         style={{
           width: mockupPixelWidth,
           height: mockupPixelHeight,
-          transform: `scale(calc(${mockupFitScale} * var(${mockupScaleVar}, 0.85)))`,
+          // Fabric shading is intentionally omitted here: on a transparent
+          // preview it paints the whole print-area rect as a visible white box.
+          // Real black/white photos — no multiply tint on top.
+          transform: `translateY(var(--popular-shirt-offset-y, 0px)) scale(calc(${mockupFitScale} * var(${mockupScaleVar}, 0.85)))`,
           transformOrigin: "center center",
         }}
       >
-        <Mockup side={side} color={color} className="absolute inset-0 h-full w-full" />
+        <Mockup
+          side={side}
+          color={WHITE_HEX}
+          className="absolute inset-0 h-full w-full"
+          {...(garmentType === "tshirt"
+            ? { imageUrl: popularShirt, aspectRatio: POPULAR_TSHIRT_ASPECT_RATIO }
+            : {})}
+        />
         {printImageUrl ? (
           <div
             className="absolute overflow-hidden"
@@ -141,7 +184,6 @@ export function GarmentClippedPrintPreview({
               areaHeightPx={canvasHeightPx}
               printScale={printScale}
             />
-            <div className="absolute inset-0" style={fabricShadingOverlayStyle} />
           </div>
         ) : null}
       </div>

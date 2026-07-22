@@ -5,6 +5,13 @@ import {
   syncAllPopularScrollElements,
 } from "../editor/popularScrollTheme.js";
 import { GripVertical, SlidersVertical } from "./icons.js";
+import {
+  SettingsPanelGroup,
+  SettingsPanelSection,
+  pickSectionsByTitle,
+  settingsSectionId,
+  useOpenSections,
+} from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
@@ -711,6 +718,41 @@ const SECTIONS: Section[] = [
   },
 ];
 
+const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
+  {
+    label: "Основные",
+    titles: ["Общий фон страницы", "Отступы между блоками"],
+  },
+  {
+    label: "Шапка",
+    titles: ["Шапка", "Переключатель стороны печати"],
+  },
+  {
+    label: "Левая зона",
+    titles: ["Левая панель инструментов", "Панели инструментов"],
+  },
+  {
+    label: "Холст",
+    titles: ["Карточка холста", "Полоска управления объектом", "Плавающие кнопки объекта"],
+  },
+  {
+    label: "Правая панель",
+    titles: [
+      "Правая панель",
+      "Цвет изделия (плитки)",
+      "Размер (кнопки)",
+      "Материал (кнопки)",
+      "Кнопки «Предпросмотр» / «Полный экран»",
+      "Цена и печать",
+      "«Заказ сохраняется после оплаты» (сноска)",
+    ],
+  },
+  {
+    label: "Низ экрана",
+    titles: ["Популярные элементы", "Советы"],
+  },
+];
+
 const ALL_TOKENS: Token[] = SECTIONS.flatMap((section) => section.tokens);
 const TOKEN_BY_KEY = new Map(ALL_TOKENS.map((token) => [token.key, token]));
 const STORAGE_KEY = "kiosk-editor-theme-overrides-v2";
@@ -834,6 +876,7 @@ export function EditorThemePanel() {
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("editor-theme-panel-open-sections");
 
   const isEditorRoute = location.pathname === "/kiosk/editor";
 
@@ -984,7 +1027,7 @@ export function EditorThemePanel() {
       </button>
 
       {open ? (
-        <div className="settings-panel-scroll flex max-h-[80vh] w-[760px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
+        <div className="settings-panel-scroll flex max-h-[80vh] w-[760px] flex-col gap-6 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span
@@ -1009,13 +1052,23 @@ export function EditorThemePanel() {
             </button>
           </div>
 
-          {SECTIONS.map((section) => (
-            <div key={section.title} className="flex flex-col gap-5">
-              <span className="text-base font-bold uppercase tracking-wider text-white/50">
-                {section.title}
-              </span>
-              {section.tokens.map((token) => renderToken(token))}
-            </div>
+          {PANEL_GROUPS.map((group) => (
+            <SettingsPanelGroup key={group.label} label={group.label}>
+              {pickSectionsByTitle(SECTIONS, group.titles).map((section) => {
+                const id = settingsSectionId(section.title);
+                return (
+                  <SettingsPanelSection
+                    key={section.title}
+                    id={id}
+                    title={section.title}
+                    open={isSectionOpen(id)}
+                    onToggle={() => toggleSection(id)}
+                  >
+                    {section.tokens.map((token) => renderToken(token))}
+                  </SettingsPanelSection>
+                );
+              })}
+            </SettingsPanelGroup>
           ))}
 
           <button

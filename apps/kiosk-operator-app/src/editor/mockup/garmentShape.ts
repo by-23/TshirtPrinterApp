@@ -50,4 +50,8 @@ export interface GarmentMockupProps {
   color: string;
   side: GarmentSide;
   className?: string;
+  /** Override flat-lay photo (e.g. home popular-prints mockup). */
+  imageUrl?: string;
+  /** CSS aspect-ratio for the photo box; defaults to editor flat-lay ratio. */
+  aspectRatio?: string;
 }

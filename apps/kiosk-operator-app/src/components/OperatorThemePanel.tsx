@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import { GripVertical, SlidersHorizontal } from "./icons.js";
+import {
+  SettingsPanelGroup,
+  SettingsPanelSection,
+  pickSectionsByTitle,
+  settingsSectionId,
+  useOpenSections,
+} from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 import { OPERATOR_SCROLL_CSS_VARS, syncAllOperatorScrollElements } from "../lib/operatorScrollTheme.js";
 
@@ -299,6 +306,37 @@ const SECTIONS: Section[] = [
   },
 ];
 
+const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
+  {
+    label: "Основные",
+    titles: ["Общая палитра", "Скроллбары"],
+  },
+  {
+    label: "Сайдбар",
+    titles: ["Сайдбар — размер и шапка", "Сайдбар — навигация", "Сайдбар — профиль"],
+  },
+  {
+    label: "Заказы",
+    titles: [
+      "Панель статистики (шапка)",
+      "Лента заказов — список",
+      "Лента заказов — карточка",
+      "Детали заказа — макет",
+      "Детали заказа — превью мокапа",
+      "Детали заказа — карточки справа",
+      "Детали заказа — кнопки действий",
+    ],
+  },
+  {
+    label: "Принтер",
+    titles: ["Панель принтера", "Панель принтера — чернила и настройки"],
+  },
+  {
+    label: "Каталог",
+    titles: ["Каталог дизайнов"],
+  },
+];
+
 const ALL_TOKENS: Token[] = SECTIONS.flatMap((section) => section.tokens);
 const TOKEN_BY_KEY = new Map(ALL_TOKENS.map((token) => [token.key, token]));
 const STORAGE_KEY = "kiosk-operator-theme-overrides-v1";
@@ -408,6 +446,7 @@ export function OperatorThemePanel() {
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("operator-theme-panel-open-sections");
 
   useEffect(() => {
     function applyAll() {
@@ -561,7 +600,7 @@ export function OperatorThemePanel() {
       </button>
 
       {open ? (
-        <div className="settings-panel-scroll flex max-h-[85vh] w-[760px] flex-col gap-8 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
+        <div className="settings-panel-scroll flex max-h-[85vh] w-[760px] flex-col gap-6 overflow-y-auto rounded-3xl border-2 border-white/10 bg-[#0c0e17f0] p-8 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span
@@ -584,11 +623,23 @@ export function OperatorThemePanel() {
             </button>
           </div>
 
-          {SECTIONS.map((section) => (
-            <div key={section.title} className="flex flex-col gap-5">
-              <span className="text-base font-bold uppercase tracking-wider text-white/50">{section.title}</span>
-              {section.tokens.map((token) => renderToken(token))}
-            </div>
+          {PANEL_GROUPS.map((group) => (
+            <SettingsPanelGroup key={group.label} label={group.label}>
+              {pickSectionsByTitle(SECTIONS, group.titles).map((section) => {
+                const id = settingsSectionId(section.title);
+                return (
+                  <SettingsPanelSection
+                    key={section.title}
+                    id={id}
+                    title={section.title}
+                    open={isSectionOpen(id)}
+                    onToggle={() => toggleSection(id)}
+                  >
+                    {section.tokens.map((token) => renderToken(token))}
+                  </SettingsPanelSection>
+                );
+              })}
+            </SettingsPanelGroup>
           ))}
 
           <button
