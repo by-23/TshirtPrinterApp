@@ -66,4 +66,23 @@ export const apiClient = {
     formData.append("file", file);
     return request<T>(path, { method: "POST", body: formData });
   },
+  /**
+   * Fetches a protected binary (the manual catalog's `GET
+   * /catalog-manual/:id/file`) with the admin's Bearer token attached — an
+   * `<img src>` can't carry an Authorization header itself, so callers turn
+   * this into an object URL instead (see `CatalogPage.tsx`).
+   */
+  getBlob: async (path: string): Promise<Blob> => {
+    const token = useAuthStore.getState().token;
+    const headers = new Headers();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const response = await fetch(`${BASE_URL}${path}`, { headers });
+    if (response.status === 401) {
+      useAuthStore.getState().logout();
+    }
+    if (!response.ok) {
+      throw new ApiError(response.status, await parseErrorBody(response));
+    }
+    return response.blob();
+  },
 };

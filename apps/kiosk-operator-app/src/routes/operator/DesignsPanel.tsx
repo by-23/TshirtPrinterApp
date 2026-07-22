@@ -1066,9 +1066,13 @@ function GalleryTab() {
     }
     setClearing(true);
     try {
+      // Admin-panel uploads are excluded server-side (read-only on the
+      // point) — re-fetch instead of assuming the category is now empty,
+      // so any of those stay visible in the grid.
       await deleteDesignsByCategory(category);
-      setDesigns([]);
-      setTotal(0);
+      const page = await fetchDesignsPage(category, { offset: 0, limit: GALLERY_PAGE_SIZE });
+      setDesigns(page.items);
+      setTotal(page.total);
     } catch {
       // fail-open: grid stays as-is, operator can retry
     } finally {
@@ -1198,7 +1202,16 @@ function GalleryTab() {
                       }}
                     />
                   )}
-                  {design.imageUrl && (
+                  {design.imageUrl && design.source === "admin" && (
+                    <span
+                      className="absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-semibold text-white"
+                      style={{ backgroundColor: "rgba(0, 0, 0, 0.65)" }}
+                      title="Загружено из панели администратора — управлять можно только там"
+                    >
+                      Из админки
+                    </span>
+                  )}
+                  {design.imageUrl && design.source !== "admin" && (
                     <div className="absolute right-2 top-2 flex items-center gap-1.5">
                       <button
                         type="button"

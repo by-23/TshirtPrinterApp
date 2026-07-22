@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { and, eq, like, sql } from "drizzle-orm";
+import { and, eq, inArray, like, sql } from "drizzle-orm";
 import {
   createDesignSchema,
   designCategorySchema,
@@ -7,6 +7,7 @@ import {
   setDesignIsolatedSchema,
   POPULAR_DESIGNS_CATEGORY_CAP_RATIO,
   POPULAR_DESIGNS_DEFAULT_LIMIT,
+  type Design,
   type DesignCategory,
   type DesignsPage,
 } from "@tshirt/shared-types";
@@ -31,6 +32,10 @@ function serializeDesign(row: DesignRow) {
     isFeatured: row.isFeatured,
     useCount: row.useCount,
     isolated: row.isolated,
+    // The column is a plain `text()` (any string), but only `source ===
+    // "admin"` (set by `modules/sync/manualCatalog.ts`) or a scraper id are
+    // ever actually written — see `db/schema.ts`.
+    source: row.source as Design["source"],
   };
 }
 
@@ -39,14 +44,24 @@ function parseId(raw: string): number | null {
   return Number.isInteger(id) ? id : null;
 }
 
+/** True for designs synced down from the admin panel's manual catalog upload — read-only on the point (see the isolate/delete guards below) and sorted ahead of scraped designs at equal `useCount`. */
+function isAdminDesign(row: DesignRow): boolean {
+  return row.source === "admin";
+}
+
 /**
- * Most-used first (hearts badge count). Among ties, older rows (lower id)
+ * Most-used first (hearts badge count) — the single most important signal.
+ * Among ties, admin-panel uploads float above scraped designs (docs/PLAN.md
+ * grill-me: "лайки важнее, потом загруженное вручную, потом без лайков
+ * скачанное автоматически"). Among *those* ties, older rows (lower id)
  * come first so freshly-scraped designs append at the *end* of the bucket
  * instead of shuffling page 1 — keeps offset pagination stable while the
  * background filler is still downloading.
  */
 function byUseCountDesc(a: DesignRow, b: DesignRow): number {
   if (b.useCount !== a.useCount) return b.useCount - a.useCount;
+  const adminDiff = Number(isAdminDesign(b)) - Number(isAdminDesign(a));
+  if (adminDiff !== 0) return adminDiff;
   return a.id - b.id;
 }
 
@@ -219,15 +234,22 @@ export async function catalogRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
 
+    const [existing] = await db.select().from(designs).where(eq(designs.id, id));
+    if (!existing) {
+      return reply.status(404).send({ error: "Design not found" });
+    }
+    // Admin-panel uploads are read-only on the point — isolate/delete only
+    // from the central admin panel (docs/PLAN.md grill-me decision).
+    if (isAdminDesign(existing)) {
+      return reply.status(403).send({ error: "Admin-uploaded designs can only be managed from the admin panel" });
+    }
+
     const [row] = await db
       .update(designs)
       .set({ isolated: parsed.data.isolated })
       .where(eq(designs.id, id))
       .returning();
-    if (!row) {
-      return reply.status(404).send({ error: "Design not found" });
-    }
-    return serializeDesign(row);
+    return serializeDesign(row!);
   });
 
   app.get<{ Params: { id: string } }>("/catalog/designs/:id", async (request, reply) => {
@@ -267,18 +289,24 @@ export async function catalogRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "No fields to update" });
     }
 
-    const [row] = await db.update(designs).set(parsed.data).where(eq(designs.id, id)).returning();
-    if (!row) {
+    const [existing] = await db.select().from(designs).where(eq(designs.id, id));
+    if (!existing) {
       return reply.status(404).send({ error: "Design not found" });
     }
-    return serializeDesign(row);
+    if (isAdminDesign(existing)) {
+      return reply.status(403).send({ error: "Admin-uploaded designs can only be managed from the admin panel" });
+    }
+
+    const [row] = await db.update(designs).set(parsed.data).where(eq(designs.id, id)).returning();
+    return serializeDesign(row!);
   });
 
   // Bulk "clear category" for the operator's Designs → Галерея tab (cache
   // management) — deletes every design (DB row + on-disk file) in one
   // category, freeing the reported cache usage in one go instead of
   // one-by-one. Placed above `/catalog/designs/:id` — distinct static
-  // route, Fastify matches them independently either way.
+  // route, Fastify matches them independently either way. Admin-panel
+  // uploads are excluded — read-only on the point, see the isolate guard above.
   app.delete("/catalog/designs", async (request, reply) => {
     const query = request.query as Record<string, unknown>;
     const parsedCategory = designCategorySchema.safeParse(query.category);
@@ -286,8 +314,13 @@ export async function catalogRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Missing or invalid category" });
     }
 
-    const rows = await db.select().from(designs).where(eq(designs.category, parsedCategory.data));
-    await db.delete(designs).where(eq(designs.category, parsedCategory.data));
+    const allRows = await db.select().from(designs).where(eq(designs.category, parsedCategory.data));
+    const rows = allRows.filter((row) => !isAdminDesign(row));
+    if (rows.length > 0) {
+      await db.delete(designs).where(
+        inArray(designs.id, rows.map((row) => row.id)),
+      );
+    }
     await Promise.all(rows.filter((row) => row.imageUrl).map((row) => deleteStoredImageFile(row.imageUrl)));
     return reply.status(200).send({ deleted: rows.length });
   });
@@ -298,11 +331,16 @@ export async function catalogRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Invalid id" });
     }
 
-    const [row] = await db.delete(designs).where(eq(designs.id, id)).returning();
-    if (!row) {
+    const [existing] = await db.select().from(designs).where(eq(designs.id, id));
+    if (!existing) {
       return reply.status(404).send({ error: "Design not found" });
     }
-    if (row.imageUrl) {
+    if (isAdminDesign(existing)) {
+      return reply.status(403).send({ error: "Admin-uploaded designs can only be managed from the admin panel" });
+    }
+
+    const [row] = await db.delete(designs).where(eq(designs.id, id)).returning();
+    if (row?.imageUrl) {
       void deleteStoredImageFile(row.imageUrl);
     }
     return reply.status(204).send();

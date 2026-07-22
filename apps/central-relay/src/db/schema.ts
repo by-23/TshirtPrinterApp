@@ -1,4 +1,16 @@
-import { pgTable, uuid, text, boolean, timestamp, real, integer, jsonb, pgEnum, unique } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  boolean,
+  timestamp,
+  real,
+  integer,
+  jsonb,
+  pgEnum,
+  unique,
+  primaryKey,
+} from "drizzle-orm/pg-core";
 import type { PartialPriceConfig, PriceConfig } from "@tshirt/shared-types";
 
 export const pointStatusEnum = pgEnum("point_status", ["open", "closed"]);
@@ -96,3 +108,60 @@ export const uploadSessions = pgTable("upload_sessions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
+
+export const catalogManualCategoryEnum = pgEnum("catalog_manual_category", ["memes", "anime_movies", "games"]);
+export const catalogManualPointStatusEnum = pgEnum("catalog_manual_point_status", [
+  "pending",
+  "applied",
+  "error",
+]);
+
+/**
+ * Admin panel's "Каталог" tab (manual PNG uploads per gallery category) —
+ * the central master copy fanned out to every point's own `designs` table
+ * (`source: "admin"`). `revision` is bumped on every edit (title/category)
+ * so `realtime/socket.ts`'s reconnect catch-up knows which points are still
+ * behind; `deletedAt` is a tombstone (never hard-deleted) so a point that
+ * was offline when an admin deleted a design still learns about it once it
+ * reconnects. Only the 3 gallery categories are eligible — see grill-me
+ * discussion in docs/PLAN.md: `text`/`custom`/`ai_style` have no designs
+ * grid on the kiosk to upload into.
+ */
+export const catalogManualDesigns = pgTable("catalog_manual_designs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  category: catalogManualCategoryEnum("category").notNull(),
+  title: text("title").notNull(),
+  /** 64-char hex perceptual hash of the PNG — rejects re-uploading a near-duplicate into the same category. */
+  contentHash: text("content_hash").notNull(),
+  /** Absolute path to the stored PNG on this central-relay host's disk (`data/catalog-manual/`). */
+  storagePath: text("storage_path").notNull(),
+  revision: integer("revision").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/**
+ * One row per `(point, manual design)` — tracks whether that point has
+ * caught up to the design's current `revision` (or to its deletion).
+ * Seeded as `pending` for every existing point when a design is created,
+ * and for every design when a new point is created (see
+ * `modules/catalog-manual/service.ts`). Read by the admin panel's "N/M
+ * точек применили" rollup and by `realtime/socket.ts`'s reconnect catch-up.
+ */
+export const catalogManualPointState = pgTable(
+  "catalog_manual_point_state",
+  {
+    pointId: uuid("point_id")
+      .notNull()
+      .references(() => points.id, { onDelete: "cascade" }),
+    designId: uuid("design_id")
+      .notNull()
+      .references(() => catalogManualDesigns.id, { onDelete: "cascade" }),
+    appliedRevision: integer("applied_revision").notNull().default(0),
+    status: catalogManualPointStatusEnum("status").notNull().default("pending"),
+    lastError: text("last_error"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.pointId, table.designId] })],
+);

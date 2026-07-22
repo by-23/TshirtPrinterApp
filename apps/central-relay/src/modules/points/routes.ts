@@ -11,6 +11,7 @@ import {
 import { db } from "../../db/client.js";
 import { points } from "../../db/schema.js";
 import { pushSnapshotToPoint } from "../../realtime/socket.js";
+import { seedManualStateForNewPoint } from "../catalog-manual/service.js";
 
 const SALT_ROUNDS = 10;
 
@@ -61,6 +62,11 @@ export async function pointsRoutes(app: FastifyInstance) {
       .insert(points)
       .values({ ...fields, operatorPasswordHash, syncToken })
       .returning();
+
+    // So this new point's admin panel "N/M точек применили" rollup for
+    // already-existing manual designs starts at "pending" (and fans them
+    // out once it connects) instead of silently never counting it.
+    await seedManualStateForNewPoint(row!.id);
 
     const response: PointCreatedResponse = { ...serializePoint(row!), syncToken };
     return reply.status(201).send(response);

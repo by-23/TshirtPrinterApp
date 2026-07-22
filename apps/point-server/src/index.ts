@@ -2,6 +2,7 @@ import { runMigrations } from "./db/migrate.js";
 import { buildServer } from "./server.js";
 import { connectToCentralRelay } from "./modules/sync/client.js";
 import { drainSyncQueue } from "./modules/sync/queue.js";
+import { drainManualCatalogQueue } from "./modules/sync/manualCatalog.js";
 import { ensureAllCategoriesStocked, startCacheFiller, GALLERY_CATEGORIES } from "./modules/catalog-scraper/job.js";
 import { clearInterruptedRuns } from "./modules/catalog-scraper/state.js";
 import { ensurePortAvailable } from "./lib/ensurePort.js";
@@ -73,6 +74,7 @@ app
       setInterval(() => {
         if (syncSocket.connected) {
           void drainSyncQueue(syncSocket, app.log);
+          void drainManualCatalogQueue(syncSocket, app.log);
         }
       }, SYNC_QUEUE_DRAIN_INTERVAL_MS);
     }

@@ -3,6 +3,8 @@ import type { FastifyBaseLogger } from "fastify";
 import {
   SYNC_SNAPSHOT_EVENT,
   UPLOAD_PHOTO_READY_EVENT,
+  CATALOG_MANUAL_UPSERT_EVENT,
+  CATALOG_MANUAL_DELETE_EVENT,
   type SyncSnapshotPayload,
   type UploadPhotoReadyPayload,
 } from "@tshirt/shared-types";
@@ -10,6 +12,7 @@ import { env } from "../../env.js";
 import { emitAiPhotoReceivedEvent } from "../../realtime/socket.js";
 import { applySnapshot } from "./handlers.js";
 import { drainSyncQueue } from "./queue.js";
+import { drainManualCatalogQueue, handleManualDelete, handleManualUpsert } from "./manualCatalog.js";
 
 let activeSocket: Socket | null = null;
 
@@ -46,10 +49,22 @@ export function connectToCentralRelay(log: FastifyBaseLogger): Socket | null {
   socket.on("connect", () => {
     log.info("Connected to central-relay");
     void drainSyncQueue(socket, log);
+    void drainManualCatalogQueue(socket, log);
   });
 
   socket.on(SYNC_SNAPSHOT_EVENT, (payload: SyncSnapshotPayload) => {
     void applySnapshot(payload, log);
+  });
+
+  // Admin panel's "Каталог" tab (manual PNG uploads) fanned out from
+  // central-relay — see `./manualCatalog.ts`. Room-broadcast, not an ack
+  // callback: the result is reported back separately via
+  // `CATALOG_MANUAL_ACK_EVENT`, which both handlers emit themselves.
+  socket.on(CATALOG_MANUAL_UPSERT_EVENT, (payload: unknown) => {
+    void handleManualUpsert(payload, socket, log);
+  });
+  socket.on(CATALOG_MANUAL_DELETE_EVENT, (payload: unknown) => {
+    void handleManualDelete(payload, socket, log);
   });
 
   // ИИ-раздел (Этап 9), `uploadMode: "relay"` — central-relay pushes this

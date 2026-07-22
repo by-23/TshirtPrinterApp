@@ -10,6 +10,14 @@ export const designCategorySchema = z.enum([
 ]);
 export type DesignCategory = z.infer<typeof designCategorySchema>;
 
+/** Categories the Pinterest catalog scraper (Этап 3) fills in — the ones with a gallery page. */
+export const galleryCategorySchema = z.enum(["memes", "anime_movies", "games"]);
+export type GalleryCategory = z.infer<typeof galleryCategorySchema>;
+
+/** Which scraper source found a given design — `null` for manually-added ones (admin/seed). */
+export const scraperSourceIdSchema = z.enum(["pinterest", "giphy", "cleanpng"]);
+export type ScraperSourceId = z.infer<typeof scraperSourceIdSchema>;
+
 export const designSchema = z.object({
   id: z.string(),
   category: designCategorySchema,
@@ -22,6 +30,13 @@ export const designSchema = z.object({
    * original `category`, but is excluded from the kiosk gallery and lives only in the panel's
    * dedicated "Изолированные" filter until restored. */
   isolated: z.boolean().default(false),
+  /**
+   * `"admin"` for designs synced down from the central admin panel's manual catalog upload
+   * (see `catalogManualUpsertPayloadSchema`); a scraper id (`"pinterest"` etc.) for scraped
+   * designs; `null`/absent for anything else. Powers the operator panel's read-only "Из
+   * админки" badge and the gallery's admin-before-scraped sort tiebreak.
+   */
+  source: z.union([scraperSourceIdSchema, z.literal("admin")]).nullable().optional(),
 });
 export type Design = z.infer<typeof designSchema>;
 
@@ -61,10 +76,6 @@ export const POPULAR_DESIGNS_CATEGORY_CAP_RATIO = 0.3;
 
 /** Default number of slides `GET /catalog/designs/popular` returns when `limit` is omitted. */
 export const POPULAR_DESIGNS_DEFAULT_LIMIT = 12;
-
-/** Categories the Pinterest catalog scraper (Этап 3) fills in — the ones with a gallery page. */
-export const galleryCategorySchema = z.enum(["memes", "anime_movies", "games"]);
-export type GalleryCategory = z.infer<typeof galleryCategorySchema>;
 
 export const catalogScrapeConfigSchema = z.object({
   minResolutionEnabled: z.boolean(),
@@ -137,10 +148,6 @@ export const catalogCacheUsageSchema = z.object({
 });
 export type CatalogCacheUsage = z.infer<typeof catalogCacheUsageSchema>;
 
-/** Which scraper source found a given design — `null` for manually-added ones (admin/seed). */
-export const scraperSourceIdSchema = z.enum(["pinterest", "giphy", "cleanpng"]);
-export type ScraperSourceId = z.infer<typeof scraperSourceIdSchema>;
-
 /** Search query tags the scraper tries in order, editable per gallery category. */
 export const categoryQueryTagsSchema = z.object({
   category: galleryCategorySchema,
@@ -163,3 +170,82 @@ export const catalogScrapeStatusSchema = z.object({
   totalDownloaded: z.number().int().nonnegative(),
 });
 export type CatalogScrapeStatus = z.infer<typeof catalogScrapeStatusSchema>;
+
+// --- Admin-panel manual catalog upload → central-relay → point fan-out ---
+// (docs/PLAN.md: admin uploads curated PNGs per gallery category from the
+// central admin panel; central-relay stores the master copy and pushes a
+// sync signal to every point, which downloads the file over plain HTTP and
+// applies it into its own local `designs` table with `source: "admin"`.)
+
+/** Socket.IO event names on the `/relay-socket` channel for the manual catalog fan-out. */
+export const CATALOG_MANUAL_UPSERT_EVENT = "catalog:manual-upsert";
+export const CATALOG_MANUAL_DELETE_EVENT = "catalog:manual-delete";
+/** Fire-and-forget point → central ack (both the immediate attempt and any later background retry report through this same event). */
+export const CATALOG_MANUAL_ACK_EVENT = "catalog:manual-ack";
+
+/**
+ * Pushed from central-relay to a point (room-broadcast, no ack expected —
+ * see `CATALOG_MANUAL_ACK_EVENT`) whenever an admin creates or edits a
+ * manual design. `fileUrl` is a path on the *central-relay* origin the
+ * point fetches with its own `pointId`/`token` as `x-point-id`/`x-point-token`
+ * headers (see `apps/point-server/src/modules/sync/manualCatalog.ts`).
+ */
+export const catalogManualUpsertPayloadSchema = z.object({
+  id: z.string(),
+  revision: z.number().int().nonnegative(),
+  category: galleryCategorySchema,
+  title: z.string(),
+  contentHash: z.string(),
+  fileUrl: z.string(),
+});
+export type CatalogManualUpsertPayload = z.infer<typeof catalogManualUpsertPayloadSchema>;
+
+/** Pushed from central-relay to a point when an admin deletes a manual design. */
+export const catalogManualDeletePayloadSchema = z.object({ id: z.string() });
+export type CatalogManualDeletePayload = z.infer<typeof catalogManualDeletePayloadSchema>;
+
+/** Point → central-relay report of whether a given manual design was applied locally. */
+export const catalogManualAckSchema = z.object({
+  id: z.string(),
+  ok: z.boolean(),
+  error: z.string().optional(),
+});
+export type CatalogManualAck = z.infer<typeof catalogManualAckSchema>;
+
+export const createCatalogManualDesignSchema = z.object({
+  category: galleryCategorySchema,
+  title: z.string().min(1),
+});
+export type CreateCatalogManualDesignInput = z.infer<typeof createCatalogManualDesignSchema>;
+
+export const updateCatalogManualDesignSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    category: galleryCategorySchema.optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, { message: "No fields to update" });
+export type UpdateCatalogManualDesignInput = z.infer<typeof updateCatalogManualDesignSchema>;
+
+/** Per-point sync state shown in the admin panel's "N/M точек применили" rollup for one manual design. */
+export const catalogManualPointStatusSchema = z.object({
+  pointId: z.string(),
+  pointName: z.string(),
+  isOnline: z.boolean(),
+  status: z.enum(["pending", "applied", "error"]),
+  lastError: z.string().nullable(),
+  updatedAt: z.string(),
+});
+export type CatalogManualPointStatus = z.infer<typeof catalogManualPointStatusSchema>;
+
+export const catalogManualDesignSchema = z.object({
+  id: z.string(),
+  category: galleryCategorySchema,
+  title: z.string(),
+  revision: z.number().int().nonnegative(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  appliedCount: z.number().int().nonnegative(),
+  totalPoints: z.number().int().nonnegative(),
+  points: z.array(catalogManualPointStatusSchema),
+});
+export type CatalogManualDesign = z.infer<typeof catalogManualDesignSchema>;

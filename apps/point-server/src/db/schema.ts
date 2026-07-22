@@ -60,6 +60,14 @@ export const designs = sqliteTable("designs", {
   // purpose: matching is by Hamming-distance threshold (near-duplicates),
   // not exact equality — see `catalog-scraper/phash.ts`.
   contentHash: text("content_hash"),
+  // Central-relay's `catalog_manual_designs.id` (uuid) for designs synced
+  // down from the admin panel's manual catalog upload — see
+  // `modules/sync/manualCatalog.ts`. Null for everything else (scraped or
+  // any hypothetical local `POST /catalog/designs`). Used both to
+  // upsert-by-central-id (idempotent re-applies/retries) and to gate the
+  // read-only guards in `modules/catalog/routes.ts` (isolate/delete/bulk
+  // clear all refuse designs with `source: "admin"`).
+  centralDesignId: text("central_design_id").unique(),
   // How many times a customer actually printed a t-shirt with this design
   // (incremented on successful order creation — see `POST /catalog/designs/:id/use`,
   // called from the kiosk editor's "Печать" flow). Powers the hearts badge on
@@ -196,6 +204,29 @@ export const syncQueue = sqliteTable("sync_queue", {
   status: text("status", { enum: ["pending", "failed"] })
     .notNull()
     .default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  lastError: text("last_error"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+/**
+ * Retry queue for manual-catalog upserts/deletes pushed from central-relay
+ * (`catalog:manual-upsert`/`catalog:manual-delete`) that failed to apply on
+ * the first try (e.g. a transient network blip fetching the file) — see
+ * `modules/sync/manualCatalog.ts`. Mirrors `syncQueue`'s backoff/drain
+ * pattern, just in the opposite direction (applying a central push, not
+ * pushing a local order up). A row disappears once the retry succeeds; the
+ * point then reports success back to central via `catalog:manual-ack`.
+ */
+export const catalogManualQueue = sqliteTable("catalog_manual_queue", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  kind: text("kind", { enum: ["upsert", "delete"] }).notNull(),
+  payloadJson: text("payload_json", { mode: "json" }).notNull(),
   attempts: integer("attempts").notNull().default(0),
   lastError: text("last_error"),
   createdAt: text("created_at")

@@ -6,15 +6,22 @@ import {
   SYNC_SNAPSHOT_EVENT,
   UPLOAD_CREATE_SESSION_EVENT,
   UPLOAD_PHOTO_READY_EVENT,
+  CATALOG_MANUAL_UPSERT_EVENT,
+  CATALOG_MANUAL_DELETE_EVENT,
+  CATALOG_MANUAL_ACK_EVENT,
   syncOrderPushSchema,
+  catalogManualAckSchema,
   type SyncOrderPushAck,
   type UploadCreateSessionAck,
   type UploadPhotoReadyPayload,
+  type CatalogManualUpsertPayload,
+  type CatalogManualDeletePayload,
 } from "@tshirt/shared-types";
 import { db } from "../db/client.js";
 import { ordersArchive, points } from "../db/schema.js";
 import { buildSnapshotForPoint, getAllPointIds } from "./buildSnapshot.js";
 import { createUploadSession } from "../modules/upload-relay/service.js";
+import { listPendingManualSyncForPoint, recordManualAck } from "../modules/catalog-manual/service.js";
 
 let io: Server | null = null;
 
@@ -58,6 +65,10 @@ export function initRealtime(app: FastifyInstance): Server {
     void socket.join(pointId);
     void setPointOnlineStatus(pointId, true);
     void pushSnapshotToPoint(pointId);
+    // Catch-up for whatever manual-catalog uploads/edits/deletes this point
+    // missed while offline (or never got, if it just joined) — see
+    // `pushManualSyncToPoint` below.
+    void pushManualSyncToPoint(pointId);
 
     socket.on(
       SYNC_ORDER_PUSH_EVENT,
@@ -83,6 +94,21 @@ export function initRealtime(app: FastifyInstance): Server {
           app.log.error({ pointId, err }, "Failed to create upload session");
           ack?.({ ok: false, error });
         });
+    });
+
+    // Point's report of whether it managed to apply a manual-catalog upsert/
+    // delete — fired both right after receiving the push (success or first
+    // failure) and again later from the point's own background retry queue
+    // once/if it eventually succeeds (see
+    // `apps/point-server/src/modules/sync/manualCatalog.ts`). No response
+    // expected — this is itself the "ack" for `CATALOG_MANUAL_UPSERT_EVENT`/
+    // `CATALOG_MANUAL_DELETE_EVENT`, which are plain room-broadcasts.
+    socket.on(CATALOG_MANUAL_ACK_EVENT, (payload: unknown) => {
+      const parsed = catalogManualAckSchema.safeParse(payload);
+      if (!parsed.success) return;
+      void recordManualAck(pointId, parsed.data.id, parsed.data.ok, parsed.data.error).catch((err: unknown) => {
+        app.log.error({ pointId, err }, "Failed to record catalog:manual-ack");
+      });
     });
 
     socket.on("disconnect", () => {
@@ -157,4 +183,44 @@ export async function pushSnapshotToAllPoints(): Promise<void> {
 export function emitPhotoReadyToPoint(pointId: string, payload: UploadPhotoReadyPayload): void {
   if (!io) return;
   io.to(pointId).emit(UPLOAD_PHOTO_READY_EVENT, payload);
+}
+
+/**
+ * Re-sends every manual-catalog design this point hasn't caught up to yet
+ * (a create/edit it never got, or a delete it hasn't applied) — called on
+ * every (re)connect, and again right after `POST/PATCH/DELETE
+ * /catalog-manual*` so an already-online point picks up the change
+ * immediately instead of waiting for its next reconnect. Plain
+ * room-broadcast, no ack: whether it landed is reported back later via
+ * `CATALOG_MANUAL_ACK_EVENT` (see the listener above), which is what
+ * actually flips a point's `catalog_manual_point_state` row to `applied`.
+ * No-op (and safe to call) if the point is offline — the row just stays
+ * `pending` until it reconnects.
+ */
+export async function pushManualSyncToPoint(pointId: string): Promise<void> {
+  if (!io) return;
+  const pending = await listPendingManualSyncForPoint(pointId);
+  for (const { design } of pending) {
+    if (design.deletedAt) {
+      const payload: CatalogManualDeletePayload = { id: design.id };
+      io.to(pointId).emit(CATALOG_MANUAL_DELETE_EVENT, payload);
+    } else {
+      const payload: CatalogManualUpsertPayload = {
+        id: design.id,
+        revision: design.revision,
+        category: design.category,
+        title: design.title,
+        contentHash: design.contentHash,
+        fileUrl: `/catalog-manual/${design.id}/file`,
+      };
+      io.to(pointId).emit(CATALOG_MANUAL_UPSERT_EVENT, payload);
+    }
+  }
+}
+
+/** Same as `pushManualSyncToPoint`, fanned out to every point — called after every admin create/edit/delete in `modules/catalog-manual/routes.ts`. */
+export async function pushManualSyncToAllPoints(): Promise<void> {
+  if (!io) return;
+  const pointIds = await getAllPointIds();
+  await Promise.all(pointIds.map((id) => pushManualSyncToPoint(id)));
 }

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { mkdir, readdir, rename, rm, stat, unlink } from "node:fs/promises";
+import { mkdir, readdir, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import type { GalleryCategory } from "@tshirt/shared-types";
 
 // Same `data/` root the rest of point-server uses (served at `/files/` —
@@ -13,6 +13,37 @@ const PUBLIC_CATALOG_PREFIX = "/files/catalog/";
 function categoryStorageDir(category: GalleryCategory): string {
   return path.join(CATALOG_DIR, category);
 }
+
+// Manual (admin-panel) designs live in a `manual/` subdirectory of each
+// category — `readdir` in `getCategoryStorageStats` below is non-recursive,
+// so files in here are invisible to the scraper's "ГБ кэша" accounting on
+// purpose (see `modules/sync/manualCatalog.ts` / docs/PLAN.md grill-me:
+// admin uploads shouldn't eat into the scraper's own cache budget).
+function manualCategoryStorageDir(category: GalleryCategory): string {
+  return path.join(categoryStorageDir(category), "manual");
+}
+
+export function manualImageFilePath(category: GalleryCategory, centralDesignId: string): string {
+  return path.join(manualCategoryStorageDir(category), `${centralDesignId}.png`);
+}
+
+export function publicManualImageUrl(category: GalleryCategory, centralDesignId: string): string {
+  return `${PUBLIC_CATALOG_PREFIX}${category}/manual/${centralDesignId}.png`;
+}
+
+/** Writes (or overwrites) a manual design's PNG at its category's path — creates the `manual/` subdirectory on first use. */
+export async function writeManualImageFile(
+  category: GalleryCategory,
+  centralDesignId: string,
+  data: Buffer,
+): Promise<string> {
+  const dir = manualCategoryStorageDir(category);
+  await mkdir(dir, { recursive: true });
+  const destination = manualImageFilePath(category, centralDesignId);
+  await writeFile(destination, data);
+  return destination;
+}
+
 
 export async function ensureCatalogDirs(
   category: GalleryCategory,
