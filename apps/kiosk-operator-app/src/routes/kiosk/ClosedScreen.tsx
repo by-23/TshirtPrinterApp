@@ -13,8 +13,8 @@ export function ClosedScreen() {
 
   return (
     <div
+      // Background intentionally left transparent: KioskAmbientBackdrop shows through.
       className="kiosk-theme-root relative flex h-full w-full flex-col items-center justify-center gap-8 px-16 text-center text-white"
-      style={{ backgroundColor: "var(--kiosk-page-bg, #05060f)" }}
     >
       <div className="absolute right-0 top-0 p-10" aria-hidden>
         <LanguageSwitcherSlot />

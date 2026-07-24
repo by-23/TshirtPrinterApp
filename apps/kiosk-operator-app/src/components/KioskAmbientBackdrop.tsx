@@ -2,8 +2,13 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { readCssNumber } from "../lib/popularPrintScale.js";
 
-/** Only the kiosk home route shows the ambient backdrop (see plan: scope v1). */
-const AMBIENT_VISIBLE_PATH = "/kiosk";
+/**
+ * Dense work surfaces where ambient would compete with the UI.
+ * Everywhere else under `/kiosk/*` with empty dark space shows the backdrop.
+ */
+function isAmbientHidden(pathname: string): boolean {
+  return pathname.startsWith("/kiosk/editor");
+}
 
 interface Orb {
   /** Position as a fraction of the canvas size, so resizing the kiosk frame
@@ -72,11 +77,14 @@ function resizeOrbPool(orbs: Orb[], count: number) {
 }
 
 /**
- * Home-only ambient backdrop: a frosted-glass layer over a canvas of slowly
- * drifting, color-shifting glow orbs. Mounted once in `KioskShell.tsx` and
- * kept alive across every `/kiosk/*` route — only its opacity toggles when
- * navigating away from home, so the animation is already "warm" on return
- * instead of restarting from a blank canvas.
+ * Ambient backdrop: a frosted-glass layer over a canvas of slowly drifting,
+ * color-shifting glow orbs. Mounted once in `KioskShell.tsx` and kept alive
+ * across every `/kiosk/*` route — only its opacity toggles on the editor
+ * (and any future dense screens), so the animation stays "warm" instead of
+ * restarting from a blank canvas.
+ *
+ * Pages that want it must leave their root background transparent so this
+ * layer shows through (same pattern as `KioskHome`).
  *
  * Every tunable (orb count/size/speed, color-shift speed/amplitude, blur, frost
  * opacity, on/off) is a plain CSS custom property from `index.css`, read
@@ -85,7 +93,7 @@ function resizeOrbPool(orbs: Orb[], count: number) {
  */
 export function KioskAmbientBackdrop() {
   const location = useLocation();
-  const isVisible = location.pathname === AMBIENT_VISIBLE_PATH;
+  const isVisible = !isAmbientHidden(location.pathname);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

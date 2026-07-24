@@ -6,7 +6,7 @@ interface PricingConfigState {
   config: PriceConfig;
 }
 
-/** Fills missing maps (e.g. older synced configs without AI surcharges). */
+/** Fills missing maps (e.g. older synced configs without AI surcharges / coverage thresholds). */
 function normalizePriceConfig(config: PriceConfig): PriceConfig {
   return {
     ...DEFAULT_PRICE_CONFIG,
@@ -21,6 +21,10 @@ function normalizePriceConfig(config: PriceConfig): PriceConfig {
     aiProviderSurchargeTenge: {
       ...DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge,
       ...config.aiProviderSurchargeTenge,
+    },
+    printCoverageThresholds: {
+      ...DEFAULT_PRICE_CONFIG.printCoverageThresholds,
+      ...config.printCoverageThresholds,
     },
   };
 }

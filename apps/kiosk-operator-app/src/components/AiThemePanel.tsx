@@ -302,10 +302,6 @@ const AI_STEPS_TOKENS: Token[] = [
  */
 const SECTIONS: Section[] = [
   {
-    title: "Страница",
-    tokens: [{ key: "--ai-page-bg", label: "Фон страницы", type: "color", defaultValue: "#000000" }],
-  },
-  {
     title: "Шапка",
     tokens: [
       { key: "--ai-header-padding-x", label: "Отступы по бокам", defaultValue: 20, ...PADDING_RANGE },
@@ -967,7 +963,7 @@ function isSectionVisible(title: string, step: AiFlowStep): boolean {
   return true;
 }
 
-const AI_COMMON_TITLES = ["Страница", "Шапка", "Кнопка «Назад»"] as const;
+const AI_COMMON_TITLES = ["Шапка", "Кнопка «Назад»"] as const;
 
 const AI_SOURCE_TITLES = [
   "Заголовок экрана",

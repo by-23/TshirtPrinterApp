@@ -143,9 +143,30 @@ async function hydrateCache(allowedKeys: ReadonlySet<string>): Promise<void> {
 
   clearCache();
   const entries = await readAllEntries(db);
+  const junkKeys: string[] = [];
+
   for (const [key, blob] of entries) {
-    if (!allowedKeys.has(key) || !(blob instanceof Blob)) continue;
+    if (!allowedKeys.has(key) || !(blob instanceof Blob)) {
+      junkKeys.push(key);
+      continue;
+    }
+    // Empty / tiny / non-image blobs produce broken <img> icons and must not
+    // shadow bundled defaults (common after a theme-panel wipe left junk).
+    const type = blob.type || "";
+    if (blob.size < 256 || (type && !type.startsWith("image/") && type !== "application/octet-stream")) {
+      junkKeys.push(key);
+      continue;
+    }
     setCacheEntry(key, blob);
+  }
+
+  if (junkKeys.length > 0) {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    for (const key of junkKeys) {
+      store.delete(key);
+    }
+    await transactionComplete(transaction);
   }
 }
 
@@ -210,4 +231,23 @@ export async function clearAllImageOverrides(): Promise<void> {
     // Best-effort clear.
   }
   clearCache();
+}
+
+/** Delete overrides for the given keys only — leaves everything else intact. */
+export async function clearImageOverridesForKeys(keys: ReadonlySet<string>): Promise<void> {
+  if (keys.size === 0) return;
+  try {
+    const db = await openDatabase();
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    for (const key of keys) {
+      store.delete(key);
+    }
+    await transactionComplete(transaction);
+  } catch {
+    // Best-effort delete; still drop from cache so UI stays consistent.
+  }
+  for (const key of keys) {
+    clearCacheEntry(key);
+  }
 }

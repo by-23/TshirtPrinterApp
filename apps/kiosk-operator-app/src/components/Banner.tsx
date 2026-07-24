@@ -8,14 +8,15 @@ import { getBannerTitle } from "../lib/homeLabels.js";
 import { useKioskImagesRevision } from "../lib/kioskImages.js";
 import { usePopularPrintSlides } from "../lib/popularPrints.js";
 import { useCssNumberVar } from "../lib/popularPrintScale.js";
-import { ChevronLeft, ChevronRight, Sparkles } from "./icons.js";
+import { ChevronLeft, ChevronRight, SparkleStar } from "./icons.js";
 import { PopularPrintSlideContent } from "./PopularPrintSlide.js";
 
 function PopularBannerTitle({ title }: { title: string }) {
   return (
     <h2 className="popular-banner-title">
-      <Sparkles aria-hidden className="popular-banner-title__icon" /> {title}{" "}
-      <Sparkles aria-hidden className="popular-banner-title__icon" />
+      <SparkleStar aria-hidden className="popular-banner-title__icon popular-banner-title__icon--pink" />
+      {title}
+      <SparkleStar aria-hidden className="popular-banner-title__icon popular-banner-title__icon--cyan" />
     </h2>
   );
 }

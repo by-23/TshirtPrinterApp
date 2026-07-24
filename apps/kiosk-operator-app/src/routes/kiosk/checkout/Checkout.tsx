@@ -32,12 +32,38 @@ export function Checkout() {
   const [status, setStatus] = useState<OrderStatus | null>(order?.status ?? null);
   const pollingRef = useRef<number | null>(null);
 
+  const orderId = order?.id;
+
+  // Re-sync when remounting (e.g. after a round-trip to the operator panel) —
+  // the in-memory order may still say `new` while the operator already accepted.
+  useEffect(() => {
+    if (!orderId) return;
+    let cancelled = false;
+    fetchOrder(orderId)
+      .then((fresh) => {
+        if (cancelled) return;
+        setStatus(fresh.status);
+        if (fresh.status !== useCheckoutStore.getState().order?.status) {
+          useCheckoutStore.getState().setOrder(fresh);
+        }
+      })
+      .catch(() => {
+        // point-server unreachable — keep local status, fail-open.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
+
   useEffect(() => {
     if (!order || status !== "new") return;
 
     pollingRef.current = window.setInterval(() => {
       fetchOrder(order.id)
-        .then((fresh) => setStatus(fresh.status))
+        .then((fresh) => {
+          setStatus(fresh.status);
+          useCheckoutStore.getState().setOrder(fresh);
+        })
         .catch(() => {
           // point-server unreachable — keep waiting, fail-open (Stage 7 covers reconnect/retry).
         });
@@ -55,6 +81,7 @@ export function Checkout() {
     return subscribeOrderEvents((event) => {
       if (event.type === "updated" && event.order.id === order.id) {
         setStatus(event.order.status);
+        useCheckoutStore.getState().setOrder(event.order);
       }
     });
   }, [order]);
@@ -65,8 +92,9 @@ export function Checkout() {
 
   return (
     <div
+      // Background intentionally left transparent: KioskAmbientBackdrop shows through.
       className="checkout-theme-root flex h-full w-full flex-col overflow-y-auto px-4 py-8 text-white"
-      style={{ backgroundColor: "var(--checkout-page-bg)", gap: "var(--checkout-page-section-gap)" }}
+      style={{ gap: "var(--checkout-page-section-gap)" }}
     >
       <header className="relative flex items-center justify-between gap-4">
         <Link

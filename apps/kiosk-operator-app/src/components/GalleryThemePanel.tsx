@@ -129,10 +129,6 @@ const COLUMNS_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step"> = {
  */
 const SECTIONS: Section[] = [
   {
-    title: "Общий фон страницы",
-    tokens: [{ key: "--gallery-page-bg", label: "Фон страницы", type: "color", defaultValue: "#05060f" }],
-  },
-  {
     title: "Отступы страницы",
     tokens: [
       { key: "--gallery-page-padding-x", label: "Отступы по бокам", defaultValue: 40, ...PADDING_RANGE },
@@ -234,7 +230,7 @@ const SECTIONS: Section[] = [
 const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
   {
     label: "Основные",
-    titles: ["Общий фон страницы", "Отступы страницы"],
+    titles: ["Отступы страницы"],
   },
   {
     label: "Шапка и поиск",

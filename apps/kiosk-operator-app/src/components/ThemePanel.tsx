@@ -18,7 +18,7 @@ import {
 import {
   getKioskImageUrl,
   KIOSK_IMAGE_SECTIONS,
-  resetAllKioskImages,
+  resetHomeKioskImages,
   resetKioskImage,
   setKioskImageOverride,
   useKioskImageOverrides,
@@ -640,7 +640,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "Ambient — фон главного экрана",
+    title: "Ambient — анимированный фон",
     tokens: [
       {
         key: "--ambient-enabled",
@@ -984,7 +984,7 @@ const HOME_SECTION_TITLES = [
   "Карточки категорий",
   "Плашка «Выберите категорию»",
   "Популярные принты",
-  "Ambient — фон главного экрана",
+  "Ambient — анимированный фон",
   "Градиенты категорий",
 ] as const;
 
@@ -1061,7 +1061,7 @@ export function ThemePanel() {
     for (const token of ALL_TOKENS) {
       clearToken(token.key);
     }
-    resetAllKioskImages();
+    resetHomeKioskImages();
     const defaults = defaultValues();
     setValues(defaults);
   }

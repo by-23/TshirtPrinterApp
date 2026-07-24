@@ -1,9 +1,8 @@
 import type { Canvas } from "fabric";
-import type { PrintSize } from "@tshirt/shared-types";
-
-/** Combined-bounding-box-area ratio thresholds against the print area. */
-const MEDIUM_THRESHOLD = 0.3;
-const LARGE_THRESHOLD = 0.6;
+import type { PrintCoverageThresholds, PrintSize } from "@tshirt/shared-types";
+import { DEFAULT_PRINT_COVERAGE_THRESHOLDS } from "@tshirt/shared-types";
+import { printSizeFromCoverageRatio } from "@tshirt/shared-pricing";
+import { usePricingConfigStore } from "../lib/pricingConfigStore.js";
 
 /**
  * There's no S/M/L print-size picker on the editor mockup — the price
@@ -11,8 +10,18 @@ const LARGE_THRESHOLD = 0.6;
  * area the customer's design actually fills, using the combined bounding box
  * of every object on the canvas (which is already sized to the print area in
  * pixels, see `FabricCanvas.tsx` / `MOCKUP_DISPLAY_SCALE`).
+ *
+ * Thresholds (default 30% / 60%) come from admin `PriceConfig.printCoverageThresholds`.
  */
-export function computePrintSize(canvas: Canvas | null): PrintSize {
+export function computePrintSize(
+  canvas: Canvas | null,
+  thresholds?: PrintCoverageThresholds,
+): PrintSize {
+  const effectiveThresholds =
+    thresholds ??
+    usePricingConfigStore.getState().config.printCoverageThresholds ??
+    DEFAULT_PRINT_COVERAGE_THRESHOLDS;
+
   if (!canvas) return "small";
   const objects = canvas.getObjects();
   if (objects.length === 0) return "small";
@@ -36,7 +45,5 @@ export function computePrintSize(canvas: Canvas | null): PrintSize {
   const boundingArea = Math.max(0, maxX - minX) * Math.max(0, maxY - minY);
   const ratio = boundingArea / canvasArea;
 
-  if (ratio < MEDIUM_THRESHOLD) return "small";
-  if (ratio < LARGE_THRESHOLD) return "medium";
-  return "large";
+  return printSizeFromCoverageRatio(ratio, effectiveThresholds);
 }

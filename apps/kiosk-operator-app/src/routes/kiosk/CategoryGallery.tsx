@@ -255,10 +255,7 @@ export function CategoryGallery() {
 
   if (!parsedCategory.success) {
     return (
-      <div
-        className="gallery-theme-root flex h-full w-full flex-col items-center justify-center gap-4 text-white"
-        style={{ backgroundColor: "var(--gallery-page-bg)" }}
-      >
+      <div className="gallery-theme-root flex h-full w-full flex-col items-center justify-center gap-4 text-white">
         <Link
           to="/kiosk"
           className="rounded-pill bg-neon-pink px-6 py-3 font-semibold text-white shadow-neon-pink transition-transform hover:scale-105"
@@ -274,9 +271,9 @@ export function CategoryGallery() {
   return (
     <div
       ref={scrollRootRef}
+      // Background intentionally left transparent: KioskAmbientBackdrop shows through.
       className="gallery-theme-root flex h-full w-full flex-col overflow-y-auto overflow-x-hidden text-white"
       style={{
-        backgroundColor: "var(--gallery-page-bg)",
         paddingInline: "var(--gallery-page-padding-x)",
         paddingBlock: "var(--gallery-page-padding-y)",
         gap: "var(--gallery-page-section-gap)",

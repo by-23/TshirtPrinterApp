@@ -234,10 +234,6 @@ function dividerTokens(prefix: string, defaults: DividerDefaults): Token[] {
  */
 const SECTIONS: Section[] = [
   {
-    title: "Общий фон страницы",
-    tokens: [{ key: "--checkout-page-bg", label: "Фон страницы", type: "color", defaultValue: "#05060f" }],
-  },
-  {
     title: "Отступы между блоками",
     tokens: [
       { key: "--checkout-page-section-gap", label: "Между секциями страницы", defaultValue: 28, ...LAYOUT_GAP_RANGE },
@@ -291,15 +287,15 @@ const SECTIONS: Section[] = [
   {
     title: "Сводка заказа (ВАШ ЗАКАЗ)",
     tokens: [
-      { key: "--checkout-summary-section-gap", label: "Зазор между секциями", defaultValue: 28, ...GAP_RANGE },
+      { key: "--checkout-summary-section-gap", label: "Зазор между секциями", defaultValue: 12, ...GAP_RANGE },
       { key: "--checkout-summary-title-size", label: "Заголовок — размер", defaultValue: 24, ...FONT_RANGE },
-      { key: "--checkout-summary-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#ffffff" },
-      { key: "--checkout-summary-row-gap", label: "Между строками", defaultValue: 28, ...GAP_RANGE },
-      { key: "--checkout-summary-row-icon-gap", label: "Строка — зазор иконка/текст", defaultValue: 16, ...GAP_RANGE },
-      { key: "--checkout-summary-row-icon-size", label: "Строка — размер иконки", defaultValue: 24, ...FONT_RANGE },
-      { key: "--checkout-summary-row-label-size", label: "Строка — название", defaultValue: 22, ...FONT_RANGE },
+      { key: "--checkout-summary-title-color", label: "Заголовок — цвет", type: "color", defaultValue: "#dd366f" },
+      { key: "--checkout-summary-row-gap", label: "Между строками", defaultValue: 18, ...GAP_RANGE },
+      { key: "--checkout-summary-row-icon-gap", label: "Строка — зазор иконка/текст", defaultValue: 14, ...GAP_RANGE },
+      { key: "--checkout-summary-row-icon-size", label: "Строка — размер иконки", defaultValue: 28, ...FONT_RANGE },
+      { key: "--checkout-summary-row-label-size", label: "Строка — название", defaultValue: 20, ...FONT_RANGE },
       { key: "--checkout-summary-row-label-color", label: "Строка — цвет названия", type: "color", defaultValue: "#ffffff" },
-      { key: "--checkout-summary-row-detail-size", label: "Строка — описание", defaultValue: 16, ...FONT_RANGE },
+      { key: "--checkout-summary-row-detail-size", label: "Строка — описание", defaultValue: 15, ...FONT_RANGE },
       { key: "--checkout-summary-row-detail-color", label: "Строка — цвет описания", type: "color", defaultValue: "#ffffff" },
       { key: "--checkout-summary-row-icon-color", label: "Строка — цвет иконки", type: "color", defaultValue: "#ffffff" },
       { key: "--checkout-summary-row-amount-size", label: "Строка — сумма", defaultValue: 22, ...FONT_RANGE },
@@ -310,7 +306,7 @@ const SECTIONS: Section[] = [
       { key: "--checkout-summary-total-amount-size", label: "Итого — сумма", defaultValue: 40, ...FONT_RANGE },
       { key: "--checkout-summary-total-color", label: "Итого — цвет суммы", type: "color", defaultValue: "#de366f" },
       { key: "--checkout-summary-leadtime-size", label: "Срок изготовления — текст", defaultValue: 16, ...FONT_RANGE },
-      { key: "--checkout-summary-leadtime-icon-size", label: "Срок изготовления — иконка", defaultValue: 18, ...FONT_RANGE },
+      { key: "--checkout-summary-leadtime-icon-size", label: "Срок изготовления — иконка", defaultValue: 20, ...FONT_RANGE },
       { key: "--checkout-summary-leadtime-width", label: "Срок изготовления — ширина", defaultValue: 360, ...BLOCK_WIDTH_RANGE },
       { key: "--checkout-summary-leadtime-color", label: "Срок изготовления — цвет", type: "color", defaultValue: "#ffffff" },
       { key: "--checkout-summary-leadtime-gap", label: "Срок изготовления — зазор", defaultValue: 8, ...GAP_RANGE },
@@ -471,9 +467,9 @@ const SECTIONS: Section[] = [
       },
       { key: "--checkout-cash-note-size", label: "Сноска — размер", defaultValue: 12, ...FONT_RANGE },
       { key: "--checkout-cash-note-width", label: "Сноска — ширина", defaultValue: 280, ...BLOCK_WIDTH_RANGE },
-      { key: "--checkout-cash-icon-size", label: "Иконка кассы — размер", defaultValue: 40, ...SIZE_RANGE },
+      { key: "--checkout-cash-icon-size", label: "Иконка кассы — размер", defaultValue: 120, ...SIZE_RANGE },
       { key: "--checkout-cash-icon-color", label: "Иконка кассы — цвет", type: "color", defaultValue: "#de3770" },
-      { key: "--checkout-cash-image-width", label: "Картинка — ширина", defaultValue: 180, ...SIZE_RANGE },
+      { key: "--checkout-cash-image-width", label: "Картинка — ширина", defaultValue: 260, ...SIZE_RANGE },
       { key: "--checkout-cash-image-height", label: "Картинка — высота", defaultValue: 120, ...SIZE_RANGE },
       ...blockBorderTokens("cash-card", { width: 1.5, color: "#3b82f6", opacity: 0.55, radius: 20, padding: 24, contentAlign: "center" }),
     ],
@@ -481,14 +477,14 @@ const SECTIONS: Section[] = [
   {
     title: "Шаги «КАК ОПЛАТИТЬ ПО QR»",
     tokens: [
-      { key: "--checkout-steps-title-size", label: "Заголовок — размер", defaultValue: 16, ...FONT_RANGE },
-      { key: "--checkout-steps-title-gap", label: "Отступ иконок от заголовка", defaultValue: 16, ...GAP_RANGE },
+      { key: "--checkout-steps-title-size", label: "Заголовок — размер", defaultValue: 20, ...FONT_RANGE },
+      { key: "--checkout-steps-title-gap", label: "Отступ иконок от заголовка", defaultValue: 24, ...GAP_RANGE },
       { key: "--checkout-steps-gap", label: "Зазор между шагами", defaultValue: 20, ...GAP_RANGE },
-      { key: "--checkout-steps-item-width", label: "Ширина одного шага", defaultValue: 140, ...SIZE_RANGE },
-      { key: "--checkout-steps-item-gap", label: "Зазор внутри шага", defaultValue: 8, ...GAP_RANGE },
-      { key: "--checkout-steps-badge-size", label: "Картинка шага — размер", defaultValue: 36, ...SIZE_RANGE },
-      { key: "--checkout-steps-badge-radius", label: "Картинка шага — скругление", defaultValue: 999, ...RADIUS_FULL },
-      { key: "--checkout-steps-text-size", label: "Текст шага — размер", defaultValue: 12, ...FONT_RANGE },
+      { key: "--checkout-steps-item-width", label: "Ширина одного шага", defaultValue: 220, ...SIZE_RANGE },
+      { key: "--checkout-steps-item-gap", label: "Зазор внутри шага", defaultValue: 10, ...GAP_RANGE },
+      { key: "--checkout-steps-badge-size", label: "Картинка шага — размер", defaultValue: 72, ...SIZE_RANGE },
+      { key: "--checkout-steps-badge-radius", label: "Картинка шага — скругление", defaultValue: 20, ...RADIUS_FULL },
+      { key: "--checkout-steps-text-size", label: "Текст шага — размер", defaultValue: 18, ...FONT_RANGE },
       ...blockBorderTokens("steps-block", { ...BLOCK_BORDER_DEFAULT, radius: 20, padding: 20, contentAlign: "center" }),
     ],
   },
@@ -541,7 +537,7 @@ const SECTIONS: Section[] = [
 const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
   {
     label: "Основные",
-    titles: ["Общий фон страницы", "Отступы между блоками", "Шапка"],
+    titles: ["Отступы между блоками", "Шапка"],
   },
   {
     label: "Заказ",

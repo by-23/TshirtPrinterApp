@@ -14,6 +14,9 @@ import {
 
 type Layer = { key: string; node: ReactNode };
 
+/** Soft-but-snappy dissolve — independent of the global transition duration slider. */
+const DISSOLVE_DURATION_MS = 480;
+
 type StackPhase =
   | {
       kind: "idle";
@@ -51,6 +54,10 @@ function topKey(phase: StackPhase): string {
  * Parked underlays use `kiosk-page--parked` (visibility:hidden) so transparent
  * screens (AI steps, home ambient) never bleed through the active page after a
  * transition ends.
+ *
+ * `dissolve` fades content only (under out → over in), leaving KioskAmbientBackdrop
+ * untouched. Other types still get an opaque plate mid-transition so transparent
+ * pages don't ghost through each other.
  */
 export function KioskPageTransition({
   animKey,
@@ -145,8 +152,22 @@ export function KioskPageTransition({
     });
   }, [animKey, children, type]);
 
-  const style = { "--kiosk-page-duration": `${durationMs}ms` } as CSSProperties;
+  const style = {
+    "--kiosk-page-duration": `${durationMs}ms`,
+    // Dissolve keeps its own snappy timing — global slider is for heavier transitions.
+    "--kiosk-dissolve-duration": `${DISSOLVE_DURATION_MS}ms`,
+  } as CSSProperties;
   const animatingOverKey = phase.kind === "idle" ? null : phase.over.key;
+  const isDissolve = phase.kind !== "idle" && phase.type === "dissolve";
+  const activeDurationMs = isDissolve ? DISSOLVE_DURATION_MS : durationMs;
+  const stackClass = [
+    "kiosk-page-stack",
+    phase.kind !== "idle" ? "kiosk-page-stack--animating" : "",
+    isDissolve ? "kiosk-page-stack--dissolve" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   function finish() {
     setPhase((prev) => {
@@ -163,13 +184,13 @@ export function KioskPageTransition({
   // Fallback if `animationend` never fires (interrupted CSS, reduced-motion edge cases).
   useEffect(() => {
     if (!animatingOverKey) return;
-    const timer = window.setTimeout(finish, durationMs + 80);
+    const timer = window.setTimeout(finish, activeDurationMs + 80);
     return () => window.clearTimeout(timer);
-  }, [animatingOverKey, durationMs]);
+  }, [animatingOverKey, activeDurationMs]);
 
   if (phase.kind === "idle") {
     return (
-      <div className={`kiosk-page-stack ${className}`.trim()} style={style}>
+      <div className={stackClass} style={style}>
         {phase.beneath ? (
           <div
             key={phase.beneath.key}
@@ -191,9 +212,17 @@ export function KioskPageTransition({
       ? `kiosk-page kiosk-page--over kiosk-page--enter-${phase.type}`
       : `kiosk-page kiosk-page--over kiosk-page--exit-${phase.type}`;
 
+  // Dissolve animates both layers: old content out, new content in (ambient stays put).
+  const underClass =
+    phase.type === "dissolve"
+      ? phase.kind === "forward"
+        ? "kiosk-page kiosk-page--under kiosk-page--exit-dissolve"
+        : "kiosk-page kiosk-page--under kiosk-page--enter-dissolve"
+      : "kiosk-page kiosk-page--under";
+
   return (
-    <div className={`kiosk-page-stack ${className}`.trim()} style={style}>
-      <div key={phase.under.key} className="kiosk-page kiosk-page--under" aria-hidden>
+    <div className={stackClass} style={style}>
+      <div key={phase.under.key} className={underClass} aria-hidden>
         {phase.under.node}
       </div>
       <div

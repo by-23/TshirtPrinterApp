@@ -1,10 +1,12 @@
 import {
   DEFAULT_PRICE_CONFIG,
+  DEFAULT_PRINT_COVERAGE_THRESHOLDS,
   garmentUsesSizeFabric,
   type AiProvider,
   type GarmentFabric,
   type GarmentType,
   type PriceConfig,
+  type PrintCoverageThresholds,
   type PrintSize,
 } from "@tshirt/shared-types";
 
@@ -82,4 +84,23 @@ export function getPriceBreakdown(
 
 export function calculatePriceTenge(input: PriceInput, config: PriceConfig = DEFAULT_PRICE_CONFIG): number {
   return getPriceBreakdown(input, config).reduce((sum, line) => sum + line.amountTenge, 0);
+}
+
+/**
+ * Maps print-zone coverage ratio (0–1) to the three-tier `PrintSize` used by
+ * `printSizeSurchargeTenge`. Thresholds come from admin `PriceConfig`.
+ *
+ * - ratio < medium% → small
+ * - medium% ≤ ratio < large% → medium
+ * - ratio ≥ large% → large
+ */
+export function printSizeFromCoverageRatio(
+  ratio: number,
+  thresholds: PrintCoverageThresholds = DEFAULT_PRINT_COVERAGE_THRESHOLDS,
+): PrintSize {
+  const medium = Math.min(thresholds.mediumPercent, thresholds.largePercent) / 100;
+  const large = Math.max(thresholds.mediumPercent, thresholds.largePercent) / 100;
+  if (ratio < medium) return "small";
+  if (ratio < large) return "medium";
+  return "large";
 }

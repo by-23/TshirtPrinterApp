@@ -18,20 +18,27 @@ export function AcceptedNotice() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const goHome = () => {
+    useEditorStore.getState().reset();
+    resetAllHistory();
+    useCheckoutStore.getState().reset();
+    navigate("/kiosk", { replace: true });
+  };
+
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      useEditorStore.getState().reset();
-      resetAllHistory();
-      useCheckoutStore.getState().reset();
-      navigate("/kiosk", { replace: true });
-    }, AUTO_HIDE_MS);
+    const timeout = window.setTimeout(goHome, AUTO_HIDE_MS);
     return () => window.clearTimeout(timeout);
   }, [navigate]);
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      role="status"
+      className="fixed inset-0 z-40 flex cursor-pointer items-center justify-center bg-black/70 backdrop-blur-sm"
+      role="button"
+      tabIndex={0}
+      onClick={goHome}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") goHome();
+      }}
     >
       <div
         className="flex flex-col items-center text-center"

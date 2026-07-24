@@ -1,6 +1,12 @@
+import { useState, type SyntheticEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Users } from "../../../components/icons.js";
-import { checkoutCashIllustrationKey, useKioskImage } from "../../../lib/kioskImages.js";
+import defaultCashArt from "../../../assets/checkout/checkout-cash-illustration.png";
+import {
+  checkoutCashIllustrationKey,
+  hasKioskImageOverride,
+  useKioskImage,
+} from "../../../lib/kioskImages.js";
 import { blockBorderStyle, cardGradientStyle, contentBoxStyle } from "./borderStyle.js";
 
 /** Offset so a fresh point-server (order #1, #2...) still shows a realistic-looking 4-digit number, like on `checkout.png` ("№ 1247"). */
@@ -17,7 +23,13 @@ export interface PaymentCashCardProps {
 export function PaymentCashCard({ orderId }: PaymentCashCardProps) {
   const { t } = useTranslation();
   const orderNumber = ORDER_NUMBER_OFFSET + Number(orderId);
-  const illustrationUrl = useKioskImage(checkoutCashIllustrationKey());
+  const imageKey = checkoutCashIllustrationKey();
+  const storedUrl = useKioskImage(imageKey);
+  const hasOverride = hasKioskImageOverride(imageKey);
+  const [imageFailed, setImageFailed] = useState(false);
+  // Bundled design-pack PNG always wins unless the operator uploaded a real override.
+  const illustrationUrl = hasOverride ? storedUrl : defaultCashArt;
+  const showImage = Boolean(illustrationUrl) && !imageFailed;
 
   return (
     <div
@@ -56,7 +68,7 @@ export function PaymentCashCard({ orderId }: PaymentCashCardProps) {
         </span>
       </div>
 
-      {illustrationUrl ? (
+      {showImage ? (
         <img
           src={illustrationUrl}
           alt=""
@@ -65,6 +77,7 @@ export function PaymentCashCard({ orderId }: PaymentCashCardProps) {
             width: "var(--checkout-cash-image-width)",
             height: "var(--checkout-cash-image-height)",
           }}
+          onError={(_event: SyntheticEvent<HTMLImageElement>) => setImageFailed(true)}
         />
       ) : (
         <Users

@@ -75,8 +75,10 @@ export function AiFlow() {
 
   return (
     <div
+      // Background intentionally left transparent: KioskAmbientBackdrop
+      // (mounted in KioskShell) paints the page color + frosted glow.
+      // Camera step covers itself with `bg-black` so the live feed stays clean.
       className={`flex h-full w-full flex-col overflow-hidden text-white ${isThemedHeaderStep ? "ai-theme-root" : ""}`}
-      style={{ backgroundColor: isThemedHeaderStep ? "var(--ai-page-bg)" : "#000000" }}
     >
       <header className={isThemedHeaderStep ? "ai-flow-header" : "relative flex flex-shrink-0 items-center justify-between px-5 py-4"}>
         <button

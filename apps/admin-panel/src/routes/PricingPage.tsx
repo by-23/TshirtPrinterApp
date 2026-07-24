@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Form, InputNumber, Button, Card, Select, Space, message, Typography, Empty } from "antd";
 import {
+  DEFAULT_PRINT_COVERAGE_THRESHOLDS,
   GARMENT_FABRICS,
   GARMENT_SIZES,
   garmentTypeSchema,
@@ -29,6 +30,7 @@ const PRINT_SIZES = printSizeSchema.options;
 
 function PriceConfigFields({ optional }: { optional?: boolean }) {
   const rules = optional ? [] : [{ required: true, message: "Укажите цену" }];
+  const thresholdRules = optional ? [] : [{ required: true, message: "Укажите порог" }];
   return (
     <>
       <Typography.Title level={5}>Базовая цена</Typography.Title>
@@ -69,6 +71,10 @@ function PriceConfigFields({ optional }: { optional?: boolean }) {
       </Space>
 
       <Typography.Title level={5}>Наценка за размер принта</Typography.Title>
+      <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
+        Размер принта считается автоматически: сколько % площади зоны печати занял дизайн
+        (по объединённому bounding box всех объектов). Три тарифа — маленький / средний / большой.
+      </Typography.Paragraph>
       <Space wrap size="large">
         {PRINT_SIZES.map((size) => (
           <Form.Item
@@ -80,6 +86,28 @@ function PriceConfigFields({ optional }: { optional?: boolean }) {
             <InputNumber min={0} step={100} addonAfter="₸" />
           </Form.Item>
         ))}
+      </Space>
+
+      <Typography.Title level={5}>Пороги покрытия зоны печати</Typography.Title>
+      <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
+        Маленький — меньше порога «средний». Средний — от порога «средний» до порога «большой».
+        Большой — от порога «большой» и выше. Зона печати = 100%.
+      </Typography.Paragraph>
+      <Space wrap size="large">
+        <Form.Item
+          name={["printCoverageThresholds", "mediumPercent"]}
+          label="Средний от"
+          rules={thresholdRules}
+        >
+          <InputNumber min={0} max={100} step={1} addonAfter="%" />
+        </Form.Item>
+        <Form.Item
+          name={["printCoverageThresholds", "largePercent"]}
+          label="Большой от"
+          rules={thresholdRules}
+        >
+          <InputNumber min={0} max={100} step={1} addonAfter="%" />
+        </Form.Item>
       </Space>
 
       <Typography.Title level={5}>Наценка за ИИ-обработку (премиум)</Typography.Title>
@@ -121,6 +149,18 @@ function cleanPartialConfig(values: PartialPriceConfig): PartialPriceConfig {
   return result as PartialPriceConfig;
 }
 
+function assertValidThresholds(config: {
+  printCoverageThresholds?: { mediumPercent?: number; largePercent?: number };
+}): boolean {
+  const medium = config.printCoverageThresholds?.mediumPercent;
+  const large = config.printCoverageThresholds?.largePercent;
+  if (typeof medium === "number" && typeof large === "number" && medium >= large) {
+    message.error("Порог «средний» должен быть меньше порога «большой»");
+    return false;
+  }
+  return true;
+}
+
 export function PricingPage() {
   const [globalForm] = Form.useForm<PriceConfig>();
   const [overrideForm] = Form.useForm<PartialPriceConfig>();
@@ -150,6 +190,10 @@ export function PricingPage() {
           gemini: 1500,
           ...config.aiProviderSurchargeTenge,
         },
+        printCoverageThresholds: {
+          ...DEFAULT_PRINT_COVERAGE_THRESHOLDS,
+          ...config.printCoverageThresholds,
+        },
       });
     } catch {
       message.error("Не удалось загрузить глобальные цены");
@@ -160,6 +204,7 @@ export function PricingPage() {
 
   async function saveGlobal() {
     const values = await globalForm.validateFields();
+    if (!assertValidThresholds(values)) return;
     try {
       await apiClient.put("/pricing/global", values);
       message.success("Глобальные цены сохранены");
@@ -191,6 +236,7 @@ export function PricingPage() {
   async function saveOverride() {
     if (!selectedPointId) return;
     const values = overrideForm.getFieldsValue();
+    if (!assertValidThresholds(values)) return;
     try {
       await apiClient.put(`/pricing/overrides/${selectedPointId}`, cleanPartialConfig(values));
       message.success("Override сохранён");

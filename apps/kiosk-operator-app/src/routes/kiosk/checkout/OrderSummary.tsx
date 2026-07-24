@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { GARMENT_COLORS } from "@tshirt/shared-types";
 import type { PriceBreakdownKey, PriceBreakdownLine } from "@tshirt/shared-pricing";
-import { Clock, type IconProps, Palette, Ruler, Sparkles, Tag, TshirtIcon } from "../../../components/icons.js";
+import { Clock, type IconProps, Layers, Ruler, Sparkles, TshirtIcon } from "../../../components/icons.js";
 import type { CheckoutGarment } from "../../../lib/checkoutStore.js";
 import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
 import { blockBorderStyle, dividerStyle } from "./borderStyle.js";
@@ -14,9 +14,10 @@ export interface OrderSummaryProps {
 
 const ROW_ORDER: PriceBreakdownKey[] = ["garment", "design", "size", "side", "ai"];
 
+/** Matches `docs/ui-mockups/checkout.png`: shirt, layers, ruler, shirt (+ sparkles for AI). */
 const ROW_ICONS: Record<PriceBreakdownKey, ComponentType<IconProps>> = {
-  garment: Tag,
-  design: Palette,
+  garment: TshirtIcon,
+  design: Layers,
   size: Ruler,
   side: TshirtIcon,
   ai: Sparkles,
@@ -70,7 +71,13 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
   return (
     <section
       className="flex h-full w-full flex-col"
-      style={{ ...blockBorderStyle("summary-block"), gap: "var(--checkout-summary-section-gap)" }}
+      style={{
+        ...blockBorderStyle("summary-block"),
+        // Clip overflowing rows so «ИТОГО» never paints over the last line item
+        // when theme tokens make the list taller than the fixed card height.
+        overflow: "hidden",
+        gap: "var(--checkout-summary-section-gap)",
+      }}
     >
       <h3
         className="shrink-0 font-bold uppercase tracking-wide"
@@ -82,11 +89,14 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
         {t("checkout.summary.title")}
       </h3>
 
-      <div className="flex min-h-0 flex-1 flex-col" style={{ gap: "var(--checkout-summary-row-gap)" }}>
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
+        style={{ gap: "var(--checkout-summary-row-gap)" }}
+      >
         {ROW_ORDER.map((key) => {
           const RowIcon = ROW_ICONS[key];
           return (
-            <div key={key} className="flex w-full items-center justify-between gap-4">
+            <div key={key} className="flex w-full shrink-0 items-center justify-between gap-4">
               <div
                 className="flex min-w-0 flex-1 items-center"
                 style={{ gap: "var(--checkout-summary-row-icon-gap)" }}
@@ -138,7 +148,7 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
 
       <div aria-hidden className="shrink-0" style={dividerStyle("summary")} />
 
-      <div className="flex shrink-0 items-center justify-between gap-4">
+      <div className="relative z-10 flex shrink-0 items-center justify-between gap-4">
         <span
           className="font-bold uppercase tracking-wide"
           style={{
@@ -157,7 +167,7 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
       </div>
 
       <p
-        className="flex max-w-full shrink-0 items-center font-semibold uppercase tracking-wide"
+        className="relative z-10 flex max-w-full shrink-0 items-center font-semibold uppercase tracking-wide"
         style={{
           width: "var(--checkout-summary-leadtime-width)",
           gap: "var(--checkout-summary-leadtime-gap)",

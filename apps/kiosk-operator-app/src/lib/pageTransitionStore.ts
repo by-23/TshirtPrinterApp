@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export const PAGE_TRANSITION_TYPES = [
+  "dissolve",
   "fade",
   "slide-left",
   "slide-up",
@@ -15,6 +16,7 @@ export const PAGE_TRANSITION_TYPES = [
 export type PageTransitionType = (typeof PAGE_TRANSITION_TYPES)[number];
 
 export const PAGE_TRANSITION_LABELS: Record<PageTransitionType, string> = {
+  dissolve: "Растворение (фон остаётся)",
   fade: "Плавное появление",
   "slide-left": "Слайд в сторону",
   "slide-up": "Слайд снизу",
@@ -66,7 +68,7 @@ function loadStoredType(): PageTransitionType {
   } catch {
     // ignore
   }
-  return "slide-left";
+  return "dissolve";
 }
 
 function loadStoredDuration(): number {
@@ -112,9 +114,9 @@ export const usePageTransitionStore = create<PageTransitionState>((set) => ({
     set({ durationMs: clamped });
   },
   reset: () => {
-    window.localStorage.setItem(STORAGE_KEY, "slide-left");
+    window.localStorage.setItem(STORAGE_KEY, "dissolve");
     window.localStorage.setItem(DURATION_STORAGE_KEY, String(PAGE_TRANSITION_DURATION_MS.default));
-    set({ type: "slide-left", durationMs: PAGE_TRANSITION_DURATION_MS.default });
+    set({ type: "dissolve", durationMs: PAGE_TRANSITION_DURATION_MS.default });
   },
 }));
 
