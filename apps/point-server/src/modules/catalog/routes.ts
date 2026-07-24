@@ -5,7 +5,6 @@ import {
   designCategorySchema,
   updateDesignSchema,
   setDesignIsolatedSchema,
-  POPULAR_DESIGNS_CATEGORY_CAP_RATIO,
   POPULAR_DESIGNS_DEFAULT_LIMIT,
   type Design,
   type DesignCategory,
@@ -67,43 +66,10 @@ function byUseCountDesc(a: DesignRow, b: DesignRow): number {
 
 /**
  * Builds the "Популярные принты" home banner list: highest `useCount` first
- * across every category, but capped so a single category can't dominate the
- * block (docs: "не больше 30% из одной категории от общего числа
- * отображаемых в этом блоке").
- *
- * `cap` is at least 1 so a category with genuinely popular designs still
- * gets a slot even when `limit` is small (a literal `floor(limit * 0.3)`
- * would round down to 0 and shut it out entirely). If capping leaves fewer
- * than `limit` items (e.g. too few categories have any designs at all), the
- * remaining slots are backfilled from the leftover pool ignoring the cap —
- * best-effort, since the ratio can't be honoured when there just isn't
- * enough variety yet.
+ * across every category, no per-category cap — just the global top by likes.
  */
 function selectPopularDesigns(rows: DesignRow[], limit: number): DesignRow[] {
-  const sorted = [...rows].sort(byUseCountDesc);
-  const cap = Math.max(1, Math.floor(limit * POPULAR_DESIGNS_CATEGORY_CAP_RATIO));
-
-  const selected: DesignRow[] = [];
-  const leftover: DesignRow[] = [];
-  const perCategoryCount = new Map<string, number>();
-
-  for (const row of sorted) {
-    if (selected.length >= limit) break;
-    const usedSoFar = perCategoryCount.get(row.category) ?? 0;
-    if (usedSoFar < cap) {
-      selected.push(row);
-      perCategoryCount.set(row.category, usedSoFar + 1);
-    } else {
-      leftover.push(row);
-    }
-  }
-
-  for (const row of leftover) {
-    if (selected.length >= limit) break;
-    selected.push(row);
-  }
-
-  return selected.sort(byUseCountDesc);
+  return [...rows].sort(byUseCountDesc).slice(0, limit);
 }
 
 export async function catalogRoutes(app: FastifyInstance) {
@@ -177,7 +143,7 @@ export async function catalogRoutes(app: FastifyInstance) {
   });
 
   // Home page "Популярные принты" banner — highest `useCount` first across
-  // every category, capped per-category (see `selectPopularDesigns`).
+  // every category (see `selectPopularDesigns`).
   // Registered above the `:id` route below — distinct static path, but kept
   // in source order for clarity.
   app.get("/catalog/designs/popular", async (request, reply) => {

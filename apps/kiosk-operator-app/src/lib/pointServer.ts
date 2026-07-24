@@ -136,9 +136,8 @@ export async function fetchDesign(id: string): Promise<Design> {
 
 /**
  * Home page "Популярные принты" banner — highest use-count designs across
- * every category, capped per-category server-side (see
- * `selectPopularDesigns` in point-server). `limit` defaults to
- * `POPULAR_DESIGNS_DEFAULT_LIMIT` on the server when omitted.
+ * every category (see `selectPopularDesigns` in point-server). `limit`
+ * defaults to `POPULAR_DESIGNS_DEFAULT_LIMIT` on the server when omitted.
  */
 export async function fetchPopularDesigns(limit?: number): Promise<Design[]> {
   const url = new URL(`${POINT_SERVER_URL}/catalog/designs/popular`);

@@ -66,16 +66,8 @@ export const designsPageSchema = z.object({
 });
 export type DesignsPage = z.infer<typeof designsPageSchema>;
 
-/**
- * Max share of `GET /catalog/designs/popular` results that may come from a
- * single category (докс: "не больше 30% из одной категории от общего числа
- * отображаемых в этом блоке") — used by both point-server (to build the
- * response) and the kiosk banner (documentation/tests).
- */
-export const POPULAR_DESIGNS_CATEGORY_CAP_RATIO = 0.3;
-
 /** Default number of slides `GET /catalog/designs/popular` returns when `limit` is omitted. */
-export const POPULAR_DESIGNS_DEFAULT_LIMIT = 12;
+export const POPULAR_DESIGNS_DEFAULT_LIMIT = 15;
 
 export const catalogScrapeConfigSchema = z.object({
   minResolutionEnabled: z.boolean(),

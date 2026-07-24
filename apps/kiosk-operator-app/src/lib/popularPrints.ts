@@ -37,11 +37,10 @@ function fromStaticCatalog(): BannerSlide[] {
 
 /**
  * Home page "Популярные принты" banner data: highest use-count designs
- * across every category (server-capped per category, see
- * `selectPopularDesigns` in point-server), falling back to the local
- * `src/assets/prints/` catalog while the real catalog has no usage stats
- * yet (fresh install, nobody has printed anything) or point-server is
- * unreachable (fail-open).
+ * across every category (see `selectPopularDesigns` in point-server),
+ * falling back to the local `src/assets/prints/` catalog while the real
+ * catalog has no usage stats yet (fresh install, nobody has printed
+ * anything) or point-server is unreachable (fail-open).
  */
 export function usePopularPrintSlides(): BannerSlide[] {
   const [designs, setDesigns] = useState<Design[] | null>(null);
