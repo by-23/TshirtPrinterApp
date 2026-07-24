@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
   Clock,
+  FilmIcon,
   Headset,
   History,
   Layers,
@@ -15,12 +16,19 @@ import {
 } from "../../components/icons.js";
 import { OperatorOnlineStatus } from "./OperatorOnlineStatus.js";
 
-export type OperatorView = "orders" | "inProgress" | "history" | "designs" | "aiStyles" | "printSettings";
+export type OperatorView =
+  | "orders"
+  | "inProgress"
+  | "history"
+  | "designs"
+  | "aiStyles"
+  | "ads"
+  | "printSettings";
 
 interface NavItem {
   id: OperatorView | "clients" | "printer" | "printSettings" | "materials" | "schedule" | "notifications" | "support";
   label: string;
-  icon: LucideIcon;
+  icon: LucideIcon | typeof FilmIcon;
   view?: OperatorView;
 }
 
@@ -30,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "history", label: "История", icon: History, view: "history" },
   { id: "designs", label: "Дизайны", icon: Palette, view: "designs" },
   { id: "aiStyles", label: "ИИ-стили", icon: Sparkles, view: "aiStyles" },
+  { id: "ads", label: "Реклама", icon: FilmIcon, view: "ads" },
   { id: "clients", label: "Клиенты", icon: Users },
   { id: "printer", label: "Принтер", icon: Printer },
   { id: "printSettings", label: "Настройки печати", icon: Settings, view: "printSettings" },

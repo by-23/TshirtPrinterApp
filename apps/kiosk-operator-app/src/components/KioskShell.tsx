@@ -4,12 +4,15 @@ import { LanguageSwitcher } from "./LanguageSwitcher.js";
 import { KioskKeyboardOverlay } from "./KioskKeyboardOverlay.js";
 import { KioskAmbientBackdrop } from "./KioskAmbientBackdrop.js";
 import { KioskPageTransition } from "./KioskPageTransition.js";
+import { ScreensaverOverlay } from "./ScreensaverOverlay.js";
 import { initPointStatus, usePointStatusStore } from "../lib/pointStatusStore.js";
 import { warmBackgroundRemoval } from "../lib/backgroundRemoval.js";
 import {
   resolveKioskNavDirection,
   type PageTransitionDirection,
 } from "../lib/pageTransitionStore.js";
+import { SCREENSAVER_IDLE_MS, useScreensaverPlaylist } from "../lib/screensaverVideos.js";
+import { useKioskIdle } from "../lib/useKioskIdle.js";
 import { ClosedScreen } from "../routes/kiosk/ClosedScreen.js";
 
 /**
@@ -31,6 +34,15 @@ export function KioskShell() {
 
   const prevPathRef = useRef(location.pathname);
   const directionRef = useRef<PageTransitionDirection>("forward");
+
+  // Attract loop (Этап 8): operator-uploaded videos from point-server, with
+  // optional bundled files in `src/assets/screensaver/` as fallback.
+  const screensaverPlaylist = useScreensaverPlaylist();
+  const screensaverEnabled = !isClosed && screensaverPlaylist.length > 0;
+  const { active: screensaverActive, dismiss: dismissScreensaver } = useKioskIdle(
+    SCREENSAVER_IDLE_MS,
+    screensaverEnabled,
+  );
 
   if (location.pathname !== prevPathRef.current) {
     directionRef.current = resolveKioskNavDirection(
@@ -77,6 +89,10 @@ export function KioskShell() {
           inside KioskFrame's CSS transform, so portalling to `document.body`
           makes overlays spill outside the simulated device bezel. */}
       <div id="kiosk-overlay-root" className="pointer-events-none absolute inset-0 z-[800]" />
+
+      {screensaverActive ? (
+        <ScreensaverOverlay videos={screensaverPlaylist} onDismiss={dismissScreensaver} />
+      ) : null}
     </div>
   );
 }

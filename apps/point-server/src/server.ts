@@ -11,17 +11,15 @@ import { configRoutes } from "./modules/config/routes.js";
 import { printAreaRoutes } from "./modules/print-area/routes.js";
 import { aiRoutes } from "./modules/ai/routes.js";
 import { stickerRoutes } from "./modules/stickers/routes.js";
+import { adsRoutes } from "./modules/ads/routes.js";
 import { initRealtime } from "./realtime/socket.js";
 
 /**
- * Fastify's default `bodyLimit` is 1 MiB, which is comfortably exceeded by a
- * normal-quality phone photo (a modern phone JPEG/HEIC easily runs 3-15 MB) —
- * uploads above that were silently rejected by `@fastify/multipart` with a
- * `RequestFileTooLargeError`, while small images downloaded from the web
- * happened to sneak under the limit. 20 MB covers even high-megapixel phone
- * cameras with headroom.
+ * Fastify's default `bodyLimit` is 1 MiB. Phone photos for the ИИ-раздел need
+ * ~20 MB; attract-loop videos uploaded from the operator panel can be much
+ * larger, so we allow up to 200 MB for multipart bodies.
  */
-const MAX_REQUEST_BODY_BYTES = 20 * 1024 * 1024;
+const MAX_REQUEST_BODY_BYTES = 200 * 1024 * 1024;
 
 export async function buildServer() {
   const app = Fastify({ logger: true, bodyLimit: MAX_REQUEST_BODY_BYTES });
@@ -36,7 +34,7 @@ export async function buildServer() {
     root: path.resolve("data"),
     prefix: "/files/",
   });
-  // Phone photo uploads for the ИИ-раздел QR flow (Этап 9, `uploadMode: "wifi"`).
+  // Phone photo uploads (ИИ-раздел) + operator ads-video uploads (Этап 8).
   // `fileSize` mirrors `bodyLimit` above — @fastify/multipart falls back to
   // Fastify's bodyLimit only when this isn't set, but being explicit here
   // avoids silently inheriting a future unrelated change to `bodyLimit`.
@@ -49,6 +47,7 @@ export async function buildServer() {
   await app.register(printAreaRoutes);
   await app.register(aiRoutes);
   await app.register(stickerRoutes);
+  await app.register(adsRoutes);
 
   return app;
 }

@@ -3953,3 +3953,31 @@ textarea {
   flex: 1.6;
   background: #1a1a22;
 }
+
+/* Idle attract loop (ScreensaverOverlay) — covers the whole kiosk canvas. */
+.kiosk-screensaver {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: #000;
+  cursor: pointer;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk-screensaver:focus {
+  outline: none;
+}
+
+.kiosk-screensaver__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}

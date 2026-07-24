@@ -262,3 +262,20 @@ export const printAreaConfig = sqliteTable("print_area_config", {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });
+
+/**
+ * Idle attract-loop videos (Этап 8) — uploaded from the operator «Реклама»
+ * panel, stored under `data/ads-videos/` and served at `/files/ads-videos/`.
+ * The kiosk plays `enabled` rows in `sortOrder` after idle timeout.
+ */
+export const adsVideos = sqliteTable("ads_videos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  filename: text("filename").notNull().unique(),
+  mimeType: text("mime_type").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});

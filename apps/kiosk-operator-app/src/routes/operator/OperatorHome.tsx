@@ -10,6 +10,7 @@ import { OrderDetails } from "./OrderDetails.js";
 import { PrinterPanel } from "./PrinterPanel.js";
 import { DesignsPanel } from "./DesignsPanel.js";
 import { AiStylesPanel } from "./AiStylesPanel.js";
+import { AdsVideosPanel } from "./AdsVideosPanel.js";
 import { PrintAreaSettingsPanel } from "./PrintAreaSettingsPanel.js";
 
 /**
@@ -118,6 +119,8 @@ export function OperatorHome() {
           <DesignsPanel />
         ) : view === "aiStyles" ? (
           <AiStylesPanel />
+        ) : view === "ads" ? (
+          <AdsVideosPanel />
         ) : view === "printSettings" ? (
           <PrintAreaSettingsPanel />
         ) : (

@@ -8,3 +8,4 @@ export * from "./stats.js";
 export * from "./sync.js";
 export * from "./ai.js";
 export * from "./stickers.js";
+export * from "./ads.js";

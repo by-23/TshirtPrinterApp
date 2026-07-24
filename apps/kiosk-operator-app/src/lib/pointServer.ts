@@ -13,6 +13,8 @@ import {
   type AiStyleTier,
   type CreateAiStyleInput,
   type UpdateAiStyleInput,
+  type AdsVideo,
+  type UpdateAdsVideoInput,
   type CatalogCacheUsage,
   type CatalogScrapeConfig,
   type CatalogScrapeStatus,
@@ -652,4 +654,68 @@ export async function selectSticker(giphyId: string, previewUrl: string): Promis
   }
   const body = (await res.json()) as { url: string };
   return resolveDesignImageUrl(body.url);
+}
+
+// --- Ads / screensaver videos (Этап 8) ---
+
+/** Kiosk playlist — enabled videos only. */
+export async function fetchAdsVideos(): Promise<AdsVideo[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/ads/videos`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ads videos: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Operator panel — all videos including disabled. */
+export async function fetchAdsVideosAdmin(): Promise<AdsVideo[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/ads/videos/admin`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ads videos (admin): ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function uploadAdsVideo(file: File): Promise<AdsVideo> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${POINT_SERVER_URL}/ads/videos`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to upload ads video: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateAdsVideo(id: number, patch: UpdateAdsVideoInput): Promise<AdsVideo> {
+  const res = await fetch(`${POINT_SERVER_URL}/ads/videos/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update ads video: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function reorderAdsVideos(ids: number[]): Promise<AdsVideo[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/ads/videos/reorder`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to reorder ads videos: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteAdsVideo(id: number): Promise<void> {
+  const res = await fetch(`${POINT_SERVER_URL}/ads/videos/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(`Failed to delete ads video: ${res.status}`);
+  }
 }
