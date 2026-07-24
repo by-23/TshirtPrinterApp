@@ -188,6 +188,9 @@ const SECTIONS: Section[] = [
       { key: "--gallery-card-padding", label: "Внутренний отступ (картинка)", defaultValue: 24, ...PADDING_RANGE },
       { key: "--gallery-card-bg-start", label: "Фон карточки — верх", type: "color", defaultValue: "#131a2e" },
       { key: "--gallery-card-bg-end", label: "Фон карточки — низ", type: "color", defaultValue: "#0a0d1a" },
+      { key: "--gallery-card-dark-art-plate-hi", label: "Тёмный арт — подложка светлая", type: "color", defaultValue: "#f5f7fc" },
+      { key: "--gallery-card-dark-art-plate", label: "Тёмный арт — подложка", type: "color", defaultValue: "#e4e9f4" },
+      { key: "--gallery-card-dark-art-plate-lo", label: "Тёмный арт — подложка края", type: "color", defaultValue: "#c8d0e2" },
       { key: "--gallery-card-glow-strength", label: "Сила свечения рамки", defaultValue: 1, ...GLOW_RANGE },
       {
         key: "--gallery-card-icon-color",

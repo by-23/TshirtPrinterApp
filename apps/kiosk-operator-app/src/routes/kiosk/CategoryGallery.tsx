@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { designCategorySchema, type Design, type DesignCategory } from "@tshirt/shared-types";
+import { isMostlyDarkArtwork } from "../../lib/imageBrightness.js";
 import { appendDesignPage, fetchDesignsPage, resolveDesignImageUrl } from "../../lib/pointServer.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
@@ -42,6 +43,18 @@ const CATEGORY_ICON: Partial<Record<DesignCategory, (props: { className?: string
 function DesignCard({ design, index, onSelect }: { design: Design; index: number; onSelect: () => void }) {
   const Icon = CATEGORY_ICON[design.category] ?? PhotoIcon;
   const accentVar = `var(--gallery-card-accent-${(index % ACCENT_COUNT) + 1})`;
+  const imageSrc = design.imageUrl ? resolveDesignImageUrl(design.imageUrl) : null;
+  const [darkArt, setDarkArt] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    setDarkArt(false);
+    const img = imgRef.current;
+    // Cached images often skip onLoad — sample once the element is mounted.
+    if (img?.complete && img.naturalWidth > 0) {
+      setDarkArt(isMostlyDarkArtwork(img, imageSrc ?? undefined));
+    }
+  }, [imageSrc]);
 
   return (
     <div className="gallery-card-shell relative">
@@ -50,12 +63,20 @@ function DesignCard({ design, index, onSelect }: { design: Design; index: number
         onClick={onSelect}
         aria-label={design.title}
         style={{ "--gallery-card-accent": accentVar } as CSSProperties}
-        className="gallery-card flex aspect-square items-center justify-center overflow-hidden transition-transform active:scale-[0.96] hover:-translate-y-1"
+        className={[
+          "gallery-card flex aspect-square items-center justify-center overflow-hidden transition-transform active:scale-[0.96] hover:-translate-y-1",
+          darkArt ? "gallery-card--dark-art" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
-        {design.imageUrl ? (
+        {imageSrc ? (
           <img
-            src={resolveDesignImageUrl(design.imageUrl)}
+            ref={imgRef}
+            src={imageSrc}
             alt={design.title}
+            crossOrigin="anonymous"
+            onLoad={(event) => setDarkArt(isMostlyDarkArtwork(event.currentTarget, imageSrc))}
             className="h-full w-full object-contain drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
           />
         ) : (

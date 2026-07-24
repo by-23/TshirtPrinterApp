@@ -63,7 +63,10 @@ export function AiProcessing() {
   }, [attempt]);
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 px-4 py-6">
+    <div
+      className="flex h-full flex-col items-center justify-center gap-6 px-4 py-6"
+      style={{ backgroundColor: "var(--ai-page-bg)" }}
+    >
       <AiStepIndicator current="processing" />
 
       {error ? (

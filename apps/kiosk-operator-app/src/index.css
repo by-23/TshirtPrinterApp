@@ -857,6 +857,10 @@ textarea {
   --gallery-card-icon-color: #1d2c59;
   --gallery-card-loading-border-color: #26325a;
   --gallery-card-loading-icon-color: #a7b0d0;
+  /* Soft plate for dark/transparent artwork (runtime luminance). */
+  --gallery-card-dark-art-plate-hi: #f5f7fc;
+  --gallery-card-dark-art-plate: #e4e9f4;
+  --gallery-card-dark-art-plate-lo: #c8d0e2;
 
   --gallery-card-accent-1: #ff2d95;
   --gallery-card-accent-2: #22d3f5;
@@ -1753,6 +1757,35 @@ textarea {
   box-shadow: 0 0 calc(46px * var(--gallery-card-glow-strength)) calc(-6px * var(--gallery-card-glow-strength)) color-mix(in srgb, var(--gallery-card-accent, var(--brand-primary)) 80%, transparent);
 }
 
+/* Soft pearl plate when art is too dark for the default card gradient.
+   Reads as a print preview surface, not a transparency checker. */
+.gallery-card--dark-art {
+  background:
+    radial-gradient(
+      125% 110% at 50% 38%,
+      var(--gallery-card-dark-art-plate-hi) 0%,
+      var(--gallery-card-dark-art-plate) 52%,
+      var(--gallery-card-dark-art-plate-lo) 100%
+    );
+  box-shadow:
+    0 0 calc(34px * var(--gallery-card-glow-strength)) calc(-8px * var(--gallery-card-glow-strength))
+      color-mix(in srgb, var(--gallery-card-accent, var(--brand-primary)) 65%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent),
+    inset 0 -22px 40px color-mix(in srgb, #1a2438 14%, transparent);
+}
+
+.gallery-card--dark-art:hover {
+  box-shadow:
+    0 0 calc(46px * var(--gallery-card-glow-strength)) calc(-6px * var(--gallery-card-glow-strength))
+      color-mix(in srgb, var(--gallery-card-accent, var(--brand-primary)) 80%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 70%, transparent),
+    inset 0 -22px 40px color-mix(in srgb, #1a2438 14%, transparent);
+}
+
+.gallery-card--dark-art img {
+  filter: drop-shadow(0 6px 14px rgba(24, 32, 56, 0.22));
+}
+
 .gallery-card--loading {
   border-style: dashed;
   border-color: var(--gallery-card-loading-border-color);
@@ -1982,6 +2015,7 @@ textarea {
 
    Stack model (KioskPageTransition):
    - forward: over layer ENTERS on top of under (previous stays)
+     - idle: under is parked (visibility:hidden) so transparent pages don't bleed
    - back: over layer EXITS, revealing under (destination)
    Duration: --kiosk-page-duration
    ========================================================================== */
@@ -2012,6 +2046,11 @@ textarea {
   pointer-events: none;
 }
 
+/* Idle keep-alive underlay: still mounted for back-pop, but never painted
+   through transparent active screens (AI steps, home ambient). */
+.kiosk-page--parked {
+  visibility: hidden;
+}
 .kiosk-page--over {
   z-index: 2;
 }
@@ -2302,6 +2341,7 @@ textarea {
   display: flex;
   height: 100%;
   flex-direction: column;
+  background: var(--ai-page-bg);
   padding: var(--ai-source-screen-padding-top) var(--ai-source-screen-padding-x) var(--ai-source-screen-padding-bottom);
 }
 
@@ -2514,6 +2554,7 @@ textarea {
   flex-direction: column;
   align-items: center;
   overflow: hidden;
+  background: var(--ai-page-bg);
   padding: var(--ai-qr-screen-padding-top) var(--ai-qr-screen-padding-x) var(--ai-qr-screen-padding-bottom);
 }
 
@@ -2794,6 +2835,7 @@ textarea {
   align-items: center;
   gap: var(--ai-style-screen-gap);
   overflow-y: auto;
+  background: var(--ai-page-bg);
   padding: var(--ai-style-screen-padding-top) var(--ai-style-screen-padding-x) var(--ai-style-screen-padding-bottom);
 }
 
@@ -3277,6 +3319,7 @@ textarea {
   align-items: center;
   gap: var(--ai-result-screen-gap);
   overflow-y: auto;
+  background: var(--ai-page-bg);
   padding: var(--ai-result-screen-padding-top) var(--ai-result-screen-padding-x) var(--ai-result-screen-padding-bottom);
 }
 

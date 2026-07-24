@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -42,10 +43,14 @@ function topKey(phase: StackPhase): string {
 /**
  * Stack-style page transitions:
  * - forward: new screen enters on top; previous stays mounted underneath
- * - idle: previous screen stays mounted under the current (covered) so back can pop it
+ * - idle: previous screen stays mounted under the current (parked/hidden) so back can pop it
  * - back: top exits; underlay is already mounted — no remount flash
  *
  * Pass a frozen route element (e.g. `useOutlet()`), not `<Outlet />`.
+ *
+ * Parked underlays use `kiosk-page--parked` (visibility:hidden) so transparent
+ * screens (AI steps, home ambient) never bleed through the active page after a
+ * transition ends.
  */
 export function KioskPageTransition({
   animKey,
@@ -141,6 +146,7 @@ export function KioskPageTransition({
   }, [animKey, children, type]);
 
   const style = { "--kiosk-page-duration": `${durationMs}ms` } as CSSProperties;
+  const animatingOverKey = phase.kind === "idle" ? null : phase.over.key;
 
   function finish() {
     setPhase((prev) => {
@@ -154,11 +160,22 @@ export function KioskPageTransition({
     });
   }
 
+  // Fallback if `animationend` never fires (interrupted CSS, reduced-motion edge cases).
+  useEffect(() => {
+    if (!animatingOverKey) return;
+    const timer = window.setTimeout(finish, durationMs + 80);
+    return () => window.clearTimeout(timer);
+  }, [animatingOverKey, durationMs]);
+
   if (phase.kind === "idle") {
     return (
       <div className={`kiosk-page-stack ${className}`.trim()} style={style}>
         {phase.beneath ? (
-          <div key={phase.beneath.key} className="kiosk-page kiosk-page--under" aria-hidden>
+          <div
+            key={phase.beneath.key}
+            className="kiosk-page kiosk-page--under kiosk-page--parked"
+            aria-hidden
+          >
             {phase.beneath.node}
           </div>
         ) : null}

@@ -10,7 +10,7 @@ interface AiFlowState {
   /** Raw photo (camera snapshot or phone upload), data URL — shown as "ДО" on the result screen. */
   sourcePhoto: string | null;
   selectedStyleKey: string | null;
-  /** When true (default), client-side background removal runs after stylization. */
+  /** When true, client-side background removal runs after stylization. Off by default. */
   removeBackground: boolean;
   /** Pollinations output, background still present — kept only to feed background-removal; not shown to the user. */
   stylizedImage: string | null;
@@ -36,7 +36,7 @@ const initialState = {
   step: "source" as AiFlowStep,
   sourcePhoto: null as string | null,
   selectedStyleKey: null as string | null,
-  removeBackground: true,
+  removeBackground: false,
   stylizedImage: null as string | null,
   finalImage: null as string | null,
   processingStage: null as AiProcessingStage,
