@@ -27,6 +27,10 @@ export const env = {
   // anonymous API docs/PLAN.md originally assumed. Optional/fail-open: unset
   // means `POST /ai/stylize` just answers 503 (see modules/ai/pollinations.ts).
   POLLINATIONS_API_TOKEN: process.env.POLLINATIONS_API_TOKEN,
+  // Premium AI stylization (ChatGPT / Gemini) — optional; when unset the
+  // corresponding provider is hidden on the kiosk (`GET /ai/providers`).
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   // ИИ-раздел (Этап 9), `uploadMode: "wifi"` — overrides the QR upload URL's
   // host:port (see `modules/ai/routes.ts`). Needed because the kiosk
   // frontend always talks to point-server over a fixed `localhost:PORT`

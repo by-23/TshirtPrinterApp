@@ -1,22 +1,35 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { AiProvider } from "@tshirt/shared-types";
 import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
 import { stylizeAiPhoto } from "../../../lib/pointServer.js";
 import { removeImageBackground } from "../../../lib/backgroundRemoval.js";
 import { AiStepIndicator } from "./AiStepIndicator.js";
 import { SpinnerIcon } from "../../../components/icons.js";
 
+function localizeStylizeError(message: string, provider: AiProvider, t: (key: string) => string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("chatgpt") || provider === "chatgpt") {
+    return t("ai.processing.errorChatgpt");
+  }
+  if (lower.includes("gemini") || provider === "gemini") {
+    return t("ai.processing.errorGemini");
+  }
+  if (lower.includes("unavailable") || lower.includes("503")) {
+    return t("ai.processing.errorUnavailable");
+  }
+  return t("ai.processing.error");
+}
+
 /**
- * "Обработка" screen — not covered by the reference mockups, built in the
- * same visual language per docs/PLAN.md Этап 9. Runs the actual pipeline
- * (Pollinations stylization, then client-side background removal) on
- * mount/retry, driven by `aiFlowStore.processingStage` for the two
- * sequential status messages.
+ * "Обработка" screen — runs stylization (+ optional BG removal).
+ * Sized for the 1080×1920 kiosk like the other AI steps (not tiny Tailwind defaults).
  */
 export function AiProcessing() {
   const { t } = useTranslation();
   const sourcePhoto = useAiFlowStore((state) => state.sourcePhoto);
   const selectedStyleKey = useAiFlowStore((state) => state.selectedStyleKey);
+  const aiProvider = useAiFlowStore((state) => state.aiProvider);
   const removeBackground = useAiFlowStore((state) => state.removeBackground);
   const processingStage = useAiFlowStore((state) => state.processingStage);
   const error = useAiFlowStore((state) => state.error);
@@ -38,7 +51,7 @@ export function AiProcessing() {
     setProcessingStage("stylizing");
 
     void (async () => {
-      const { imageBase64: stylized } = await stylizeAiPhoto(sourcePhoto, selectedStyleKey);
+      const { imageBase64: stylized } = await stylizeAiPhoto(sourcePhoto, selectedStyleKey, aiProvider);
       if (cancelled) return;
       setStylizedImage(stylized);
       if (removeBackground) {
@@ -52,7 +65,8 @@ export function AiProcessing() {
       setStep("result");
     })().catch((err: unknown) => {
       if (cancelled) return;
-      setError(err instanceof Error ? err.message : t("ai.processing.error"));
+      const raw = err instanceof Error ? err.message : "";
+      setError(localizeStylizeError(raw, aiProvider, t));
     });
 
     return () => {
@@ -63,41 +77,30 @@ export function AiProcessing() {
   }, [attempt]);
 
   return (
-    <div
-      className="flex h-full flex-col items-center justify-center gap-6 px-4 py-6"
-      style={{ backgroundColor: "var(--ai-page-bg)" }}
-    >
+    <div className="ai-processing-screen">
       <AiStepIndicator current="processing" />
 
       {error ? (
-        <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-          <p className="text-sm text-ink-200">{error}</p>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setStep("style")}
-              className="rounded-pill bg-ink-800 px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-ink-700"
-            >
+        <div className="ai-processing-body">
+          <p className="ai-processing-error">{error}</p>
+          <div className="ai-processing-actions">
+            <button type="button" onClick={() => setStep("style")} className="ai-style-back-btn">
               {t("ai.processing.backToStyles")}
             </button>
-            <button
-              type="button"
-              onClick={() => setAttempt((n) => n + 1)}
-              className="rounded-pill bg-neon-pink px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-white shadow-neon-pink"
-            >
+            <button type="button" onClick={() => setAttempt((n) => n + 1)} className="ai-style-stylize-btn">
               {t("ai.processing.retry")}
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <SpinnerIcon aria-hidden className="h-10 w-10 animate-spin text-neon-pink" />
-          <p className="text-lg font-semibold text-white">
+        <div className="ai-processing-body">
+          <SpinnerIcon aria-hidden className="ai-processing-spinner animate-spin" />
+          <p className="ai-processing-title">
             {processingStage === "removingBackground"
               ? t("ai.processing.removingBackground")
               : t("ai.processing.stylizing")}
           </p>
-          <p className="text-sm text-ink-200">{t("ai.processing.hint")}</p>
+          <p className="ai-processing-hint">{t("ai.processing.hint")}</p>
         </div>
       )}
     </div>

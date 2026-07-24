@@ -1,6 +1,7 @@
 import {
   DEFAULT_PRICE_CONFIG,
   garmentUsesSizeFabric,
+  type AiProvider,
   type GarmentFabric,
   type GarmentType,
   type PriceConfig,
@@ -12,10 +13,12 @@ export interface PriceInput {
   fabric: GarmentFabric;
   size: string;
   printSize: PrintSize;
+  /** AI stylization provider — only set for `ai_style` orders; defaults to no surcharge. */
+  aiProvider?: AiProvider;
 }
 
 /** One row of the order summary (`ВАШ ЗАКАЗ` on `docs/ui-mockups/checkout.png`). */
-export type PriceBreakdownKey = "garment" | "design" | "size" | "side";
+export type PriceBreakdownKey = "garment" | "design" | "size" | "side" | "ai";
 
 export interface PriceBreakdownLine {
   key: PriceBreakdownKey;
@@ -33,6 +36,7 @@ export const BASE_PRICE_TENGE = DEFAULT_PRICE_CONFIG.basePriceTenge;
 export const FABRIC_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.fabricSurchargeTenge;
 export const SIZE_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.sizeSurchargeTenge;
 export const PRINT_SIZE_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.printSizeSurchargeTenge;
+export const AI_PROVIDER_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge;
 
 /**
  * Single-side pricing only for now — the mockup's "Сторона печати" row is
@@ -42,9 +46,8 @@ export const PRINT_SIZE_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.printSizeSurcharg
 const SIDE_SURCHARGE_TENGE = 0;
 
 /**
- * `цена = f(тип одежды, ткань, размер, размер принта)` — see `docs/PLAN.md`.
- * Returns the four line items shown in the checkout order summary, in the
- * same order as the mockup: Футболка → Дизайн → Размер → Сторона печати.
+ * `цена = f(тип одежды, ткань, размер, размер принта, ИИ-провайдер)` — see `docs/PLAN.md`.
+ * Returns the line items shown in the checkout order summary.
  *
  * `config` defaults to `DEFAULT_PRICE_CONFIG` (Stage 6 hardcoded values) so
  * existing call sites keep working unchanged; pass the point's synced
@@ -64,12 +67,16 @@ export function getPriceBreakdown(
     (usesSizeFabric ? config.fabricSurchargeTenge[input.fabric] ?? 0 : 0);
   const designAmount = config.printSizeSurchargeTenge[input.printSize] ?? 0;
   const sizeAmount = usesSizeFabric ? config.sizeSurchargeTenge[input.size] ?? 0 : 0;
+  const aiProvider = input.aiProvider ?? "standard";
+  const aiSurchargeMap = config.aiProviderSurchargeTenge ?? DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge;
+  const aiAmount = aiSurchargeMap[aiProvider] ?? 0;
 
   return [
     { key: "garment", amountTenge: garmentAmount },
     { key: "design", amountTenge: designAmount },
     { key: "size", amountTenge: sizeAmount },
     { key: "side", amountTenge: SIDE_SURCHARGE_TENGE },
+    { key: "ai", amountTenge: aiAmount },
   ];
 }
 

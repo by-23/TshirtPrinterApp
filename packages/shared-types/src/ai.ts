@@ -1,4 +1,12 @@
 import { z } from "zod";
+import { aiProviderSchema } from "./pricing.js";
+
+export { aiProviderSchema };
+export type { AiProvider } from "./pricing.js";
+
+/** Catalog tier — standard (Pollinations/local) vs premium (ChatGPT/Gemini). */
+export const aiStyleTierSchema = z.enum(["standard", "premium"]);
+export type AiStyleTier = z.infer<typeof aiStyleTierSchema>;
 
 /**
  * ИИ-раздел (Этап 9) — стиль из `point-server`'s `ai_styles` table, отдаётся
@@ -13,6 +21,7 @@ export const aiStyleSchema = z.object({
   label: z.string(),
   description: z.string(),
   previewUrl: z.string(),
+  tier: aiStyleTierSchema,
 });
 export type AiStyle = z.infer<typeof aiStyleSchema>;
 
@@ -21,6 +30,7 @@ export type AiStyle = z.infer<typeof aiStyleSchema>;
  * Pollinations недоступен (см. `point-server/src/modules/ai/local/index.ts`).
  * Формат `{kind}:{variant}`. Список используется и для валидации на
  * бэкенде, и для выпадающего списка в админке ("ИИ-стили").
+ * Только для `tier: "standard"`.
  */
 export const AI_LOCAL_ENGINE_KEYS = [
   "animegan:hayao",
@@ -43,7 +53,7 @@ export type AiLocalEngineKey = (typeof AI_LOCAL_ENGINE_KEYS)[number];
  * Полная запись стиля (вкл. отключённые), для операторской панели
  * "ИИ-стили" — `GET /ai/styles/admin` (см. `point-server/src/modules/ai/routes.ts`).
  * В отличие от `aiStyleSchema`, отдаёт `promptTemplate`/`engineKey`, чтобы
- * их можно было редактировать.
+ * их можно было редактировать. `engineKey` пустой у premium-стилей.
  */
 export const aiStyleAdminSchema = z.object({
   id: z.number(),
@@ -52,6 +62,7 @@ export const aiStyleAdminSchema = z.object({
   description: z.string(),
   promptTemplate: z.string(),
   engineKey: z.string(),
+  tier: aiStyleTierSchema,
   sortOrder: z.number(),
   enabled: z.boolean(),
   previewUrl: z.string(),
@@ -67,7 +78,9 @@ export const createAiStyleInputSchema = z.object({
   label: z.string().min(1),
   description: z.string().min(1),
   promptTemplate: z.string().min(1),
-  engineKey: z.string().min(1),
+  /** Required for standard styles; ignored/empty for premium. */
+  engineKey: z.string().optional(),
+  tier: aiStyleTierSchema.optional().default("standard"),
   sortOrder: z.number().optional(),
   enabled: z.boolean().optional(),
 });
@@ -97,10 +110,11 @@ export const createAiUploadSessionResponseSchema = z.object({
 });
 export type CreateAiUploadSessionResponse = z.infer<typeof createAiUploadSessionResponseSchema>;
 
-/** Body of `POST /ai/stylize` — полное фото (селфи/загрузка) + выбранный стиль. */
+/** Body of `POST /ai/stylize` — полное фото (селфи/загрузка) + выбранный стиль + провайдер. */
 export const stylizeRequestSchema = z.object({
   imageBase64: z.string().min(1),
   styleKey: z.string().min(1),
+  provider: aiProviderSchema.default("standard"),
 });
 export type StylizeRequest = z.infer<typeof stylizeRequestSchema>;
 
@@ -109,6 +123,44 @@ export const stylizeResponseSchema = z.object({
   imageBase64: z.string().min(1),
 });
 export type StylizeResponse = z.infer<typeof stylizeResponseSchema>;
+
+/** Response of `GET /ai/providers` — which premium APIs have keys configured on this point. */
+export const aiProvidersAvailabilitySchema = z.object({
+  chatgpt: z.boolean(),
+  gemini: z.boolean(),
+});
+export type AiProvidersAvailability = z.infer<typeof aiProvidersAvailabilitySchema>;
+
+/**
+ * Operator-editable premium API keys (`GET/PATCH /ai/config`).
+ * Panel value overrides `.env`; `*KeyConfigured` is true if DB or env has a key.
+ */
+export const aiConfigSchema = z.object({
+  openaiApiKey: z.string().nullable(),
+  geminiApiKey: z.string().nullable(),
+  openaiKeyConfigured: z.boolean(),
+  geminiKeyConfigured: z.boolean(),
+  updatedAt: z.string(),
+});
+export type AiConfig = z.infer<typeof aiConfigSchema>;
+
+export const updateAiConfigInputSchema = z.object({
+  openaiApiKey: z.string().nullable().optional(),
+  geminiApiKey: z.string().nullable().optional(),
+});
+export type UpdateAiConfigInput = z.infer<typeof updateAiConfigInputSchema>;
+
+/** Body of `POST /ai/config/test-openai` / `test-gemini` — optional draft key; empty = use saved/env. */
+export const testAiApiKeyInputSchema = z.object({
+  apiKey: z.string().optional(),
+});
+export type TestAiApiKeyInput = z.infer<typeof testAiApiKeyInputSchema>;
+
+export const aiApiKeyTestResultSchema = z.object({
+  ok: z.boolean(),
+  error: z.string().optional(),
+});
+export type AiApiKeyTestResult = z.infer<typeof aiApiKeyTestResultSchema>;
 
 /**
  * Local (kiosk-facing) event on point-server's own Socket.IO — fired once a

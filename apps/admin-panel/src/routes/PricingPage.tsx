@@ -81,6 +81,24 @@ function PriceConfigFields({ optional }: { optional?: boolean }) {
           </Form.Item>
         ))}
       </Space>
+
+      <Typography.Title level={5}>Наценка за ИИ-обработку (премиум)</Typography.Title>
+      <Space wrap size="large">
+        <Form.Item
+          name={["aiProviderSurchargeTenge", "chatgpt"]}
+          label="ChatGPT"
+          rules={rules}
+        >
+          <InputNumber min={0} step={100} addonAfter="₸" />
+        </Form.Item>
+        <Form.Item
+          name={["aiProviderSurchargeTenge", "gemini"]}
+          label="Gemini"
+          rules={rules}
+        >
+          <InputNumber min={0} step={100} addonAfter="₸" />
+        </Form.Item>
+      </Space>
     </>
   );
 }
@@ -124,7 +142,15 @@ export function PricingPage() {
     setLoadingGlobal(true);
     try {
       const config = await apiClient.get<PriceConfig>("/pricing/global");
-      globalForm.setFieldsValue(config);
+      globalForm.setFieldsValue({
+        ...config,
+        aiProviderSurchargeTenge: {
+          standard: 0,
+          chatgpt: 1500,
+          gemini: 1500,
+          ...config.aiProviderSurchargeTenge,
+        },
+      });
     } catch {
       message.error("Не удалось загрузить глобальные цены");
     } finally {

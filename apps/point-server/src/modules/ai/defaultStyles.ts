@@ -23,6 +23,7 @@ export interface DefaultAiStyle {
   promptTemplate: string;
   engineKey: string;
   sortOrder: number;
+  tier?: "standard" | "premium";
 }
 
 export const DEFAULT_AI_STYLES: DefaultAiStyle[] = [

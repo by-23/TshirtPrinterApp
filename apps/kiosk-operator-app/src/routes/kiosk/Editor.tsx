@@ -118,7 +118,7 @@ export function Editor() {
     void FabricImage.fromURL(finalImage).then((image) => {
       if (cancelled) return;
       placeImageCentered(canvas, image);
-      useAiFlowStore.getState().reset();
+      useAiFlowStore.getState().clearAfterEditorApply();
     });
 
     return () => {
@@ -152,12 +152,15 @@ export function Editor() {
       // image loaded without `crossOrigin`) makes this throw a SecurityError,
       // which must not skip the error handling/`finally` below.
       const designImageBase64 = canvas.toDataURL({ format: "png", multiplier: 2 });
+      const aiProvider =
+        category === "ai_style" ? useAiFlowStore.getState().aiProvider : ("standard" as const);
       const priceBreakdown = getPriceBreakdown(
         {
           garmentType,
           fabric: fabricName as GarmentFabric,
           size,
           printSize,
+          aiProvider,
         },
         priceConfig,
       );

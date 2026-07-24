@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { FastifyBaseLogger } from "fastify";
+import sharp from "sharp";
 import { decodeDataUrl, encodeDataUrl } from "./imageIO.js";
 import { stylizeLocally } from "./index.js";
 
@@ -13,7 +14,7 @@ const SAMPLE_PORTRAIT_PATH = path.resolve("assets", "ai-sample-portrait.jpg");
 let samplePortraitDataUrl: string | null = null;
 
 /** Bundled generic (AI-generated) portrait used only to pre-render style preview thumbnails — never shown to real customers. */
-async function loadSamplePortrait(): Promise<string> {
+export async function loadSamplePortrait(): Promise<string> {
   if (!samplePortraitDataUrl) {
     const buffer = await readFile(SAMPLE_PORTRAIT_PATH);
     samplePortraitDataUrl = encodeDataUrl(buffer, "image/jpeg");
@@ -27,9 +28,7 @@ export function previewPathForKey(key: string): string {
 
 /**
  * Renders and caches (overwriting any existing file) the preview for one
- * style, using the local offline engine — previews always come from the
- * local engine, even for styles whose *actual* stylize call prefers
- * Pollinations, so generating them never depends on internet/API tokens.
+ * standard style, using the local offline engine.
  */
 export async function regeneratePreview(key: string, engineKey: string): Promise<void> {
   mkdirSync(AI_STYLE_PREVIEWS_DIR, { recursive: true });
@@ -39,19 +38,36 @@ export async function regeneratePreview(key: string, engineKey: string): Promise
   await writeFile(previewPathForKey(key), buffer);
 }
 
+/** Writes a JPEG preview from a stylized data URL (premium regenerate / upload). */
+export async function savePreviewFromDataUrl(key: string, imageDataUrl: string): Promise<void> {
+  mkdirSync(AI_STYLE_PREVIEWS_DIR, { recursive: true });
+  const { buffer } = decodeDataUrl(imageDataUrl);
+  const jpeg = await sharp(buffer).jpeg({ quality: 85 }).toBuffer();
+  await writeFile(previewPathForKey(key), jpeg);
+}
+
+/** Writes a JPEG preview from an uploaded image buffer. */
+export async function savePreviewFromBuffer(key: string, buffer: Buffer): Promise<void> {
+  mkdirSync(AI_STYLE_PREVIEWS_DIR, { recursive: true });
+  const jpeg = await sharp(buffer)
+    .rotate()
+    .resize(512, 512, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  await writeFile(previewPathForKey(key), jpeg);
+}
+
 /**
- * Fire-and-forget on boot (see `index.ts`) — renders a preview for every
- * style that doesn't have one cached yet. Fails open per-style: a style
- * whose engine/model isn't ready yet just keeps showing no thumbnail until
- * a later boot (or an explicit "Обновить превью" in the admin panel)
- * succeeds.
+ * Fire-and-forget on boot — only standard styles with an engineKey get local
+ * previews. Premium styles need an uploaded or API-generated preview.
  */
 export async function ensureStylePreviews(
-  styles: { key: string; engineKey: string }[],
+  styles: { key: string; engineKey: string; tier?: string }[],
   logger: FastifyBaseLogger,
 ): Promise<void> {
   mkdirSync(AI_STYLE_PREVIEWS_DIR, { recursive: true });
   for (const style of styles) {
+    if (style.tier === "premium" || !style.engineKey) continue;
     if (existsSync(previewPathForKey(style.key))) continue;
     try {
       await regeneratePreview(style.key, style.engineKey);

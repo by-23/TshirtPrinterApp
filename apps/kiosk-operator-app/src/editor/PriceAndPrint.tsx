@@ -1,9 +1,11 @@
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { TouchButton } from "@tshirt/ui-kit";
 import { calculatePriceTenge } from "@tshirt/shared-pricing";
-import type { GarmentFabric } from "@tshirt/shared-types";
+import { designCategorySchema, type GarmentFabric } from "@tshirt/shared-types";
 import { useEditorStore } from "./store.js";
 import { usePricingConfigStore } from "../lib/pricingConfigStore.js";
+import { useAiFlowStore } from "../lib/aiFlowStore.js";
 import { blockBorderStyle } from "./borderStyle.js";
 
 export interface PriceAndPrintProps {
@@ -19,17 +21,22 @@ export interface PriceAndPrintProps {
  */
 export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const categoryParam = designCategorySchema.safeParse(searchParams.get("category"));
+  const category = categoryParam.success ? categoryParam.data : null;
   const garmentType = useEditorStore((state) => state.garmentType);
   const size = useEditorStore((state) => state.size);
   const fabricName = useEditorStore((state) => state.fabricName);
   const printSize = useEditorStore((state) => state.printSizeBySide[state.side]);
   const priceConfig = usePricingConfigStore((state) => state.config);
+  const aiProvider = useAiFlowStore((state) => state.aiProvider);
   const price = calculatePriceTenge(
     {
       garmentType,
       fabric: fabricName as GarmentFabric,
       size,
       printSize,
+      aiProvider: category === "ai_style" ? aiProvider : "standard",
     },
     priceConfig,
   );

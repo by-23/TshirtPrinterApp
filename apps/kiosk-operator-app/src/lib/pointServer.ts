@@ -3,8 +3,14 @@ import {
   AI_PHOTO_RECEIVED_EVENT,
   ORDER_EVENT_CHANNEL,
   type AiPhotoReceivedPayload,
+  type AiProvider,
+  type AiProvidersAvailability,
+  type AiConfig,
+  type UpdateAiConfigInput,
+  type AiApiKeyTestResult,
   type AiStyle,
   type AiStyleAdmin,
+  type AiStyleTier,
   type CreateAiStyleInput,
   type UpdateAiStyleInput,
   type CatalogCacheUsage,
@@ -444,10 +450,64 @@ export async function updateQueryTags(category: GalleryCategory, tags: string[])
 
 // --- ИИ-раздел (Этап 9) ---
 
-export async function fetchAiStyles(): Promise<AiStyle[]> {
-  const res = await fetch(`${POINT_SERVER_URL}/ai/styles`);
+export async function fetchAiStyles(tier?: AiStyleTier): Promise<AiStyle[]> {
+  const url = new URL(`${POINT_SERVER_URL}/ai/styles`);
+  if (tier) url.searchParams.set("tier", tier);
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch AI styles: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchAiProviders(): Promise<AiProvidersAvailability> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/providers`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI providers: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchAiConfig(): Promise<AiConfig> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/config`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateAiConfig(input: UpdateAiConfigInput): Promise<AiConfig> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/config`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update AI config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function testOpenAIApiKey(apiKey?: string): Promise<AiApiKeyTestResult> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/config/test-openai`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(apiKey != null && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to test OpenAI key: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function testGeminiApiKey(apiKey?: string): Promise<AiApiKeyTestResult> {
+  const res = await fetch(`${POINT_SERVER_URL}/ai/config/test-gemini`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(apiKey != null && apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to test Gemini key: ${res.status}`);
   }
   return res.json();
 }
@@ -462,12 +522,16 @@ export async function createAiUploadSession(): Promise<CreateAiUploadSessionResp
   return res.json();
 }
 
-/** Sends the raw photo + chosen style to point-server, which calls Pollinations (requires internet, see docs/PLAN.md). */
-export async function stylizeAiPhoto(imageBase64: string, styleKey: string): Promise<StylizeResponse> {
+/** Sends the raw photo + chosen style + provider to point-server for stylization. */
+export async function stylizeAiPhoto(
+  imageBase64: string,
+  styleKey: string,
+  provider: AiProvider = "standard",
+): Promise<StylizeResponse> {
   const res = await fetch(`${POINT_SERVER_URL}/ai/stylize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ imageBase64, styleKey }),
+    body: JSON.stringify({ imageBase64, styleKey, provider }),
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -486,10 +550,12 @@ export function subscribeAiPhotoReceived(callback: (payload: AiPhotoReceivedPayl
   };
 }
 
-// --- "ИИ-стили" operator panel — CRUD over the ai_styles catalog (hybrid Pollinations + local stylization) ---
+// --- "ИИ-стили" operator panel — CRUD over the ai_styles catalog ---
 
-export async function fetchAiStylesAdmin(): Promise<AiStyleAdmin[]> {
-  const res = await fetch(`${POINT_SERVER_URL}/ai/styles/admin`);
+export async function fetchAiStylesAdmin(tier?: AiStyleTier): Promise<AiStyleAdmin[]> {
+  const url = new URL(`${POINT_SERVER_URL}/ai/styles/admin`);
+  if (tier) url.searchParams.set("tier", tier);
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch AI styles (admin): ${res.status}`);
   }
@@ -528,11 +594,29 @@ export async function deleteAiStyle(id: number): Promise<void> {
   }
 }
 
-export async function regenerateAiStylePreview(id: number): Promise<void> {
-  const res = await fetch(`${POINT_SERVER_URL}/ai/styles/${id}/regenerate-preview`, { method: "POST" });
+export async function regenerateAiStylePreview(
+  id: number,
+  provider?: "chatgpt" | "gemini",
+): Promise<void> {
+  const url = new URL(`${POINT_SERVER_URL}/ai/styles/${id}/regenerate-preview`);
+  if (provider) url.searchParams.set("provider", provider);
+  const res = await fetch(url, { method: "POST" });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? `Failed to regenerate AI style preview: ${res.status}`);
+  }
+}
+
+export async function uploadAiStylePreview(id: number, file: File): Promise<void> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${POINT_SERVER_URL}/ai/styles/${id}/preview`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(body?.error ?? `Failed to upload AI style preview: ${res.status}`);
   }
 }
 

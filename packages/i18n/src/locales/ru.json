@@ -164,6 +164,12 @@
       "title": "Ваш заказ",
       "designLabel": "Дизайн",
       "designSource": "Пользовательский",
+      "aiLabel": "ИИ обработка",
+      "aiProviders": {
+        "standard": "Обычное",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
       "fabric": {
         "cotton": "100% хлопок",
         "premium": "Премиум ткань"
@@ -265,16 +271,45 @@
     "style": {
       "title": "Выберите стиль",
       "subtitle": "Мы применим ИИ-стилизацию к вашему фото",
+      "chooseStyle": "Выберите стиль",
       "photoLoaded": "Фото загружено",
       "removeBackground": "Вырезать фон",
       "stylize": "Стилизовать",
-      "loadError": "Не удалось загрузить список стилей."
+      "loadError": "Не удалось загрузить список стилей.",
+      "emptyStyles": "В этом разделе пока нет стилей.",
+      "providerTitle": "Качество обработки",
+      "qualityBadge": "Лучше",
+      "providerFree": "Без доплаты",
+      "providerPrice": "+{{amount}} ₸",
+      "providerUnavailable": "Не настроено на точке",
+      "premiumHint": "Премиум-нейросети дают заметно лучший результат. За токены берётся доплата.",
+      "providers": {
+        "standard": "Обычное",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "filters": {
+        "standard": "Встроенные",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "info": {
+        "builtinTitle": "Встроенные",
+        "builtinText": "Быстро и без доплаты",
+        "premiumTitle": "ChatGPT / Gemini",
+        "premiumText": "Выше качество, платная обработка",
+        "timeTitle": "Время",
+        "timeText": "Обычно 10–60 секунд"
+      }
     },
     "processing": {
       "stylizing": "Генерируем стиль…",
       "removingBackground": "Удаляем фон…",
       "hint": "Обычно это занимает от 10 до 40 секунд",
       "error": "Не удалось обработать фото. Проверьте соединение с интернетом.",
+      "errorUnavailable": "Стилизация сейчас недоступна. Попробуйте ещё раз или выберите обычное качество.",
+      "errorChatgpt": "ChatGPT сейчас недоступен. Проверьте ключ API или попробуйте позже.",
+      "errorGemini": "Gemini сейчас недоступен. Проверьте ключ API или попробуйте позже.",
       "backToStyles": "Назад к стилям",
       "retry": "Повторить"
     },

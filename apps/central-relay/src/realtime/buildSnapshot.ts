@@ -13,6 +13,11 @@ function mergePriceConfig(global: PriceConfig, override: Partial<PriceConfig> | 
     fabricSurchargeTenge: { ...global.fabricSurchargeTenge, ...override.fabricSurchargeTenge },
     sizeSurchargeTenge: { ...global.sizeSurchargeTenge, ...override.sizeSurchargeTenge },
     printSizeSurchargeTenge: { ...global.printSizeSurchargeTenge, ...override.printSizeSurchargeTenge },
+    aiProviderSurchargeTenge: {
+      ...DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge,
+      ...global.aiProviderSurchargeTenge,
+      ...override.aiProviderSurchargeTenge,
+    },
   };
 }
 

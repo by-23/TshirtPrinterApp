@@ -167,17 +167,13 @@ export const orders = sqliteTable("orders", {
 
 /**
  * ИИ-раздел (Этап 9) — style presets offered on the "Выберите стиль" screen.
- * Seeded lazily from `DEFAULT_AI_STYLES` on first `GET /ai/styles` (same
- * pattern as `catalogScrapeQueryTags` — see `modules/catalog-scraper/queryTags.ts`),
- * only when the table is empty — from then on this table (edited via the
- * "ИИ-стили" operator panel, see `modules/ai/routes.ts` admin routes) is the
- * source of truth, not `defaultStyles.ts`. `key` is what the kiosk sends
- * back in `POST /ai/stylize` and what names its cached preview thumbnail
+ * Seeded lazily from `DEFAULT_AI_STYLES` / `DEFAULT_PREMIUM_AI_STYLES` on first
+ * catalog read (same pattern as `catalogScrapeQueryTags`). `key` is what the
+ * kiosk sends in `POST /ai/stylize` and names the preview file
  * (`data/ai-style-previews/{key}.jpg`).
  *
- * `promptTemplate` is used for the cloud path (Pollinations); `engineKey`
- * (`{kind}:{variant}`, e.g. `animegan:hayao`, `fast-neural-style:mosaic`,
- * `filter:noir`) picks the offline fallback engine — see `modules/ai/local/`.
+ * `tier: "standard"` — Pollinations + local `engineKey` fallback.
+ * `tier: "premium"` — ChatGPT / Gemini only; `engineKey` is empty.
  */
 export const aiStyles = sqliteTable("ai_styles", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -185,9 +181,25 @@ export const aiStyles = sqliteTable("ai_styles", {
   label: text("label").notNull(),
   description: text("description").notNull(),
   promptTemplate: text("prompt_template").notNull(),
-  engineKey: text("engine_key").notNull(),
+  engineKey: text("engine_key").notNull().default(""),
+  tier: text("tier", { enum: ["standard", "premium"] }).notNull().default("standard"),
   sortOrder: integer("sort_order").notNull().default(0),
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+});
+
+/**
+ * Singleton (id=1) — operator-editable ChatGPT / Gemini API keys for premium
+ * AI stylization. Panel values override `.env` (`OPENAI_API_KEY` /
+ * `GEMINI_API_KEY`); either source is enough for the provider to show up on
+ * the kiosk.
+ */
+export const aiConfig = sqliteTable("ai_config", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  openaiApiKey: text("openai_api_key"),
+  geminiApiKey: text("gemini_api_key"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
 });
 
 /**

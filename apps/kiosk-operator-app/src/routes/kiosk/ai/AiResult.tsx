@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
 import { fetchAiStyles } from "../../../lib/pointServer.js";
-import { AiStepIndicator } from "./AiStepIndicator.js";
 import { CircleCheck } from "../../../components/icons.js";
 
 /** Screen 4 ("Ваш дизайн готов") — matches the reference mockup: ДО/ПОСЛЕ toggle, bg-removed badge, 2 CTAs. */
@@ -49,8 +48,6 @@ export function AiResult() {
               : t("ai.result.subtitleNoBg")}
         </p>
       </div>
-
-      <AiStepIndicator current="result" />
 
       <div className="ai-result-content">
         <div className="ai-result-preview">

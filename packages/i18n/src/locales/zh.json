@@ -164,6 +164,12 @@
       "title": "您的订单",
       "designLabel": "设计",
       "designSource": "自定义",
+      "aiLabel": "AI 处理",
+      "aiProviders": {
+        "standard": "标准",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
       "fabric": {
         "cotton": "100%棉",
         "premium": "高级面料"
@@ -268,13 +274,42 @@
       "photoLoaded": "照片已加载",
       "removeBackground": "抠除背景",
       "stylize": "风格化",
-      "loadError": "无法加载风格列表。"
+      "loadError": "无法加载风格列表。",
+      "emptyStyles": "此分类暂无风格。",
+      "providerTitle": "处理质量",
+      "qualityBadge": "更好",
+      "providerFree": "无额外费用",
+      "providerPrice": "+{{amount}} ₸",
+      "providerUnavailable": "本点未配置",
+      "premiumHint": "高级神经网络效果更好。按 token 计费会有额外费用。",
+      "chooseStyle": "选择风格",
+      "providers": {
+        "standard": "标准",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "filters": {
+        "standard": "内置",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "info": {
+        "builtinTitle": "内置",
+        "builtinText": "快速且免费",
+        "premiumTitle": "ChatGPT / Gemini",
+        "premiumText": "更高质量，付费处理",
+        "timeTitle": "时间",
+        "timeText": "通常 10–60 秒"
+      }
     },
     "processing": {
       "stylizing": "正在生成风格…",
       "removingBackground": "正在移除背景…",
       "hint": "通常需要10到40秒",
       "error": "无法处理照片，请检查网络连接。",
+      "errorUnavailable": "风格化暂时不可用。请重试或选择标准质量。",
+      "errorChatgpt": "ChatGPT 暂时不可用。请检查 API 密钥或稍后再试。",
+      "errorGemini": "Gemini 暂时不可用。请检查 API 密钥或稍后再试。",
       "backToStyles": "返回风格选择",
       "retry": "重试"
     },

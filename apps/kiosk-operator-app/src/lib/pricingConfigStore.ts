@@ -6,6 +6,25 @@ interface PricingConfigState {
   config: PriceConfig;
 }
 
+/** Fills missing maps (e.g. older synced configs without AI surcharges). */
+function normalizePriceConfig(config: PriceConfig): PriceConfig {
+  return {
+    ...DEFAULT_PRICE_CONFIG,
+    ...config,
+    basePriceTenge: { ...DEFAULT_PRICE_CONFIG.basePriceTenge, ...config.basePriceTenge },
+    fabricSurchargeTenge: { ...DEFAULT_PRICE_CONFIG.fabricSurchargeTenge, ...config.fabricSurchargeTenge },
+    sizeSurchargeTenge: { ...DEFAULT_PRICE_CONFIG.sizeSurchargeTenge, ...config.sizeSurchargeTenge },
+    printSizeSurchargeTenge: {
+      ...DEFAULT_PRICE_CONFIG.printSizeSurchargeTenge,
+      ...config.printSizeSurchargeTenge,
+    },
+    aiProviderSurchargeTenge: {
+      ...DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge,
+      ...config.aiProviderSurchargeTenge,
+    },
+  };
+}
+
 /**
  * Effective (global + point override) price config, cached from
  * point-server's `GET /pricing` (itself cached from central-relay's last
@@ -25,10 +44,12 @@ export function initPricingConfig(): void {
   initialized = true;
 
   fetchPriceConfig()
-    .then((config) => usePricingConfigStore.setState({ config }))
+    .then((config) => usePricingConfigStore.setState({ config: normalizePriceConfig(config) }))
     .catch(() => {
       // Keep the default — point-server unreachable or never synced.
     });
 
-  subscribePricingEvents((config) => usePricingConfigStore.setState({ config }));
+  subscribePricingEvents((config) =>
+    usePricingConfigStore.setState({ config: normalizePriceConfig(config) }),
+  );
 }

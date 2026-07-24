@@ -164,6 +164,12 @@
       "title": "Your order",
       "designLabel": "Design",
       "designSource": "Custom",
+      "aiLabel": "AI processing",
+      "aiProviders": {
+        "standard": "Standard",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
       "fabric": {
         "cotton": "100% cotton",
         "premium": "Premium fabric"
@@ -265,16 +271,45 @@
     "style": {
       "title": "Choose a style",
       "subtitle": "We'll apply AI stylization to your photo",
+      "chooseStyle": "Choose a style",
       "photoLoaded": "Photo loaded",
       "removeBackground": "Remove background",
       "stylize": "Stylize",
-      "loadError": "Couldn't load the style list."
+      "loadError": "Couldn't load the style list.",
+      "emptyStyles": "No styles in this section yet.",
+      "providerTitle": "Processing quality",
+      "qualityBadge": "Better",
+      "providerFree": "No extra charge",
+      "providerPrice": "+{{amount}} ₸",
+      "providerUnavailable": "Not configured on this point",
+      "premiumHint": "Premium neural networks look better. Token usage adds an extra fee.",
+      "providers": {
+        "standard": "Standard",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "filters": {
+        "standard": "Built-in",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "info": {
+        "builtinTitle": "Built-in",
+        "builtinText": "Fast and free",
+        "premiumTitle": "ChatGPT / Gemini",
+        "premiumText": "Higher quality, paid processing",
+        "timeTitle": "Time",
+        "timeText": "Usually 10–60 seconds"
+      }
     },
     "processing": {
       "stylizing": "Generating the style…",
       "removingBackground": "Removing the background…",
       "hint": "This usually takes 10 to 40 seconds",
       "error": "Couldn't process the photo. Check your internet connection.",
+      "errorUnavailable": "Stylization is unavailable right now. Try again or choose standard quality.",
+      "errorChatgpt": "ChatGPT is unavailable right now. Check the API key or try later.",
+      "errorGemini": "Gemini is unavailable right now. Check the API key or try later.",
       "backToStyles": "Back to styles",
       "retry": "Retry"
     },

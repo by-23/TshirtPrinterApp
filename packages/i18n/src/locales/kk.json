@@ -164,6 +164,12 @@
       "title": "Сіздің тапсырысыңыз",
       "designLabel": "Дизайн",
       "designSource": "Жеке",
+      "aiLabel": "ИИ өңдеу",
+      "aiProviders": {
+        "standard": "Қарапайым",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
       "fabric": {
         "cotton": "100% мақта",
         "premium": "Премиум мата"
@@ -268,13 +274,42 @@
       "photoLoaded": "Фото жүктелді",
       "removeBackground": "Фонды кесу",
       "stylize": "Стильдеу",
-      "loadError": "Стильдер тізімін жүктеу мүмкін болмады."
+      "loadError": "Стильдер тізімін жүктеу мүмкін болмады.",
+      "emptyStyles": "Бұл бөлімде стильдер жоқ.",
+      "providerTitle": "Өңдеу сапасы",
+      "qualityBadge": "Жақсырақ",
+      "providerFree": "Қосымша ақысыз",
+      "providerPrice": "+{{amount}} ₸",
+      "providerUnavailable": "Нүктеде бапталмаған",
+      "premiumHint": "Премиум нейрондық желілер нәтижені жақсартады. Токен үшін қосымша төлем бар.",
+      "chooseStyle": "Стильді таңдаңыз",
+      "providers": {
+        "standard": "Қарапайым",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "filters": {
+        "standard": "Кірістірілген",
+        "chatgpt": "ChatGPT",
+        "gemini": "Gemini"
+      },
+      "info": {
+        "builtinTitle": "Кірістірілген",
+        "builtinText": "Жылдам және тегін",
+        "premiumTitle": "ChatGPT / Gemini",
+        "premiumText": "Жоғары сапа, ақылы өңдеу",
+        "timeTitle": "Уақыт",
+        "timeText": "Әдетте 10–60 секунд"
+      }
     },
     "processing": {
       "stylizing": "Стиль жасалуда…",
       "removingBackground": "Фон өшірілуде…",
       "hint": "Әдетте бұл 10-40 секунд алады",
       "error": "Фотоны өңдеу мүмкін болмады. Интернет байланысын тексеріңіз.",
+      "errorUnavailable": "Стильдеу қазір қолжетімсіз. Қайталаңыз немесе қарапайым сапаны таңдаңыз.",
+      "errorChatgpt": "ChatGPT қазір қолжетімсіз. API кілтін тексеріңіз немесе кейінірек қайталаңыз.",
+      "errorGemini": "Gemini қазір қолжетімсіз. API кілтін тексеріңіз немесе кейінірек қайталаңыз.",
       "backToStyles": "Стильдерге оралу",
       "retry": "Қайталау"
     },

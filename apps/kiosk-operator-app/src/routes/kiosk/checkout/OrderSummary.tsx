@@ -2,8 +2,9 @@ import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { GARMENT_COLORS } from "@tshirt/shared-types";
 import type { PriceBreakdownKey, PriceBreakdownLine } from "@tshirt/shared-pricing";
-import { Clock, type IconProps, Palette, Ruler, Tag, TshirtIcon } from "../../../components/icons.js";
+import { Clock, type IconProps, Palette, Ruler, Sparkles, Tag, TshirtIcon } from "../../../components/icons.js";
 import type { CheckoutGarment } from "../../../lib/checkoutStore.js";
+import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
 import { blockBorderStyle, dividerStyle } from "./borderStyle.js";
 
 export interface OrderSummaryProps {
@@ -11,19 +12,20 @@ export interface OrderSummaryProps {
   priceBreakdown: PriceBreakdownLine[];
 }
 
-const ROW_ORDER: PriceBreakdownKey[] = ["garment", "design", "size", "side"];
+const ROW_ORDER: PriceBreakdownKey[] = ["garment", "design", "size", "side", "ai"];
 
 const ROW_ICONS: Record<PriceBreakdownKey, ComponentType<IconProps>> = {
   garment: Tag,
   design: Palette,
   size: Ruler,
   side: TshirtIcon,
+  ai: Sparkles,
 };
 
 /**
  * Matches `checkout.png` exactly: the base garment price is shown plain
- * (no sign), while the three surcharge rows always show a leading sign —
- * including `+0 ₸` when a size/print/side doesn't add anything.
+ * (no sign), while surcharge rows always show a leading sign —
+ * including `+0 ₸` when a size/print/side/ai doesn't add anything.
  */
 function formatAmount(key: PriceBreakdownKey, amount: number): string {
   const formatted = `${amount.toLocaleString("ru-RU")} ₸`;
@@ -32,15 +34,15 @@ function formatAmount(key: PriceBreakdownKey, amount: number): string {
 }
 
 /**
- * Right-column "ВАШ ЗАКАЗ" card on `checkout.png` — 4 line items (garment,
- * design, size, print side) from `getPriceBreakdown` plus the total and
- * lead time, styled like the editor's price block (`PriceAndPrint.tsx`).
+ * Right-column "ВАШ ЗАКАЗ" card — line items from `getPriceBreakdown`
+ * plus the total and lead time.
  */
 export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
   const { t } = useTranslation();
   const colorId = GARMENT_COLORS.find((option) => option.hex === garment.color)?.id ?? "white";
   const total = priceBreakdown.reduce((sum, line) => sum + line.amountTenge, 0);
   const amountByKey = new Map(priceBreakdown.map((line) => [line.key, line.amountTenge]));
+  const aiProvider = useAiFlowStore((state) => state.aiProvider);
 
   const rowMeta: Record<PriceBreakdownKey, { label: string; detail: string }> = {
     garment: {
@@ -58,6 +60,10 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
     side: {
       label: t("editor.printSide"),
       detail: t(`editor.sides.${garment.side}`),
+    },
+    ai: {
+      label: t("checkout.summary.aiLabel"),
+      detail: t(`checkout.summary.aiProviders.${aiProvider}`),
     },
   };
 
