@@ -6,6 +6,8 @@ import { CheckoutThemePanel } from "./CheckoutThemePanel.js";
 import { GalleryThemePanel } from "./GalleryThemePanel.js";
 import { AiThemePanel } from "./AiThemePanel.js";
 import { DevViewSwitcher } from "./DevViewSwitcher.js";
+import { useReleaseMode } from "../hooks/useReleaseMode.js";
+import { enterReleaseFullscreen } from "../lib/displays.js";
 
 /** Real kiosk touchscreen resolution — every kiosk route is designed pixel-for-pixel at this size. */
 export const KIOSK_WIDTH = 1080;
@@ -25,18 +27,26 @@ const BEZEL_BORDER = 6;
  * inside a visible device frame, scaled down (never up) to fit whatever
  * window/monitor the developer is testing on. This lets you judge the real
  * on-device layout instead of a stretched/responsive browser layout.
+ *
+ * In release/native mode the bezel is removed — the canvas fills a vertical
+ * frameless window (Chrome `--app` / fullscreen) and may scale up to the
+ * physical display.
  */
 export function KioskFrame({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const release = useReleaseMode();
 
   useEffect(() => {
     function updateScale() {
       const el = containerRef.current;
       if (!el) return;
-      const availableWidth = el.clientWidth - OUTER_PADDING * 2 - BEZEL_BORDER * 2;
-      const availableHeight = el.clientHeight - OUTER_PADDING * 2 - BEZEL_BORDER * 2;
-      const next = Math.min(availableWidth / KIOSK_WIDTH, availableHeight / KIOSK_HEIGHT, 1);
+      const pad = release ? 0 : OUTER_PADDING * 2 + BEZEL_BORDER * 2;
+      const availableWidth = el.clientWidth - pad;
+      const availableHeight = el.clientHeight - pad;
+      const fitted = Math.min(availableWidth / KIOSK_WIDTH, availableHeight / KIOSK_HEIGHT);
+      // Dev: never upscale (judge true 1080×1920). Release: fill the monitor.
+      const next = release ? fitted : Math.min(fitted, 1);
       setScale(next > 0 ? next : 1);
     }
 
@@ -48,13 +58,18 @@ export function KioskFrame({ children }: { children: ReactNode }) {
       observer.disconnect();
       window.removeEventListener("resize", updateScale);
     };
-  }, []);
+  }, [release]);
+
+  useEffect(() => {
+    if (!release) return;
+    void enterReleaseFullscreen();
+  }, [release]);
 
   // Border-box size of the bezel: scaled canvas + the border itself, so the
   // canvas (sized/scaled independently below) exactly fills the space inside
   // the border instead of overflowing it asymmetrically.
-  const frameWidth = KIOSK_WIDTH * scale + BEZEL_BORDER * 2;
-  const frameHeight = KIOSK_HEIGHT * scale + BEZEL_BORDER * 2;
+  const frameWidth = KIOSK_WIDTH * scale + (release ? 0 : BEZEL_BORDER * 2);
+  const frameHeight = KIOSK_HEIGHT * scale + (release ? 0 : BEZEL_BORDER * 2);
 
   return (
     <div
@@ -62,9 +77,13 @@ export function KioskFrame({ children }: { children: ReactNode }) {
       className="flex h-full w-full items-center justify-center overflow-hidden bg-[#000]"
       style={{ minHeight: "100vh" }}
     >
-      <div className="flex flex-col items-center gap-2">
+      <div className={`flex flex-col items-center ${release ? "gap-0" : "gap-2"}`}>
         <div
-          className="relative overflow-hidden rounded-[28px] border-[6px] border-ink-600 bg-ink-950 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_80px_rgba(0,0,0,0.85)]"
+          className={
+            release
+              ? "relative overflow-hidden bg-ink-950"
+              : "relative overflow-hidden rounded-[28px] border-[6px] border-ink-600 bg-ink-950 shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_80px_rgba(0,0,0,0.85)]"
+          }
           style={{ width: frameWidth, height: frameHeight }}
         >
           <div
@@ -74,32 +93,33 @@ export function KioskFrame({ children }: { children: ReactNode }) {
             {children}
           </div>
         </div>
-        <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-ink-400">
-          <span className="select-none">
-            Экран киоска · 1080 × 1920 · {Math.round(scale * 100)}%
-          </span>
-          <span className="text-ink-600" aria-hidden>
-            |
-          </span>
-          <PointServerStatus />
-        </div>
+        {!release && (
+          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-ink-400">
+            <span className="select-none">
+              Экран киоска · 1080 × 1920 · {Math.round(scale * 100)}%
+            </span>
+            <span className="text-ink-600" aria-hidden>
+              |
+            </span>
+            <PointServerStatus />
+          </div>
+        )}
       </div>
 
       {/* Rendered outside the scaled/transformed kiosk canvas above (on purpose:
           a `transform` on an ancestor would turn this `fixed` panel into one
           that positions relative to that ancestor instead of the real
           viewport), so it stays put and usable at any kiosk zoom level. */}
-      <ThemePanel />
-      {/* Same idea, but scoped to /kiosk/editor and its own block-by-block
-          tokens (see EditorThemePanel.tsx). Sits lower so its gear button
-          doesn't overlap the main Design Panel's one above it. */}
-      <EditorThemePanel />
-      {/* Same idea again, scoped to /kiosk/checkout (see CheckoutThemePanel.tsx). */}
-      <CheckoutThemePanel />
-      {/* Same idea again, scoped to /kiosk/category/:category (see GalleryThemePanel.tsx). */}
-      <GalleryThemePanel />
-      <AiThemePanel />
-      <DevViewSwitcher />
+      {!release && (
+        <>
+          <ThemePanel />
+          <EditorThemePanel />
+          <CheckoutThemePanel />
+          <GalleryThemePanel />
+          <AiThemePanel />
+          <DevViewSwitcher />
+        </>
+      )}
     </div>
   );
 }

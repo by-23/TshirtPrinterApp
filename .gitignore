@@ -15,7 +15,9 @@ build/
 dev-urls.txt
 dev-pids.txt
 dev-exitcode.txt
+release-exitcode.txt
 logs/
+displays.json
 
 # Generated per-order design/mockup PNGs (point-server, Stage 5)
 apps/point-server/data/orders/

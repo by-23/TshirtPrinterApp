@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DevViewSwitcher } from "./DevViewSwitcher.js";
 import { OperatorThemePanel } from "./OperatorThemePanel.js";
+import { useReleaseMode } from "../hooks/useReleaseMode.js";
+import { enterReleaseFullscreen } from "../lib/displays.js";
 
 /**
  * Reference canvas the operator screen is designed at pixel-for-pixel —
@@ -22,6 +24,7 @@ export const OPERATOR_HEIGHT = 960;
 export function OperatorFrame({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState({ scale: 1, width: 1440 });
+  const release = useReleaseMode();
 
   useEffect(() => {
     function update() {
@@ -41,6 +44,11 @@ export function OperatorFrame({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!release) return;
+    void enterReleaseFullscreen();
+  }, [release]);
+
   return (
     <div ref={containerRef} className="h-screen w-full overflow-hidden bg-black">
       <div
@@ -54,8 +62,12 @@ export function OperatorFrame({ children }: { children: ReactNode }) {
           a `transform` on an ancestor would turn this `fixed` panel into one
           that positions relative to that ancestor instead of the real
           viewport) — see the same note in KioskFrame.tsx. */}
-      <OperatorThemePanel />
-      <DevViewSwitcher />
+      {!release && (
+        <>
+          <OperatorThemePanel />
+          <DevViewSwitcher />
+        </>
+      )}
     </div>
   );
 }
