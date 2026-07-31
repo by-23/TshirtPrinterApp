@@ -8,6 +8,7 @@ const configDir = fileURLToPath(new URL(".", import.meta.url));
 export default defineConfig({
   plugins: [react(), kioskThemeSavePlugin(resolveIndexCssPath(configDir))],
   server: {
+    host: true,
     port: 5173,
   },
 });

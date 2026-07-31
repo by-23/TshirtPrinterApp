@@ -47,7 +47,15 @@ import {
 const POINT_CONFIG_EVENT_CHANNEL = "point-config:event";
 const PRICING_EVENT_CHANNEL = "pricing:event";
 
-export const POINT_SERVER_URL = "http://localhost:4000";
+/** Same host as the UI (LAN IP on phones), so API calls don't hit the device's own localhost. */
+function resolvePointServerUrl(): string {
+  const fromEnv = import.meta.env.VITE_POINT_SERVER_URL;
+  if (typeof fromEnv === "string" && fromEnv.trim()) return fromEnv.replace(/\/$/, "");
+  const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
+  return `http://${host}:4000`;
+}
+
+export const POINT_SERVER_URL = resolvePointServerUrl();
 
 /** Append a fetched designs page without duplicate cards — offset pagination can overlap when the catalog grows mid-scroll. */
 export function appendDesignPage(existing: Design[], incoming: Design[]): Design[] {

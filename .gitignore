@@ -12,6 +12,10 @@ build/
 .env.local
 .DS_Store
 *.log
+dev-urls.txt
+dev-pids.txt
+dev-exitcode.txt
+logs/
 
 # Generated per-order design/mockup PNGs (point-server, Stage 5)
 apps/point-server/data/orders/
