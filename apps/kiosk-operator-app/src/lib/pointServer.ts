@@ -32,11 +32,14 @@ import {
   type PointConfigSnapshot,
   type PriceConfig,
   type PrintAreaConfig,
+  type GarmentAvailabilityConfig,
+  type GarmentAvailabilityEvent,
   type SetDesignIsolatedInput,
   type StickerSearchResponse,
   type StylizeResponse,
   type UpdateCatalogScrapeConfigInput,
   type UpdatePrintAreaConfigInput,
+  type UpdateGarmentAvailabilityConfigInput,
   orderEventSchema,
 } from "@tshirt/shared-types";
 
@@ -46,13 +49,25 @@ import {
 // than imported.
 const POINT_CONFIG_EVENT_CHANNEL = "point-config:event";
 const PRICING_EVENT_CHANNEL = "pricing:event";
+const GARMENT_AVAILABILITY_EVENT_CHANNEL = "garment-availability:event";
 
 /** Same host as the UI (LAN IP on phones), so API calls don't hit the device's own localhost. */
 function resolvePointServerUrl(): string {
   const fromEnv = import.meta.env.VITE_POINT_SERVER_URL;
   if (typeof fromEnv === "string" && fromEnv.trim()) return fromEnv.replace(/\/$/, "");
-  const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
-  return `http://${host}:4000`;
+  if (typeof window !== "undefined") {
+    const { protocol, hostname, port } = window.location;
+    // UI served by point-server (release / Electron) — same origin, any PORT.
+    // Vite dev (5173) and admin (5174) still talk to point-server on :4000.
+    if (port && port !== "5173" && port !== "5174") {
+      return `${protocol}//${hostname}:${port}`;
+    }
+    if (!port) {
+      return `${protocol}//${hostname}`;
+    }
+    return `${protocol}//${hostname}:4000`;
+  }
+  return "http://localhost:4000";
 }
 
 export const POINT_SERVER_URL = resolvePointServerUrl();
@@ -354,6 +369,18 @@ export function subscribePricingEvents(callback: (config: PriceConfig) => void):
   };
 }
 
+/** Realtime push when materials availability changes (local save or central admin override). */
+export function subscribeGarmentAvailabilityEvents(
+  callback: (payload: GarmentAvailabilityEvent) => void,
+): () => void {
+  const socket = getSocket();
+  const handler = (payload: GarmentAvailabilityEvent) => callback(payload);
+  socket.on(GARMENT_AVAILABILITY_EVENT_CHANNEL, handler);
+  return () => {
+    socket.off(GARMENT_AVAILABILITY_EVENT_CHANNEL, handler);
+  };
+}
+
 // --- Pinterest catalog scraper (Этап 3) — settings tab in the operator panel ---
 
 export interface PrintAreaConfigResponse {
@@ -377,6 +404,37 @@ export async function updatePrintAreaConfig(input: UpdatePrintAreaConfigInput): 
   });
   if (!res.ok) {
     throw new Error(`Failed to update print area config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface GarmentAvailabilityConfigResponse {
+  availability: GarmentAvailabilityConfig;
+  adminOverrideActive: boolean;
+  updatedAt: string;
+}
+
+export async function fetchGarmentAvailabilityConfig(): Promise<GarmentAvailabilityConfigResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/garment-availability-config`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch garment availability config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateGarmentAvailabilityConfig(
+  input: UpdateGarmentAvailabilityConfigInput,
+): Promise<GarmentAvailabilityConfigResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/garment-availability-config`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error("ADMIN_OVERRIDE_ACTIVE");
+    }
+    throw new Error(`Failed to update garment availability config: ${res.status}`);
   }
   return res.json();
 }

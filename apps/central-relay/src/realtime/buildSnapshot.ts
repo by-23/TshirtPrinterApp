@@ -1,12 +1,18 @@
 import { eq } from "drizzle-orm";
 import {
   DEFAULT_PRICE_CONFIG,
+  withGarmentAvailabilityDefaults,
   type PartialPriceConfig,
   type PriceConfig,
   type SyncSnapshotPayload,
 } from "@tshirt/shared-types";
 import { db } from "../db/client.js";
-import { globalPriceConfig, pointPriceOverrides, points } from "../db/schema.js";
+import {
+  globalPriceConfig,
+  pointGarmentAvailabilityOverrides,
+  pointPriceOverrides,
+  points,
+} from "../db/schema.js";
 
 const GLOBAL_ROW_ID = "global";
 
@@ -58,9 +64,8 @@ function mergePriceConfig(global: PriceConfig, override: PartialPriceConfig | un
 
 /**
  * Builds the full `sync:snapshot` payload for a single point — point
- * identity/status and its effective (global + override) price config.
- * Returns `null` if the point no longer exists (e.g. deleted between the
- * triggering write and the push).
+ * identity/status, effective price config, and optional garment-availability
+ * admin override. Returns `null` if the point no longer exists.
  */
 export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapshotPayload | null> {
   const [point] = await db.select().from(points).where(eq(points.id, pointId));
@@ -74,13 +79,27 @@ export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapsh
     .select()
     .from(pointPriceOverrides)
     .where(eq(pointPriceOverrides.pointId, pointId));
+  const [garmentOverrideRow] = await db
+    .select()
+    .from(pointGarmentAvailabilityOverrides)
+    .where(eq(pointGarmentAvailabilityOverrides.pointId, pointId));
 
   const global = withPriceConfigDefaults(globalRow?.config);
   const priceConfig = mergePriceConfig(global, overrideRow?.config);
 
+  if (garmentOverrideRow) {
+    return {
+      pointConfig: { name: point.name, status: point.status, uploadMode: point.uploadMode },
+      priceConfig,
+      garmentAvailabilityOverrideActive: true,
+      garmentAvailability: withGarmentAvailabilityDefaults(garmentOverrideRow.availability),
+    };
+  }
+
   return {
     pointConfig: { name: point.name, status: point.status, uploadMode: point.uploadMode },
     priceConfig,
+    garmentAvailabilityOverrideActive: false,
   };
 }
 

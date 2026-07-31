@@ -1,13 +1,13 @@
 import path from "node:path";
 import { mkdir, readdir, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
 import type { GalleryCategory } from "@tshirt/shared-types";
+import { dataPath } from "../../lib/dataDir.js";
 
-// Same `data/` root the rest of point-server uses (served at `/files/` —
+// Same DATA_DIR root the rest of point-server uses (served at `/files/` —
 // see `server.ts`), so downloaded pins survive restarts and are reachable
 // by the kiosk without a separate static route.
-const DATA_ROOT = path.resolve("data");
-const CATALOG_DIR = path.join(DATA_ROOT, "catalog");
-const CATALOG_TMP_DIR = path.join(DATA_ROOT, "catalog-tmp");
+const CATALOG_DIR = dataPath("catalog");
+const CATALOG_TMP_DIR = dataPath("catalog-tmp");
 const PUBLIC_CATALOG_PREFIX = "/files/catalog/";
 
 function categoryStorageDir(category: GalleryCategory): string {

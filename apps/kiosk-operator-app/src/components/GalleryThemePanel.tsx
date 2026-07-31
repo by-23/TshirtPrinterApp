@@ -137,6 +137,25 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    title: "Скроллбар",
+    tokens: [
+      {
+        key: "--gallery-scroll-size",
+        label: "Ширина",
+        type: "range",
+        defaultValue: 8,
+        min: 2,
+        max: 20,
+        step: 1,
+        unit: "px",
+      },
+      { key: "--gallery-scroll-track-color", label: "Дорожка — цвет", type: "color", defaultValue: "#242938" },
+      { key: "--gallery-scroll-track-opacity", label: "Дорожка — прозрачность", defaultValue: 0.45, ...OPACITY_RANGE },
+      { key: "--gallery-scroll-thumb-color", label: "Ползунок — цвет", type: "color", defaultValue: "#ff2d95" },
+      { key: "--gallery-scroll-thumb-opacity", label: "Ползунок — прозрачность", defaultValue: 0.72, ...OPACITY_RANGE },
+    ],
+  },
+  {
     title: "Шапка",
     tokens: [
       { key: "--gallery-back-btn-height", label: "Кнопка «назад» — высота", defaultValue: 48, ...SIZE_RANGE },
@@ -230,7 +249,7 @@ const SECTIONS: Section[] = [
 const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
   {
     label: "Основные",
-    titles: ["Отступы страницы"],
+    titles: ["Отступы страницы", "Скроллбар"],
   },
   {
     label: "Шапка и поиск",

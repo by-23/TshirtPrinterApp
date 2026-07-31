@@ -4,6 +4,7 @@ import {
   AI_PHOTO_RECEIVED_EVENT,
   ORDER_EVENT_CHANNEL,
   type AiPhotoReceivedPayload,
+  type GarmentAvailabilityEvent,
   type Order,
   type OrderEvent,
   type PointConfigSnapshot,
@@ -16,6 +17,8 @@ let io: Server | null = null;
 export const POINT_CONFIG_EVENT_CHANNEL = "point-config:event";
 /** Local event carrying the latest cached (effective) price config — see `modules/sync/handlers.ts`. */
 export const PRICING_EVENT_CHANNEL = "pricing:event";
+/** Local event when garment availability changes (operator save or central admin override). */
+export const GARMENT_AVAILABILITY_EVENT_CHANNEL = "garment-availability:event";
 
 /**
  * Attaches Socket.IO to the same underlying HTTP server Fastify listens on
@@ -49,6 +52,12 @@ export function emitPointConfigEvent(config: PointConfigSnapshot): void {
 export function emitPricingEvent(config: PriceConfig): void {
   if (!io) return;
   io.emit(PRICING_EVENT_CHANNEL, config);
+}
+
+/** Broadcasts garment availability + admin-lock flag to operator Materials panel and kiosk editor. */
+export function emitGarmentAvailabilityEvent(payload: GarmentAvailabilityEvent): void {
+  if (!io) return;
+  io.emit(GARMENT_AVAILABILITY_EVENT_CHANNEL, payload);
 }
 
 /**

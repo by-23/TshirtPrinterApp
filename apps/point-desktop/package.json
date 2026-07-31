@@ -1,0 +1,72 @@
+{
+  "name": "@tshirt/point-desktop",
+  "version": "1.0.3",
+  "private": true,
+  "description": "Windows desktop shell for the T-shirt print point (kiosk + operator)",
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "electron .",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.tshirtprinter.point",
+    "productName": "Tshirt Printer",
+    "copyright": "Copyright © Tshirt Printer",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/point-server",
+        "to": "point-server",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "resources/point-server/node_modules",
+        "to": "point-server/node_modules",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "resources/node",
+        "to": "node",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tshirt Printer",
+      "runAfterFinish": true
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  }
+}

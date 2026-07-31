@@ -13,6 +13,7 @@ import { AiStylesPanel } from "./AiStylesPanel.js";
 import { AdsVideosPanel } from "./AdsVideosPanel.js";
 import { PrintAreaSettingsPanel } from "./PrintAreaSettingsPanel.js";
 import { DisplaysPanel } from "./DisplaysPanel.js";
+import { MaterialsPanel } from "./MaterialsPanel.js";
 
 /**
  * `/operator` — realtime order feed for the printing point, strictly
@@ -126,6 +127,8 @@ export function OperatorHome() {
           <PrintAreaSettingsPanel />
         ) : view === "displays" ? (
           <DisplaysPanel />
+        ) : view === "materials" ? (
+          <MaterialsPanel />
         ) : (
           <div className="flex min-h-0 flex-1 overflow-hidden">
             <OrderList

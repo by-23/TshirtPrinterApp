@@ -158,6 +158,10 @@ export const orders = sqliteTable("orders", {
   side: text("side", { enum: ["front", "back"] }).notNull(),
   printSize: text("print_size", { enum: ["small", "medium", "large"] }).notNull(),
   price: real("price").notNull(),
+  // Incremented each time the operator sends the order to the printer
+  // ("Отправить на печать" / "Повторить печать") — synced to central for
+  // cash-register audit (orders vs physical prints).
+  printCount: integer("print_count").notNull().default(0),
   mockupImagePath: text("mockup_image_path"),
   designImagePath: text("design_image_path"),
   createdAt: text("created_at")
@@ -258,6 +262,23 @@ export const catalogManualQueue = sqliteTable("catalog_manual_queue", {
 export const printAreaConfig = sqliteTable("print_area_config", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   areasJson: text("areas_json", { mode: "json" }).$type<import("@tshirt/shared-types").PrintAreaConfig>().notNull(),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+/**
+ * Singleton (single row, id=1) of which garment types / colors / sizes /
+ * fabrics are selectable in the kiosk editor. Edited from «Материалы» in
+ * the operator panel unless `adminOverrideActive` is set by a central-relay
+ * snapshot (admin owns the config until the override is deleted).
+ */
+export const garmentAvailabilityConfig = sqliteTable("garment_availability_config", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  availabilityJson: text("availability_json", { mode: "json" })
+    .$type<import("@tshirt/shared-types").GarmentAvailabilityConfig>()
+    .notNull(),
+  adminOverrideActive: integer("admin_override_active", { mode: "boolean" }).notNull().default(false),
   updatedAt: text("updated_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),

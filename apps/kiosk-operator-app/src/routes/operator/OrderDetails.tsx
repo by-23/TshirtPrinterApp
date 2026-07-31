@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { Order } from "@tshirt/shared-types";
-import { TshirtIcon } from "../../components/icons.js";
 import { updateOrderStatus } from "../../lib/pointServer.js";
 import { printOrderDesign } from "../../lib/printOrder.js";
 import { StatusBadge } from "./StatusBadge.js";
+import { OrderImage } from "./OrderImage.js";
 import {
   FABRIC_LABELS,
   GARMENT_SIDE_LABELS,
@@ -124,16 +124,14 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
               border: "1px solid var(--operator-card-border)",
             }}
           >
-            {order.mockupImageUrl ? (
-              <img
-                src={order.mockupImageUrl}
-                alt={`Мокап заказа №${order.id}`}
-                className="max-w-full object-contain"
-                style={{ maxHeight: "var(--operator-details-preview-max-height)" }}
-              />
-            ) : (
-              <TshirtIcon className="h-24 w-24" style={{ color: "var(--operator-text-muted)" }} />
-            )}
+            <OrderImage
+              src={order.mockupImageUrl}
+              alt={`Мокап заказа №${order.id}`}
+              className="max-w-full object-contain"
+              style={{ maxHeight: "var(--operator-details-preview-max-height)" }}
+              iconClassName="h-24 w-24"
+              iconStyle={{ color: "var(--operator-text-muted)" }}
+            />
           </div>
         </div>
 
@@ -158,6 +156,7 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
             <DetailRow label="Дизайнов" value="1" />
             <DetailRow label="Материал" value={FABRIC_LABELS[order.garment.fabric] ?? order.garment.fabric} />
             <DetailRow label="Цена" value={formatPrice(order.price)} />
+            <DetailRow label="Печатей" value={String(order.printCount)} />
             <DetailRow label="Клиент" value="—" />
             <DetailRow label="Способ оплаты" value="—" />
           </div>
@@ -201,7 +200,13 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
                 }}
               >
                 {order.designImageUrl ? (
-                  <img src={order.designImageUrl} alt="Дизайн" className="h-full w-full object-contain" />
+                  <OrderImage
+                    src={order.designImageUrl}
+                    alt="Дизайн"
+                    className="h-full w-full object-contain"
+                    iconClassName="h-8 w-8"
+                    iconStyle={{ color: "var(--operator-text-muted)" }}
+                  />
                 ) : (
                   <span className="text-xs" style={{ color: "var(--operator-text-muted)" }}>
                     нет файла

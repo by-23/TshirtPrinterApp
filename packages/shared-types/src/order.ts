@@ -11,6 +11,8 @@ export const orderSchema = z.object({
   printSize: printSizeSchema,
   price: z.number().nonnegative(),
   status: orderStatusSchema,
+  /** How many times the operator actually sent this order to the printer (including reprints). */
+  printCount: z.number().int().nonnegative(),
   mockupImageUrl: z.string().nullable(),
   designImageUrl: z.string().nullable(),
   createdAt: z.string(),

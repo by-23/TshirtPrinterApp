@@ -1,6 +1,6 @@
 import type { Order } from "@tshirt/shared-types";
-import { TshirtIcon } from "../../components/icons.js";
 import { StatusBadge } from "./StatusBadge.js";
+import { OrderImage } from "./OrderImage.js";
 import { GARMENT_TYPE_LABELS, GARMENT_SIDE_LABELS, formatOrderTime, formatPrice, garmentColorLabel } from "./orderLabels.js";
 
 export function OrderListItem({
@@ -37,17 +37,15 @@ export function OrderListItem({
           border: "1px solid var(--operator-card-border)",
         }}
       >
-        {order.mockupImageUrl ? (
-          <img src={order.mockupImageUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <TshirtIcon
-            style={{
-              width: "var(--operator-item-thumb-icon-size)",
-              height: "var(--operator-item-thumb-icon-size)",
-              color: "var(--operator-text-muted)",
-            }}
-          />
-        )}
+        <OrderImage
+          src={order.mockupImageUrl}
+          className="h-full w-full object-cover"
+          iconStyle={{
+            width: "var(--operator-item-thumb-icon-size)",
+            height: "var(--operator-item-thumb-icon-size)",
+            color: "var(--operator-text-muted)",
+          }}
+        />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -63,7 +61,14 @@ export function OrderListItem({
           {garmentLine} · 1 дизайн · {GARMENT_SIDE_LABELS[order.side]}
         </span>
         <div className="flex items-center justify-between gap-2 pt-0.5">
-          <StatusBadge status={order.status} />
+          <div className="flex items-center gap-2">
+            <StatusBadge status={order.status} />
+            {order.printCount > 0 && (
+              <span style={{ fontSize: "var(--operator-item-time-size)", color: "var(--operator-text-muted)" }}>
+                ×{order.printCount}
+              </span>
+            )}
+          </div>
           <span className="font-bold text-white" style={{ fontSize: "var(--operator-item-price-size)" }}>
             {formatPrice(order.price)}
           </span>

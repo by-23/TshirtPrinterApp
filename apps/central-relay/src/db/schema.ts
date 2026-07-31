@@ -11,7 +11,7 @@ import {
   unique,
   primaryKey,
 } from "drizzle-orm/pg-core";
-import type { PartialPriceConfig, PriceConfig } from "@tshirt/shared-types";
+import type { GarmentAvailabilityConfig, PartialPriceConfig, PriceConfig } from "@tshirt/shared-types";
 
 export const pointStatusEnum = pgEnum("point_status", ["open", "closed"]);
 export const uploadModeEnum = pgEnum("upload_mode", ["relay", "wifi"]);
@@ -69,6 +69,8 @@ export const ordersArchive = pgTable(
     garmentType: text("garment_type").notNull(),
     printSize: text("print_size").notNull(),
     price: real("price").notNull(),
+    /** Physical print attempts synced from the point (first + reprints). */
+    printCount: integer("print_count").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique("orders_archive_point_order_unique").on(table.pointId, table.pointOrderId)],
@@ -87,6 +89,18 @@ export const pointPriceOverrides = pgTable("point_price_overrides", {
     .primaryKey()
     .references(() => points.id, { onDelete: "cascade" }),
   config: jsonb("config").notNull().$type<PartialPriceConfig>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Full garment-availability override per point. Presence of a row means the
+ * central admin owns materials for that point (locks the local operator panel).
+ */
+export const pointGarmentAvailabilityOverrides = pgTable("point_garment_availability_overrides", {
+  pointId: uuid("point_id")
+    .primaryKey()
+    .references(() => points.id, { onDelete: "cascade" }),
+  availability: jsonb("availability").notNull().$type<GarmentAvailabilityConfig>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

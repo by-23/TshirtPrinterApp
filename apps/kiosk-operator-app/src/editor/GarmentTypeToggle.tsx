@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { garmentTypeSchema, type GarmentType } from "@tshirt/shared-types";
+import { garmentTypeSchema, isGarmentTypeEnabled, type GarmentType } from "@tshirt/shared-types";
 import { PillButton } from "@tshirt/ui-kit";
 import { RAIL_ICON_CLASS, TshirtIcon } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
+import { useGarmentAvailabilityStore } from "../lib/garmentAvailabilityStore.js";
 
 /**
  * Garment type switch (футболка / свитшот / кепка / шоппер) shown above
@@ -14,9 +15,11 @@ export function GarmentTypeToggle() {
   const { t } = useTranslation();
   const garmentType = useEditorStore((state) => state.garmentType);
   const setGarmentType = useEditorStore((state) => state.setGarmentType);
+  const availability = useGarmentAvailabilityStore((state) => state.availability);
 
   function handleSelect(nextType: GarmentType) {
     if (nextType === garmentType) return;
+    if (!isGarmentTypeEnabled(availability, nextType)) return;
     setGarmentType(nextType);
   }
 
@@ -31,10 +34,12 @@ export function GarmentTypeToggle() {
       <div className="flex flex-wrap justify-center" style={{ gap: "var(--editor-toggle-gap)" }}>
         {garmentTypeSchema.options.map((typeOption) => {
           const active = garmentType === typeOption;
+          const catalogEnabled = isGarmentTypeEnabled(availability, typeOption);
           return (
             <PillButton
               key={typeOption}
               active={active}
+              disabled={!catalogEnabled}
               onClick={() => handleSelect(typeOption)}
               icon={<TshirtIcon className={RAIL_ICON_CLASS} />}
               className="px-6"

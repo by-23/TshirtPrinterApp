@@ -8,6 +8,8 @@ allowBuilds:
   better-sqlite3: true
   # fabric's optional Node.js canvas backend; not needed for browser-only usage in kiosk-operator-app
   canvas: false
+  electron: true
+  electron-winstaller: true
   esbuild: true
   msgpackr-extract: true
   # Local (offline) AI-stylization fallback (hybrid Pollinations + local

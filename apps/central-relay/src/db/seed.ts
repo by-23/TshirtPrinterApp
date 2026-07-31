@@ -77,6 +77,7 @@ async function seedDemoPointAndStats() {
         garmentType: garmentTypes[Math.floor(Math.random() * garmentTypes.length)]!,
         printSize: printSizes[Math.floor(Math.random() * printSizes.length)]!,
         price: prices[Math.floor(Math.random() * prices.length)]!,
+        printCount: Math.random() < 0.15 ? 2 + Math.floor(Math.random() * 2) : 1,
         createdAt,
       });
     }

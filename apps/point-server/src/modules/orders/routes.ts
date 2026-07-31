@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { createOrderSchema, updateOrderStatusSchema, type SyncOrderPushPayload } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { orders } from "../../db/schema.js";
@@ -18,6 +18,7 @@ function pushOrderToCentral(app: FastifyInstance, row: OrderRow): void {
     garmentType: row.garmentType,
     printSize: row.printSize,
     price: row.price,
+    printCount: row.printCount,
     createdAt: row.createdAt,
   };
   void enqueueOrderPush(payload).then(() => {
@@ -46,6 +47,7 @@ function serializeOrder(row: OrderRow, request: FastifyRequest) {
     printSize: row.printSize,
     price: row.price,
     status: row.status,
+    printCount: row.printCount,
     mockupImageUrl: row.mockupImagePath ? fileUrl(request, row.mockupImagePath) : null,
     designImageUrl: row.designImagePath ? fileUrl(request, row.designImagePath) : null,
     createdAt: row.createdAt,
@@ -116,6 +118,8 @@ export async function ordersRoutes(app: FastifyInstance) {
 
   // Status transitions used by Stage 5's operator actions ("Отправить на
   // печать" -> accepted, "Готово" -> done, "Отменить заказ" -> cancelled).
+  // Every transition to `accepted` (first print or reprint) bumps `printCount`
+  // and immediately re-pushes to central for cash-register audit.
   app.patch<{ Params: { id: string } }>("/orders/:id", async (request, reply) => {
     const id = parseId(request.params.id);
     if (id === null) {
@@ -127,7 +131,12 @@ export async function ordersRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
 
-    const [row] = await db.update(orders).set(parsed.data).where(eq(orders.id, id)).returning();
+    const patch =
+      parsed.data.status === "accepted"
+        ? { status: parsed.data.status, printCount: sql`${orders.printCount} + 1` }
+        : { status: parsed.data.status };
+
+    const [row] = await db.update(orders).set(patch).where(eq(orders.id, id)).returning();
     if (!row) {
       return reply.status(404).send({ error: "Order not found" });
     }

@@ -25,10 +25,11 @@ export type OperatorView =
   | "aiStyles"
   | "ads"
   | "printSettings"
-  | "displays";
+  | "displays"
+  | "materials";
 
 interface NavItem {
-  id: OperatorView | "clients" | "printer" | "printSettings" | "materials" | "schedule" | "notifications" | "support";
+  id: OperatorView | "clients" | "printer" | "schedule" | "notifications" | "support";
   label: string;
   icon: LucideIcon | typeof FilmIcon;
   view?: OperatorView;
@@ -45,7 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "printer", label: "Принтер", icon: Printer },
   { id: "printSettings", label: "Настройки печати", icon: Settings, view: "printSettings" },
   { id: "displays", label: "Экраны", icon: Monitor, view: "displays" },
-  { id: "materials", label: "Материалы", icon: Layers },
+  { id: "materials", label: "Материалы", icon: Layers, view: "materials" },
   { id: "schedule", label: "Расписание", icon: Calendar },
   { id: "notifications", label: "Уведомления", icon: Bell },
   { id: "support", label: "Поддержка", icon: Headset },

@@ -2,13 +2,13 @@ import path from "node:path";
 import { access, mkdir } from "node:fs/promises";
 import sharp from "sharp";
 import { downloadToFile } from "../catalog-scraper/sources/download.js";
+import { dataPath } from "../../lib/dataDir.js";
 
 // Own cache dir, separate from `catalog/` (scraped category designs) —
 // stickers are picked one-off from a live Giphy search, not backfilled by
 // the scraper job, so they get their own small on-disk cache instead.
-const DATA_ROOT = path.resolve("data");
-const STICKERS_DIR = path.join(DATA_ROOT, "stickers-cache");
-const STICKERS_TMP_DIR = path.join(DATA_ROOT, "stickers-tmp");
+const STICKERS_DIR = dataPath("stickers-cache");
+const STICKERS_TMP_DIR = dataPath("stickers-tmp");
 const PUBLIC_STICKERS_PREFIX = "/files/stickers-cache/";
 
 function cacheFilename(giphyId: string): string {

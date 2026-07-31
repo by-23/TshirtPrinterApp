@@ -125,7 +125,7 @@ async function handleOrderPush(pointId: string, rawPayload: unknown): Promise<vo
   if (!parsed.success) {
     throw new Error(`Invalid order-push payload: ${parsed.error.message}`);
   }
-  const { pointOrderId, status, garmentType, printSize, price, createdAt } = parsed.data;
+  const { pointOrderId, status, garmentType, printSize, price, printCount, createdAt } = parsed.data;
 
   const [existing] = await db
     .select({ id: ordersArchive.id })
@@ -135,7 +135,7 @@ async function handleOrderPush(pointId: string, rawPayload: unknown): Promise<vo
   if (existing) {
     await db
       .update(ordersArchive)
-      .set({ status, garmentType, printSize, price })
+      .set({ status, garmentType, printSize, price, printCount })
       .where(eq(ordersArchive.id, existing.id));
     return;
   }
@@ -147,6 +147,7 @@ async function handleOrderPush(pointId: string, rawPayload: unknown): Promise<vo
     garmentType,
     printSize,
     price,
+    printCount,
     createdAt: new Date(createdAt),
   });
 }

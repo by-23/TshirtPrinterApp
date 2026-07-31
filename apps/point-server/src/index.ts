@@ -6,13 +6,19 @@ import { drainManualCatalogQueue } from "./modules/sync/manualCatalog.js";
 import { ensureAllCategoriesStocked, startCacheFiller, GALLERY_CATEGORIES } from "./modules/catalog-scraper/job.js";
 import { clearInterruptedRuns } from "./modules/catalog-scraper/state.js";
 import { ensurePortAvailable } from "./lib/ensurePort.js";
+import { ensureDataDir } from "./lib/dataDir.js";
 import { env } from "./env.js";
 import { ensureAiModelsDownloaded } from "./modules/ai/local/downloadModels.js";
 import { ensureStylePreviews } from "./modules/ai/local/previewCache.js";
 import { getAllStylesForPreviewRender } from "./modules/ai/styles.js";
+import { repairOrderImagePaths } from "./modules/orders/repairImagePaths.js";
+import { startDailyBackupScheduler } from "./modules/backup/daily.js";
 
 /** Safety-net interval for `sync_queue` retries — connect/order-create already nudge a drain, this just catches anything left behind after a failed attempt. */
 const SYNC_QUEUE_DRAIN_INTERVAL_MS = 30_000;
+
+// Create DATA_DIR (+ catalog/orders/…) before SQLite or scrapers touch disk.
+ensureDataDir();
 
 // Applies any pending migrations before anything else touches the DB, so a
 // point never needs a manual `db:migrate` step after pulling new code —
@@ -21,8 +27,7 @@ const SYNC_QUEUE_DRAIN_INTERVAL_MS = 30_000;
 runMigrations();
 
 const app = await buildServer();
-
-// Dev restarts (tsx watch reloads, crashed terminals, killed processes) can
+void repairOrderImagePaths(app.log);// Dev restarts (tsx watch reloads, crashed terminals, killed processes) can
 // leave port `env.PORT` either still bound by a stale copy of this same
 // process or held by something else entirely. Both used to surface as a
 // raw EADDRINUSE crash — or worse, no crash at all on *this* side while the
@@ -99,6 +104,9 @@ app
       const styles = await getAllStylesForPreviewRender();
       await ensureStylePreviews(styles, app.log);
     });
+    // Local durability net — SQLite + orders/ only (essentials), once per day.
+    // Fail-open; keep last N days under BACKUP_DIR.
+    startDailyBackupScheduler(app.log);
   })
   .catch((err) => {
     app.log.error(err);

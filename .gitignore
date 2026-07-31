@@ -17,7 +17,9 @@ dev-pids.txt
 dev-exitcode.txt
 release-exitcode.txt
 logs/
-displays.json
+apps/point-desktop/resources/
+apps/point-desktop/release/
+apps/point-desktop/node_modules/
 
 # Generated per-order design/mockup PNGs (point-server, Stage 5)
 apps/point-server/data/orders/
@@ -33,6 +35,11 @@ apps/point-server/data/ai-style-previews/
 
 # Uploaded catalog master images (central-relay, Stage 6)
 apps/central-relay/data/
+
+# Local daily backups (point auto + scripts/backup-*.ps1)
+apps/point-server/backups/
+**/TshirtPrinter/backups/
+**/TshirtPrinter/backups-central/
 
 .vscode/*
 !.vscode/extensions.json

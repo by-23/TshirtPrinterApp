@@ -3,11 +3,12 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { FastifyBaseLogger } from "fastify";
 import sharp from "sharp";
+import { dataPath } from "../../../lib/dataDir.js";
 import { decodeDataUrl, encodeDataUrl } from "./imageIO.js";
 import { stylizeLocally } from "./index.js";
 
 /** Served by the existing `@fastify/static` mount at `/files/` (see `server.ts`) — same convention as order/design images. */
-export const AI_STYLE_PREVIEWS_DIR = path.resolve("data", "ai-style-previews");
+export const AI_STYLE_PREVIEWS_DIR = dataPath("ai-style-previews");
 
 const SAMPLE_PORTRAIT_PATH = path.resolve("assets", "ai-sample-portrait.jpg");
 

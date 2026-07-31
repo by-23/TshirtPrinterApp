@@ -3,6 +3,7 @@ import { DevViewSwitcher } from "./DevViewSwitcher.js";
 import { OperatorThemePanel } from "./OperatorThemePanel.js";
 import { useReleaseMode } from "../hooks/useReleaseMode.js";
 import { enterReleaseFullscreen } from "../lib/displays.js";
+import { isPointDesktop } from "../lib/pointDesktop.js";
 
 /**
  * Reference canvas the operator screen is designed at pixel-for-pixel —
@@ -46,6 +47,7 @@ export function OperatorFrame({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!release) return;
+    if (isPointDesktop()) return;
     void enterReleaseFullscreen();
   }, [release]);
 

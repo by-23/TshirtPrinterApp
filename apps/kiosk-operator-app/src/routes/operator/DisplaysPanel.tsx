@@ -8,6 +8,7 @@ import {
   type DisplayAssignment,
   type DisplayInfo,
 } from "../../lib/displays.js";
+import { isPointDesktop } from "../../lib/pointDesktop.js";
 import { setReleaseMode } from "../../lib/releaseMode.js";
 
 const CARD_STYLE = { backgroundColor: "var(--operator-card-bg)", border: "1px solid var(--operator-card-border)" };
@@ -82,11 +83,32 @@ function ScreenCard({
   );
 }
 
+function desktopToDisplayInfo(
+  rows: Awaited<NonNullable<Window["pointDesktop"]>["listDisplays"] extends () => Promise<infer R> ? R : never>,
+): DisplayInfo[] {
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.isPrimary ? `${row.label} (основной)` : row.label,
+    left: row.x,
+    top: row.y,
+    width: row.width,
+    height: row.height,
+    availLeft: row.x,
+    availTop: row.y,
+    availWidth: row.width,
+    availHeight: row.height,
+    isPrimary: row.isPrimary,
+    isCurrent: false,
+    isPortrait: row.isPortrait,
+  }));
+}
+
 /**
  * Operator «Экраны» — assign physical monitors to the kiosk (vertical,
  * frameless) and operator (fullscreen) windows in release mode.
  */
 export function DisplaysPanel() {
+  const desktop = isPointDesktop();
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [advanced, setAdvanced] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -97,6 +119,34 @@ export function DisplaysPanel() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
+      if (desktop && window.pointDesktop) {
+        const rows = await window.pointDesktop.listDisplays();
+        const mapped = desktopToDisplayInfo(rows);
+        setDisplays(mapped);
+        setAdvanced(true);
+        const saved = await window.pointDesktop.getAssignment();
+        setAssignment((prev) => {
+          const portrait = mapped.find((d) => d.isPortrait);
+          const primary = mapped.find((d) => d.isPrimary) ?? mapped[0];
+          const other = mapped.find((d) => d.id !== (portrait?.id ?? primary?.id)) ?? primary;
+          return {
+            kioskScreenId:
+              saved.kioskIndex != null && mapped[saved.kioskIndex]
+                ? mapped[saved.kioskIndex]!.id
+                : prev.kioskScreenId && mapped.some((d) => d.id === prev.kioskScreenId)
+                  ? prev.kioskScreenId
+                  : (portrait?.id ?? other?.id ?? null),
+            operatorScreenId:
+              saved.operatorIndex != null && mapped[saved.operatorIndex]
+                ? mapped[saved.operatorIndex]!.id
+                : prev.operatorScreenId && mapped.some((d) => d.id === prev.operatorScreenId)
+                  ? prev.operatorScreenId
+                  : (primary?.id ?? mapped[0]?.id ?? null),
+          };
+        });
+        return;
+      }
+
       const result = await listDisplays();
       setDisplays(result.displays);
       setAdvanced(result.advanced);
@@ -120,7 +170,7 @@ export function DisplaysPanel() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [desktop]);
 
   useEffect(() => {
     void refresh();
@@ -139,10 +189,23 @@ export function DisplaysPanel() {
     setNote(null);
     try {
       setReleaseMode(true);
-      await applyDisplayAssignment(assignment);
-      setNote("Применено — окна на выбранных мониторах");
+      if (desktop && window.pointDesktop) {
+        const kioskIndex = displays.findIndex((d) => d.id === assignment.kioskScreenId);
+        const operatorIndex = displays.findIndex((d) => d.id === assignment.operatorScreenId);
+        if (kioskIndex < 0 || operatorIndex < 0) throw new Error("monitor");
+        await window.pointDesktop.applyDisplays({ kioskIndex, operatorIndex });
+        saveDisplayAssignment(assignment);
+        setNote("Применено — окна на выбранных мониторах");
+      } else {
+        await applyDisplayAssignment(assignment);
+        setNote("Применено — окна на выбранных мониторах");
+      }
     } catch {
-      setNote("Не удалось применить. Разрешите доступ к экранам в Chrome.");
+      setNote(
+        desktop
+          ? "Не удалось применить мониторы"
+          : "Не удалось применить. Разрешите доступ к экранам в Chrome.",
+      );
     } finally {
       setApplying(false);
       setTimeout(() => setNote(null), 4000);
@@ -171,7 +234,9 @@ export function DisplaysPanel() {
           <div>
             <h2 className="text-xl font-bold text-white">Экраны</h2>
             <p className="text-sm" style={LABEL_STYLE}>
-              Релиз: киоск — вертикальное окно без рамок, оператор — на весь экран
+              {desktop
+                ? "Приложение Windows: безрамочные окна киоска и оператора на выбранных мониторах"
+                : "Релиз: киоск и оператор — безрамочно на весь экран"}
             </p>
           </div>
         </div>
@@ -190,7 +255,7 @@ export function DisplaysPanel() {
         )}
       </div>
 
-      {!advanced && (
+      {!advanced && !desktop && (
         <div className="rounded-xl px-4 py-3 text-sm" style={{ ...CARD_STYLE, color: "var(--operator-text-muted)" }}>
           Chrome не отдал список мониторов. Нажмите «Применить» и разрешите доступ к экранам — после
           этого можно выбрать монитор для киоска и оператора.
@@ -200,7 +265,7 @@ export function DisplaysPanel() {
       <div className="flex flex-col gap-4 xl:flex-row">
         <ScreenCard
           title="Киоск"
-          hint="Вертикальный клиентский экран (без рамок браузера)"
+          hint="Вертикальный клиентский экран без рамок"
           displays={displays}
           selectedId={assignment.kioskScreenId}
           onSelect={(id) => updateAssignment({ kioskScreenId: id })}
@@ -233,26 +298,22 @@ export function DisplaysPanel() {
         >
           Обновить список
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            setReleaseMode(false);
-            if (document.fullscreenElement) void document.exitFullscreen();
-            setNote("Релиз-режим выключен для этого браузера");
-            setTimeout(() => setNote(null), 3000);
-          }}
-          className="rounded-xl px-5 py-3 text-sm font-semibold"
-          style={{ ...CARD_STYLE, color: "var(--operator-text-muted)" }}
-        >
-          Выйти из релиз-режима
-        </button>
+        {!desktop && (
+          <button
+            type="button"
+            onClick={() => {
+              setReleaseMode(false);
+              if (document.fullscreenElement) void document.exitFullscreen();
+              setNote("Релиз-режим выключен для этого браузера");
+              setTimeout(() => setNote(null), 3000);
+            }}
+            className="rounded-xl px-5 py-3 text-sm font-semibold"
+            style={{ ...CARD_STYLE, color: "var(--operator-text-muted)" }}
+          >
+            Выйти из релиз-режима
+          </button>
+        )}
       </div>
-
-      <p className="text-sm" style={LABEL_STYLE}>
-        Для автозапуска точки используйте <code className="text-white/80">start-release.bat</code> — окна
-        Chrome откроются в режиме приложения без адресной строки. Выбор мониторов здесь сохраняется и
-        применяется по кнопке.
-      </p>
     </div>
   );
 }

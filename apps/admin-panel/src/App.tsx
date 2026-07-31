@@ -3,6 +3,7 @@ import { AdminLayout } from "./components/AdminLayout.js";
 import { Login } from "./routes/Login.js";
 import { PointsPage } from "./routes/PointsPage.js";
 import { PricingPage } from "./routes/PricingPage.js";
+import { MaterialsPage } from "./routes/MaterialsPage.js";
 import { StatsPage } from "./routes/StatsPage.js";
 import { CatalogPage } from "./routes/CatalogPage.js";
 
@@ -14,6 +15,7 @@ export function App() {
         <Route path="/" element={<Navigate to="/points" replace />} />
         <Route path="/points" element={<PointsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/materials" element={<MaterialsPage />} />
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/stats" element={<StatsPage />} />
       </Route>

@@ -14,6 +14,7 @@
     "@ant-design/icons": "^6.3.2",
     "@tshirt/shared-types": "workspace:*",
     "antd": "^6.5.0",
+    "dayjs": "^1.11.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.3",

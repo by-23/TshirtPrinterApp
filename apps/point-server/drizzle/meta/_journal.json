@@ -127,6 +127,27 @@
       "when": 1784901000000,
       "tag": "0017_ads_videos",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1784902000000,
+      "tag": "0018_garment_availability",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1784903000000,
+      "tag": "0019_order_print_count",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1784905000000,
+      "tag": "0020_garment_availability_admin_override",
+      "breakpoints": true
     }
   ]
 }

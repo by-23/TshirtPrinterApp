@@ -2,11 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
-import { designCategorySchema, type GarmentFabric } from "@tshirt/shared-types";
+import {
+  designCategorySchema,
+  GARMENT_COLORS,
+  GARMENT_FABRICS,
+  GARMENT_SIZES,
+  garmentTypeSchema,
+  garmentUsesSizeFabric,
+  isGarmentColorEnabled,
+  isGarmentFabricEnabled,
+  isGarmentSizeEnabled,
+  isGarmentTypeEnabled,
+  type GarmentFabric,
+} from "@tshirt/shared-types";
 import { getPriceBreakdown } from "@tshirt/shared-pricing";
 import { createOrder, fetchDesign, markDesignUsed, resolveDesignImageUrl } from "../../lib/pointServer.js";
 import { initPricingConfig, usePricingConfigStore } from "../../lib/pricingConfigStore.js";
 import { initPrintAreaConfig, usePrintAreaStore } from "../../lib/printAreaStore.js";
+import {
+  initGarmentAvailabilityConfig,
+  subscribeGarmentAvailabilityStore,
+  useGarmentAvailabilityStore,
+} from "../../lib/garmentAvailabilityStore.js";
 import {
   deselectCanvasSelection,
   shouldDeselectCanvasOnPointerDown,
@@ -48,7 +65,13 @@ export function Editor() {
   const color = useEditorStore((state) => state.color);
   const size = useEditorStore((state) => state.size);
   const fabricName = useEditorStore((state) => state.fabricName);
+  const setGarmentType = useEditorStore((state) => state.setGarmentType);
+  const setColor = useEditorStore((state) => state.setColor);
+  const setSize = useEditorStore((state) => state.setSize);
+  const setFabricName = useEditorStore((state) => state.setFabricName);
   const priceConfig = usePricingConfigStore((state) => state.config);
+  const availability = useGarmentAvailabilityStore((state) => state.availability);
+  const availabilityLoaded = useGarmentAvailabilityStore((state) => state.loaded);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [printError, setPrintError] = useState(false);
@@ -61,7 +84,47 @@ export function Editor() {
   useEffect(() => {
     initPricingConfig();
     initPrintAreaConfig();
+    initGarmentAvailabilityConfig();
+    return subscribeGarmentAvailabilityStore();
   }, []);
+
+  // If the operator disabled the current selection, snap to the first enabled option.
+  useEffect(() => {
+    if (!availabilityLoaded) return;
+
+    if (!isGarmentTypeEnabled(availability, garmentType)) {
+      const nextType = garmentTypeSchema.options.find((type) => isGarmentTypeEnabled(availability, type));
+      if (nextType) setGarmentType(nextType);
+    }
+
+    const activeColor = GARMENT_COLORS.find((option) => option.hex === color);
+    if (!activeColor || !isGarmentColorEnabled(availability, activeColor.id)) {
+      const nextColor = GARMENT_COLORS.find((option) => isGarmentColorEnabled(availability, option.id));
+      if (nextColor) setColor(nextColor.hex);
+    }
+
+    if (garmentUsesSizeFabric(garmentType)) {
+      if (!isGarmentSizeEnabled(availability, size)) {
+        const nextSize = GARMENT_SIZES.find((option) => isGarmentSizeEnabled(availability, option));
+        if (nextSize) setSize(nextSize);
+      }
+      if (!isGarmentFabricEnabled(availability, fabricName)) {
+        const nextFabric = GARMENT_FABRICS.find((option) => isGarmentFabricEnabled(availability, option));
+        if (nextFabric) setFabricName(nextFabric);
+      }
+    }
+  }, [
+    availability,
+    availabilityLoaded,
+    garmentType,
+    color,
+    size,
+    fabricName,
+    setGarmentType,
+    setColor,
+    setSize,
+    setFabricName,
+  ]);
 
   const categoryParam = designCategorySchema.safeParse(searchParams.get("category"));
   const category = categoryParam.success ? categoryParam.data : null;

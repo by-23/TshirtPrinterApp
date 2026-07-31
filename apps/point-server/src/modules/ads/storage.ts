@@ -4,9 +4,9 @@ import { mkdir, unlink } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { randomUUID } from "node:crypto";
 import type { Readable } from "node:stream";
+import { dataPath } from "../../lib/dataDir.js";
 
-const DATA_ROOT = path.resolve("data");
-export const ADS_VIDEOS_DIR = path.join(DATA_ROOT, "ads-videos");
+export const ADS_VIDEOS_DIR = dataPath("ads-videos");
 const PUBLIC_ADS_PREFIX = "/files/ads-videos/";
 
 const ALLOWED_MIME = new Set(["video/mp4", "video/webm", "video/ogg"]);

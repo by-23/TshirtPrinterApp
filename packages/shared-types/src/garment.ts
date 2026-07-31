@@ -45,9 +45,9 @@ export interface GarmentColorOption {
 }
 
 /**
- * Hardcoded catalog defaults for the editor UI (Stage 2). Once catalog
- * management moves to the admin panel (Stage 3/6), these should come from
- * point-server / central-relay instead.
+ * Hardcoded catalog option lists for the editor UI. Per-option enable/disable
+ * flags live in `GarmentAvailabilityConfig` on point-server and are edited
+ * from the operator «Материалы» panel.
  */
 export const GARMENT_COLORS: readonly GarmentColorOption[] = [
   { id: "white", hex: "#ffffff" },
@@ -65,12 +65,98 @@ export const GARMENT_COLORS: readonly GarmentColorOption[] = [
 ];
 
 export const GARMENT_SIZES = ["S", "M", "L", "XL", "XXL", "3XL"] as const;
+export type GarmentSize = (typeof GARMENT_SIZES)[number];
 
 export const GARMENT_FABRICS = ["cotton", "premium"] as const;
 export type GarmentFabric = (typeof GARMENT_FABRICS)[number];
 
 /** Fixed fabric written to the order when `garmentUsesSizeFabric` is false — kept valid (zero surcharge) rather than special-cased. */
 export const FIXED_GARMENT_FABRIC: GarmentFabric = "cotton";
+
+/**
+ * Per-option enable flags for the kiosk editor. Disabled options stay visible
+ * but inactive (not clickable). Managed from the operator «Материалы» panel
+ * and stored on point-server — same singleton pattern as print-area config.
+ */
+export const garmentAvailabilityConfigSchema = z.object({
+  types: z.record(z.string(), z.boolean()),
+  colors: z.record(z.string(), z.boolean()),
+  sizes: z.record(z.string(), z.boolean()),
+  fabrics: z.record(z.string(), z.boolean()),
+});
+
+export type GarmentAvailabilityConfig = z.infer<typeof garmentAvailabilityConfigSchema>;
+
+export const updateGarmentAvailabilityConfigSchema = z.object({
+  availability: garmentAvailabilityConfigSchema,
+});
+
+export type UpdateGarmentAvailabilityConfigInput = z.infer<typeof updateGarmentAvailabilityConfigSchema>;
+
+function allEnabled<T extends string>(ids: readonly T[]): Record<T, boolean> {
+  return Object.fromEntries(ids.map((id) => [id, true])) as Record<T, boolean>;
+}
+
+/** Defaults — everything available until the operator turns options off. */
+export const DEFAULT_GARMENT_AVAILABILITY: GarmentAvailabilityConfig = {
+  types: allEnabled(garmentTypeSchema.options),
+  colors: allEnabled(GARMENT_COLORS.map((color) => color.id)),
+  sizes: allEnabled(GARMENT_SIZES),
+  fabrics: allEnabled(GARMENT_FABRICS),
+};
+
+/** Merge a stored (possibly partial / stale-key) config onto current catalog defaults. */
+export function withGarmentAvailabilityDefaults(
+  stored: Partial<GarmentAvailabilityConfig> | null | undefined,
+): GarmentAvailabilityConfig {
+  const merge = <T extends string>(
+    defaults: Record<T, boolean>,
+    override: Record<string, boolean> | undefined,
+  ): Record<T, boolean> => {
+    const next = { ...defaults };
+    if (!override) return next;
+    for (const key of Object.keys(defaults) as T[]) {
+      if (typeof override[key] === "boolean") next[key] = override[key]!;
+    }
+    return next;
+  };
+
+  return {
+    types: merge(DEFAULT_GARMENT_AVAILABILITY.types as Record<GarmentType, boolean>, stored?.types),
+    colors: merge(DEFAULT_GARMENT_AVAILABILITY.colors as Record<string, boolean>, stored?.colors),
+    sizes: merge(DEFAULT_GARMENT_AVAILABILITY.sizes as Record<GarmentSize, boolean>, stored?.sizes),
+    fabrics: merge(DEFAULT_GARMENT_AVAILABILITY.fabrics as Record<GarmentFabric, boolean>, stored?.fabrics),
+  };
+}
+
+export function isGarmentTypeEnabled(availability: GarmentAvailabilityConfig, type: GarmentType): boolean {
+  return availability.types[type] !== false;
+}
+
+export function isGarmentColorEnabled(availability: GarmentAvailabilityConfig, colorId: string): boolean {
+  return availability.colors[colorId] !== false;
+}
+
+export function isGarmentSizeEnabled(availability: GarmentAvailabilityConfig, size: string): boolean {
+  return availability.sizes[size] !== false;
+}
+
+export function isGarmentFabricEnabled(availability: GarmentAvailabilityConfig, fabric: string): boolean {
+  return availability.fabrics[fabric] !== false;
+}
+
+export const pointGarmentAvailabilityOverrideSchema = z.object({
+  pointId: z.string(),
+  availability: garmentAvailabilityConfigSchema,
+});
+export type PointGarmentAvailabilityOverride = z.infer<typeof pointGarmentAvailabilityOverrideSchema>;
+
+/** Payload broadcast to kiosk/operator after local write or central sync. */
+export const garmentAvailabilityEventSchema = z.object({
+  availability: garmentAvailabilityConfigSchema,
+  adminOverrideActive: z.boolean(),
+});
+export type GarmentAvailabilityEvent = z.infer<typeof garmentAvailabilityEventSchema>;
 
 /** Shared mockup coordinate space — kiosk editor and point-server compositing. */
 export const MOCKUP_WIDTH = 300;

@@ -1,14 +1,13 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import * as ort from "onnxruntime-node";
+import { dataPath } from "../../../lib/dataDir.js";
 
 /**
- * Where downloaded `.onnx` weights live — gitignored, populated on first
- * boot by `downloadModels.ts`. Resolved relative to `cwd` (point-server is
- * always started from its own directory, same convention as `data/orders`,
- * `data/catalog` etc. in `modules/orders/mockup.ts` and friends).
+ * Where downloaded `.onnx` weights live — under DATA_DIR, populated on first
+ * boot by `downloadModels.ts`.
  */
-export const AI_MODELS_DIR = path.resolve("data", "ai-models");
+export const AI_MODELS_DIR = dataPath("ai-models");
 
 const EXECUTION_PROVIDERS_PRIMARY: ort.InferenceSession.ExecutionProviderConfig[] =
   process.platform === "win32" ? ["dml", "cpu"] : ["cpu"];

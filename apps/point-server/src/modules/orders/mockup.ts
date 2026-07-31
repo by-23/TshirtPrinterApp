@@ -2,11 +2,11 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
+import { dataPath } from "../../lib/dataDir.js";
 import { MOCKUP_HEIGHT, MOCKUP_WIDTH, getPrintAreas } from "./garmentGeometry.js";
 
-/** Everything generated at runtime (per-order PNGs) lives under this dir, relative to cwd (same convention as `env.DATABASE_PATH`). */
-const DATA_DIR = path.resolve("data");
-const ORDERS_DIR = path.join(DATA_DIR, "orders");
+/** Per-order design/mockup PNGs under DATA_DIR/orders (served at /files/orders/...). */
+const ORDERS_DIR = dataPath("orders");
 const ASSETS_DIR = path.resolve("assets", "garments");
 
 /** Matches the client's `MOCKUP_DISPLAY_SCALE` — arbitrary (cancels out in the math below) but kept for readability/parity. */

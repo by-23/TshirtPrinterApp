@@ -869,6 +869,13 @@ textarea {
   --gallery-card-accent-5: #2563eb;
   --gallery-card-accent-6: #eab308;
   --gallery-card-accent-7: #22c55e;
+
+  /* Gallery page scrollbar (CategoryGallery scroll root). */
+  --gallery-scroll-size: 8px;
+  --gallery-scroll-track-color: #242938;
+  --gallery-scroll-track-opacity: 0.45;
+  --gallery-scroll-thumb-color: #ff2d95;
+  --gallery-scroll-thumb-opacity: 0.72;
 /* AI source select screen ("/kiosk/ai", step "source") — tuned from AiThemePanel.tsx. */
   --ai-page-bg: #000000;
 
@@ -1766,6 +1773,48 @@ textarea {
    Every size/color reads from a `--gallery-*` custom property so the whole
    screen is retunable live from GalleryThemePanel.tsx, same mechanics as the
    editor/checkout screens above. */
+@property --gallery-scroll-size {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 8px;
+}
+
+.gallery-theme-root {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--gallery-scroll-thumb-color) calc(var(--gallery-scroll-thumb-opacity) * 100%), transparent)
+    color-mix(in srgb, var(--gallery-scroll-track-color) calc(var(--gallery-scroll-track-opacity) * 100%), transparent);
+}
+
+.gallery-theme-root::-webkit-scrollbar {
+  width: var(--gallery-scroll-size);
+}
+
+.gallery-theme-root::-webkit-scrollbar-button,
+.gallery-theme-root::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.gallery-theme-root::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--gallery-scroll-track-color) calc(var(--gallery-scroll-track-opacity) * 100%), transparent);
+  border-radius: 9999px;
+}
+
+.gallery-theme-root::-webkit-scrollbar-thumb {
+  min-width: var(--gallery-scroll-size);
+  background: color-mix(in srgb, var(--gallery-scroll-thumb-color) calc(var(--gallery-scroll-thumb-opacity) * 100%), transparent);
+  border-radius: 9999px;
+}
+
+.gallery-theme-root::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.15);
+}
+
 .gallery-search {
   height: var(--gallery-search-height);
   border-width: var(--gallery-search-border-width);

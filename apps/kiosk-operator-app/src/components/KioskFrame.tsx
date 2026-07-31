@@ -8,6 +8,7 @@ import { AiThemePanel } from "./AiThemePanel.js";
 import { DevViewSwitcher } from "./DevViewSwitcher.js";
 import { useReleaseMode } from "../hooks/useReleaseMode.js";
 import { enterReleaseFullscreen } from "../lib/displays.js";
+import { isPointDesktop } from "../lib/pointDesktop.js";
 
 /** Real kiosk touchscreen resolution — every kiosk route is designed pixel-for-pixel at this size. */
 export const KIOSK_WIDTH = 1080;
@@ -62,6 +63,8 @@ export function KioskFrame({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!release) return;
+    // Electron already opens frameless fullscreen BrowserWindows.
+    if (isPointDesktop()) return;
     void enterReleaseFullscreen();
   }, [release]);
 

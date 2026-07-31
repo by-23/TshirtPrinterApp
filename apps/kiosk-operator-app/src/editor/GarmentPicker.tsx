@@ -5,12 +5,16 @@ import {
   GARMENT_SIZES,
   GARMENT_FABRICS,
   garmentUsesSizeFabric,
+  isGarmentColorEnabled,
+  isGarmentFabricEnabled,
+  isGarmentSizeEnabled,
   type GarmentFabric,
 } from "@tshirt/shared-types";
 import { PillButton } from "@tshirt/ui-kit";
 import { Diamond, RAIL_ICON_CLASS } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
 import { blockBorderStyle, blockContentRowStyle } from "./borderStyle.js";
+import { useGarmentAvailabilityStore } from "../lib/garmentAvailabilityStore.js";
 
 const FABRIC_ICONS: Partial<Record<GarmentFabric, ReactNode>> = {
   premium: <Diamond className={RAIL_ICON_CLASS} />,
@@ -30,6 +34,7 @@ export function GarmentPicker() {
   const setColor = useEditorStore((state) => state.setColor);
   const setSize = useEditorStore((state) => state.setSize);
   const setFabricName = useEditorStore((state) => state.setFabricName);
+  const availability = useGarmentAvailabilityStore((state) => state.availability);
   // Cap/shopper are one-size/one-material — the pills stay visible (so the
   // panel's layout doesn't shift) but disabled + dimmed, per the editor's
   // decision to never show empty gaps for unavailable options.
@@ -44,15 +49,19 @@ export function GarmentPicker() {
         <div className="flex flex-wrap" style={{ gap: "var(--editor-swatch-gap)", ...blockContentRowStyle("color-block") }}>
           {GARMENT_COLORS.map((option) => {
             const active = color === option.hex;
+            const catalogEnabled = isGarmentColorEnabled(availability, option.id);
             return (
               <button
                 key={option.id}
                 type="button"
+                disabled={!catalogEnabled}
                 onClick={() => setColor(option.hex)}
                 aria-pressed={active}
                 aria-label={t(`editor.colors.${option.id}`)}
                 title={t(`editor.colors.${option.id}`)}
-                className={`flex-shrink-0 transition-transform ${active ? "scale-105 shadow-neon-pink" : ""}`}
+                className={`flex-shrink-0 transition-transform disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none ${
+                  active && catalogEnabled ? "scale-105 shadow-neon-pink" : ""
+                }`}
                 style={{
                   backgroundColor: option.hex,
                   width: "var(--editor-swatch-width)",
@@ -72,11 +81,12 @@ export function GarmentPicker() {
         <div className="flex flex-wrap" style={{ gap: "var(--editor-size-pill-gap)", ...blockContentRowStyle("size-block") }}>
           {GARMENT_SIZES.map((sizeOption) => {
             const active = size === sizeOption;
+            const catalogEnabled = isGarmentSizeEnabled(availability, sizeOption);
             return (
               <PillButton
                 key={sizeOption}
                 active={active}
-                disabled={!sizeFabricEnabled}
+                disabled={!sizeFabricEnabled || !catalogEnabled}
                 onClick={() => setSize(sizeOption)}
                 className="flex-shrink-0 px-0"
                 style={{
@@ -101,11 +111,12 @@ export function GarmentPicker() {
         <div className="flex flex-wrap" style={{ gap: "var(--editor-fabric-pill-gap)", ...blockContentRowStyle("fabric-block") }}>
           {GARMENT_FABRICS.map((fabricOption) => {
             const active = fabricName === fabricOption;
+            const catalogEnabled = isGarmentFabricEnabled(availability, fabricOption);
             return (
               <PillButton
                 key={fabricOption}
                 active={active}
-                disabled={!sizeFabricEnabled}
+                disabled={!sizeFabricEnabled || !catalogEnabled}
                 onClick={() => setFabricName(fabricOption)}
                 icon={FABRIC_ICONS[fabricOption]}
                 className="flex-shrink-0"

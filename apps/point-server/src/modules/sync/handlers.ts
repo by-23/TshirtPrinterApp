@@ -3,17 +3,20 @@ import type { SyncSnapshotPayload } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { pointConfig } from "../../db/schema.js";
 import { emitPointConfigEvent, emitPricingEvent } from "../../realtime/socket.js";
+import { applyGarmentAvailabilityFromSnapshot } from "../garment-availability/config.js";
 
 const POINT_CONFIG_ROW_ID = 1;
 
 /**
  * Applies a full `sync:snapshot` from central-relay: caches point
- * identity/status/price config locally. Fail-open: a DB hiccup is logged
- * and skipped rather than throwing, so a bad snapshot can never crash the
- * socket connection.
+ * identity/status/price config locally, and optionally locks garment
+ * availability under a central admin override. Fail-open: a DB hiccup is
+ * logged and skipped rather than throwing, so a bad snapshot can never
+ * crash the socket connection.
  */
 export async function applySnapshot(snapshot: SyncSnapshotPayload, log: FastifyBaseLogger): Promise<void> {
   await upsertPointConfig(snapshot, log);
+  await applyGarmentAvailability(snapshot, log);
 }
 
 async function upsertPointConfig(snapshot: SyncSnapshotPayload, log: FastifyBaseLogger): Promise<void> {
@@ -36,5 +39,16 @@ async function upsertPointConfig(snapshot: SyncSnapshotPayload, log: FastifyBase
     emitPricingEvent(snapshot.priceConfig);
   } catch (err) {
     log.error(err, "Failed to persist synced point config");
+  }
+}
+
+async function applyGarmentAvailability(snapshot: SyncSnapshotPayload, log: FastifyBaseLogger): Promise<void> {
+  try {
+    await applyGarmentAvailabilityFromSnapshot({
+      adminOverrideActive: snapshot.garmentAvailabilityOverrideActive ?? false,
+      availability: snapshot.garmentAvailability,
+    });
+  } catch (err) {
+    log.error(err, "Failed to apply synced garment availability override");
   }
 }

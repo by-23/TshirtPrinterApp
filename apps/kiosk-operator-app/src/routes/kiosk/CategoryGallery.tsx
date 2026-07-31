@@ -64,7 +64,7 @@ function DesignCard({ design, index, onSelect }: { design: Design; index: number
         aria-label={design.title}
         style={{ "--gallery-card-accent": accentVar } as CSSProperties}
         className={[
-          "gallery-card flex aspect-square items-center justify-center overflow-hidden transition-transform active:scale-[0.96] hover:-translate-y-1",
+          "gallery-card flex aspect-[9/16] items-center justify-center overflow-hidden transition-transform active:scale-[0.96] hover:-translate-y-1",
           darkArt ? "gallery-card--dark-art" : "",
         ]
           .filter(Boolean)
@@ -97,7 +97,7 @@ function LoadingMoreCard() {
   return (
     <div className="gallery-card-shell">
       <div
-        className="gallery-card gallery-card--loading flex aspect-square flex-col items-center justify-center gap-3"
+        className="gallery-card gallery-card--loading flex aspect-[9/16] flex-col items-center justify-center gap-3"
         style={{ color: "var(--gallery-card-loading-icon-color)" }}
       >
         <SpinnerIcon className="h-8 w-8 animate-spin" />
