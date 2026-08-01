@@ -14,6 +14,7 @@ import { getAllStylesForPreviewRender } from "./modules/ai/styles.js";
 import { repairOrderImagePaths } from "./modules/orders/repairImagePaths.js";
 import { startDailyBackupScheduler } from "./modules/backup/daily.js";
 import { ensureLocalBuiltinFonts } from "./modules/fonts/service.js";
+import { backfillCatalogThumbs } from "./modules/catalog-scraper/thumbs.js";
 
 /** Safety-net interval for `sync_queue` retries — connect/order-create already nudge a drain, this just catches anything left behind after a failed attempt. */
 const SYNC_QUEUE_DRAIN_INTERVAL_MS = 30_000;
@@ -109,6 +110,10 @@ app
     // Local durability net — SQLite + orders/ only (essentials), once per day.
     // Fail-open; keep last N days under BACKUP_DIR.
     startDailyBackupScheduler(app.log);
+    // Half-size gallery thumbs for existing catalog images (LAN Android).
+    void backfillCatalogThumbs().then((stats) => {
+      app.log.info(`Catalog thumbs backfill: scanned=${stats.scanned} written=${stats.written}`);
+    });
   })
   .catch((err) => {
     app.log.error(err);

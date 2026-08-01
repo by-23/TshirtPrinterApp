@@ -147,7 +147,7 @@ export const EDITOR_FONTS: FontOption[] = BUILTIN_EDITOR_FONTS.map(({ id, label,
 }));
 
 export const DEFAULT_UI_FONT = "'Roboto', sans-serif";
-export const DEFAULT_DISPLAY_FONT = "'Roboto', sans-serif";
+export const DEFAULT_DISPLAY_FONT = "'PT Sans Narrow', 'Segoe UI', sans-serif";
 
 function buildGoogleFontsHref(families: string[]): string {
   if (families.length === 0) return "";
@@ -160,29 +160,9 @@ function buildGoogleFontsHref(families: string[]): string {
   return `https://fonts.googleapis.com/css2?${params.join("&")}&display=swap`;
 }
 
-/** Injects (or replaces) the Google Fonts stylesheet for the given family names. */
-export function injectGoogleFonts(googleFamilies?: string[]): void {
-  const families =
-    googleFamilies ??
-    GOOGLE_FONT_SPECS.map((spec) => spec.google);
-  const href = buildGoogleFontsHref(families);
-  const existing = document.getElementById("google-fonts");
-
-  if (!href) {
-    existing?.remove();
-    return;
-  }
-
-  if (existing instanceof HTMLLinkElement) {
-    if (existing.href !== href) existing.href = href;
-    return;
-  }
-
-  const link = document.createElement("link");
-  link.id = "google-fonts";
-  link.rel = "stylesheet";
-  link.href = href;
-  document.head.appendChild(link);
+/** No-op: kiosk UI uses local PT Sans / Barlow; print fonts come from /files/fonts. */
+export function injectGoogleFonts(_googleFamilies?: string[]): void {
+  document.getElementById("google-fonts")?.remove();
 }
 
 const CUSTOM_FONT_STYLE_ID = "managed-custom-fonts";
@@ -218,16 +198,12 @@ export function injectCustomFontFaces(
   style.textContent = rules;
 }
 
-/** Applies managed font list: Google CDN + custom @font-face. */
+/** Applies managed font list: custom @font-face from point-server only (no Google CDN). */
 export function applyManagedFonts(
   fonts: ManagedFont[],
   resolveUrl: (path: string) => string,
 ): FontOption[] {
   const enabled = fonts.filter((font) => font.enabled);
-  const googleFamilies = enabled
-    .filter((font) => font.kind === "google" && font.googleFamily)
-    .map((font) => font.googleFamily!);
-  injectGoogleFonts(googleFamilies);
 
   const custom = enabled.filter(
     (font): font is ManagedFont & { fileUrl: string } =>

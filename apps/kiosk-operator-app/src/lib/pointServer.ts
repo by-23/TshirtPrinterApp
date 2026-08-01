@@ -58,15 +58,14 @@ function resolvePointServerUrl(): string {
   if (typeof fromEnv === "string" && fromEnv.trim()) return fromEnv.replace(/\/$/, "");
   if (typeof window !== "undefined") {
     const { protocol, hostname, port } = window.location;
-    // UI served by point-server (release / Electron) — same origin, any PORT.
-    // Vite dev (5173) and admin (5174) still talk to point-server on :4000.
-    if (port && port !== "5173" && port !== "5174") {
+    // Vite dev (5173) / preview (4173) and admin (5174) still talk to point-server on :4000.
+    if (port === "5173" || port === "5174" || port === "4173" || port === "4174") {
+      return `${protocol}//${hostname}:4000`;
+    }
+    if (port) {
       return `${protocol}//${hostname}:${port}`;
     }
-    if (!port) {
-      return `${protocol}//${hostname}`;
-    }
-    return `${protocol}//${hostname}:4000`;
+    return `${protocol}//${hostname}`;
   }
   return "http://localhost:4000";
 }
@@ -86,6 +85,16 @@ export function resolveDesignImageUrl(imageUrl: string): string {
   if (!imageUrl) return imageUrl;
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) return imageUrl;
   return `${POINT_SERVER_URL}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+}
+
+/**
+ * Half-size gallery preview URL (`imageUrl` + `.thumb.webp`). Falls back to the
+ * full image via the caller's `onError` if the thumb is missing.
+ */
+export function resolveDesignThumbUrl(imageUrl: string): string {
+  if (!imageUrl) return imageUrl;
+  if (imageUrl.endsWith(".thumb.webp")) return resolveDesignImageUrl(imageUrl);
+  return resolveDesignImageUrl(`${imageUrl}.thumb.webp`);
 }
 
 export interface HealthResponse {

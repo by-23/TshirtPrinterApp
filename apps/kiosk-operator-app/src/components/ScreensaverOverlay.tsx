@@ -59,7 +59,7 @@ export function ScreensaverOverlay({ videos, onDismiss }: ScreensaverOverlayProp
         src={current.url}
         playsInline
         muted
-        preload="auto"
+        preload="metadata"
         onEnded={() => setIndex((prev) => (prev + 1) % count)}
         onError={() => setIndex((prev) => (prev + 1) % count)}
       />

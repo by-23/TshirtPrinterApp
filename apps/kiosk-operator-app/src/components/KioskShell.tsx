@@ -13,6 +13,7 @@ import {
 } from "../lib/pageTransitionStore.js";
 import { SCREENSAVER_IDLE_MS, useScreensaverPlaylist } from "../lib/screensaverVideos.js";
 import { useKioskIdle } from "../lib/useKioskIdle.js";
+import { isWeakClient } from "../lib/weakClient.js";
 import { ClosedScreen } from "../routes/kiosk/ClosedScreen.js";
 
 /**
@@ -54,10 +55,15 @@ export function KioskShell() {
   }
 
   useEffect(() => {
+    if (isWeakClient()) {
+      document.documentElement.classList.add("kiosk-weak-client");
+    }
     initPointStatus();
-    // Warm the AI-style background-removal model as soon as the kiosk boots
-    // (idle-deferred), so entering `/kiosk/ai` later doesn't pay the cold-start cost.
-    warmBackgroundRemoval();
+    // Skip ONNX/WASM warm-up on weak Android — it competes for RAM/CPU at boot
+    // and the model still loads on first real use in `/kiosk/ai`.
+    if (!isWeakClient()) {
+      warmBackgroundRemoval();
+    }
   }, []);
 
   return (

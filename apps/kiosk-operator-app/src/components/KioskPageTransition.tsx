@@ -45,15 +45,11 @@ function topKey(phase: StackPhase): string {
 
 /**
  * Stack-style page transitions:
- * - forward: new screen enters on top; previous stays mounted underneath
- * - idle: previous screen stays mounted under the current (parked/hidden) so back can pop it
- * - back: top exits; underlay is already mounted — no remount flash
+ * - forward: new screen enters on top; previous stays mounted only during the animation
+ * - idle: only the current screen stays mounted (previous is unmounted — no Swiper/polls)
+ * - back: top exits; destination remounts (no parked underlay keep-alive)
  *
  * Pass a frozen route element (e.g. `useOutlet()`), not `<Outlet />`.
- *
- * Parked underlays use `kiosk-page--parked` (visibility:hidden) so transparent
- * screens (AI steps, home ambient) never bleed through the active page after a
- * transition ends.
  *
  * `dissolve` fades content only (under out → over in), leaving KioskAmbientBackdrop
  * untouched. Other types still get an opaque plate mid-transition so transparent
@@ -172,7 +168,9 @@ export function KioskPageTransition({
   function finish() {
     setPhase((prev) => {
       if (prev.kind === "forward") {
-        return { kind: "idle", current: prev.over, beneath: prev.under };
+        // Do not keep the previous route mounted — Swiper/polls/images would
+        // keep running under a parked layer on weak Android kiosk panels.
+        return { kind: "idle", current: prev.over, beneath: null };
       }
       if (prev.kind === "back") {
         return { kind: "idle", current: prev.under, beneath: null };

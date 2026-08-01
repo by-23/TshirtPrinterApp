@@ -11,4 +11,17 @@ export default defineConfig({
     host: true,
     port: 5173,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/fabric")) return "fabric";
+          if (id.includes("node_modules/swiper")) return "swiper";
+          if (id.includes("node_modules/socket.io-client")) return "socket";
+          if (id.includes("node_modules/@imgly/background-removal")) return "bg-removal";
+          return undefined;
+        },
+      },
+    },
+  },
 });

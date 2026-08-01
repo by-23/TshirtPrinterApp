@@ -136,70 +136,48 @@ try {
 
   $config = Read-DisplayConfig
   $picked = Select-Screens $screens $config
-  $kioskScreen = $picked.Kiosk
   $operatorScreen = $picked.Operator
 
   $profilesRoot = Join-Path $env:LOCALAPPDATA "TshirtPrinterApp\chrome-profiles"
-  $kioskProfile = Join-Path $profilesRoot "kiosk"
   $operatorProfile = Join-Path $profilesRoot "operator"
-  New-Item -ItemType Directory -Force -Path $kioskProfile | Out-Null
   New-Item -ItemType Directory -Force -Path $operatorProfile | Out-Null
 
   Write-Step "Closing previous release browser windows"
   Stop-ReleaseBrowsers $profilesRoot
 
-  $kioskUrl = "http://localhost:5173/kiosk?native=1"
   $operatorUrl = "http://localhost:5173/operator?native=1"
-
-  $kb = $kioskScreen.Bounds
   $ob = $operatorScreen.Bounds
 
-  Write-Step "Opening Chrome windows (frameless --kiosk on both)"
-  Write-Host ("  Kiosk    -> {0}x{1} @ ({2},{3})" -f $kb.Width, $kb.Height, $kb.X, $kb.Y)
+  Write-Step "Opening operator Chrome window (kiosk is LAN Android)"
   Write-Host ("  Operator -> {0}x{1} @ ({2},{3})" -f $ob.Width, $ob.Height, $ob.X, $ob.Y)
+  Write-Host "  Kiosk    -> open http://<PC-LAN-IP>:5173/kiosk on the Android display"
 
-  # Both windows: Chrome --kiosk = no title bar, no address bar, no OS window chrome.
-  # Position the process on the target monitor first; --kiosk then fills that display.
-  $commonArgs = @(
+  # Operator only: Chrome --kiosk = no title bar, no address bar, no OS window chrome.
+  # Kiosk UI runs separately on an Android screen over the local network.
+  $operatorArgs = @(
     "--no-first-run",
     "--no-default-browser-check",
     "--disable-session-crashed-bubble",
     "--disable-features=TranslateUI",
     "--autoplay-policy=no-user-gesture-required",
-    "--kiosk"
-  )
-
-  $kioskArgs = $commonArgs + @(
-    "--user-data-dir=`"$kioskProfile`"",
-    "--window-position=$($kb.X),$($kb.Y)",
-    "--window-size=$($kb.Width),$($kb.Height)",
-    $kioskUrl
-  )
-
-  $operatorArgs = $commonArgs + @(
+    "--kiosk",
     "--user-data-dir=`"$operatorProfile`"",
     "--window-position=$($ob.X),$($ob.Y)",
     "--window-size=$($ob.Width),$($ob.Height)",
     $operatorUrl
   )
 
-  Start-Process -FilePath $chrome -ArgumentList $kioskArgs
-  Start-Sleep -Milliseconds 400
   Start-Process -FilePath $chrome -ArgumentList $operatorArgs
 
   $configHint = @"
-Optional displays.json (repo root):
-  {
-    "kioskIndex": 0,
-    "operatorIndex": 1
-  }
-Indices match the list printed above.
-In the operator UI: sidebar → «Экраны» to reassign monitors live.
+Kiosk is no longer opened on a second PC monitor.
+On the Android display open: http://<this-PC-LAN-IP>:5173/kiosk
+(or the point-server port in packaged builds, usually :4000/kiosk).
 "@
 
   Write-Host ""
   Write-Host "========================================" -ForegroundColor Green
-  Write-Host "  RELEASE WINDOWS OPENED"
+  Write-Host "  RELEASE OPERATOR WINDOW OPENED"
   Write-Host "========================================" -ForegroundColor Green
   Write-Host ""
   Write-Host $configHint

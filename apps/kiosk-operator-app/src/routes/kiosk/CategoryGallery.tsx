@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { designCategorySchema, type Design, type DesignCategory } from "@tshirt/shared-types";
 import { isMostlyDarkArtwork } from "../../lib/imageBrightness.js";
-import { appendDesignPage, fetchDesignsPage, resolveDesignImageUrl } from "../../lib/pointServer.js";
+import { appendDesignPage, fetchDesignsPage, resolveDesignImageUrl, resolveDesignThumbUrl } from "../../lib/pointServer.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
 import { ArrowLeft, FilmIcon, GamepadIcon, Heart, PhotoIcon, SearchIcon, SpinnerIcon } from "../../components/icons.js";
@@ -43,18 +43,30 @@ const CATEGORY_ICON: Partial<Record<DesignCategory, (props: { className?: string
 function DesignCard({ design, index, onSelect }: { design: Design; index: number; onSelect: () => void }) {
   const Icon = CATEGORY_ICON[design.category] ?? PhotoIcon;
   const accentVar = `var(--gallery-card-accent-${(index % ACCENT_COUNT) + 1})`;
-  const imageSrc = design.imageUrl ? resolveDesignImageUrl(design.imageUrl) : null;
+  const fullSrc = design.imageUrl ? resolveDesignImageUrl(design.imageUrl) : null;
+  const thumbSrc = design.imageUrl ? resolveDesignThumbUrl(design.imageUrl) : null;
+  const [src, setSrc] = useState<string | null>(thumbSrc);
   const [darkArt, setDarkArt] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
+    setSrc(thumbSrc);
     setDarkArt(false);
+  }, [thumbSrc]);
+
+  useEffect(() => {
     const img = imgRef.current;
-    // Cached images often skip onLoad — sample once the element is mounted.
-    if (img?.complete && img.naturalWidth > 0) {
-      setDarkArt(isMostlyDarkArtwork(img, imageSrc ?? undefined));
+    if (!img || !src) return;
+    if (!(img.complete && img.naturalWidth > 0)) return;
+
+    const run = () => setDarkArt(isMostlyDarkArtwork(img, fullSrc ?? src));
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(() => run(), { timeout: 1200 });
+      return () => cancelIdleCallback(id);
     }
-  }, [imageSrc]);
+    const t = window.setTimeout(run, 0);
+    return () => clearTimeout(t);
+  }, [src, fullSrc]);
 
   return (
     <div className="gallery-card-shell relative">
@@ -70,13 +82,27 @@ function DesignCard({ design, index, onSelect }: { design: Design; index: number
           .filter(Boolean)
           .join(" ")}
       >
-        {imageSrc ? (
+        {src ? (
           <img
             ref={imgRef}
-            src={imageSrc}
+            src={src}
             alt={design.title}
+            loading="lazy"
+            decoding="async"
             crossOrigin="anonymous"
-            onLoad={(event) => setDarkArt(isMostlyDarkArtwork(event.currentTarget, imageSrc))}
+            onError={() => {
+              if (fullSrc && src !== fullSrc) setSrc(fullSrc);
+            }}
+            onLoad={() => {
+              const img = imgRef.current;
+              if (!img) return;
+              const run = () => setDarkArt(isMostlyDarkArtwork(img, fullSrc ?? src));
+              if (typeof requestIdleCallback === "function") {
+                requestIdleCallback(() => run(), { timeout: 1200 });
+              } else {
+                setTimeout(run, 0);
+              }
+            }}
             className="h-full w-full object-contain drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
           />
         ) : (

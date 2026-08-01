@@ -314,15 +314,15 @@ function closeSplash() {
 }
 
 function openUiWindows(config = readDisplayConfig()) {
-  const { kiosk, operator } = pickDisplays(config);
-  log(`Opening UI kiosk=${JSON.stringify(kiosk.bounds)} operator=${JSON.stringify(operator.bounds)}`);
+  const { operator } = pickDisplays(config);
+  log(`Opening operator UI bounds=${JSON.stringify(operator.bounds)} (kiosk is LAN Android, not opened here)`);
 
+  // Close leftover kiosk windows from older builds that still opened a second display.
   if (kioskWindow && !kioskWindow.isDestroyed()) kioskWindow.close();
   if (operatorWindow && !operatorWindow.isDestroyed()) operatorWindow.close();
 
-  // Operator first on primary — user always sees at least one window.
+  // Kiosk UI runs on a separate Android display over LAN — only the operator window on the PC.
   operatorWindow = createFramelessWindow(operator, `${POINT_ORIGIN}/operator?native=1`);
-  kioskWindow = createFramelessWindow(kiosk, `${POINT_ORIGIN}/kiosk?native=1`);
   closeSplash();
 }
 
@@ -437,16 +437,20 @@ function stopPointServer() {
 function registerIpc() {
   ipcMain.handle("displays:list", () => listDisplayPayloads());
   ipcMain.handle("displays:getAssignment", () => readDisplayConfig());
+  // Dual-monitor assignment retired: kiosk is a separate Android client on LAN.
+  // Keep the IPC stub so older UI builds don't crash if they still call apply.
   ipcMain.handle("displays:apply", (_event, assignment) => {
     const config = {
       kioskIndex: Number(assignment?.kioskIndex),
       operatorIndex: Number(assignment?.operatorIndex),
     };
-    if (!Number.isInteger(config.kioskIndex) || !Number.isInteger(config.operatorIndex)) {
-      throw new Error("Invalid display indices");
+    if (Number.isInteger(config.operatorIndex)) {
+      writeDisplayConfig({
+        kioskIndex: Number.isInteger(config.kioskIndex) ? config.kioskIndex : 0,
+        operatorIndex: config.operatorIndex,
+      });
     }
-    writeDisplayConfig(config);
-    openUiWindows(config);
+    openUiWindows(readDisplayConfig());
     return { ok: true };
   });
 }
@@ -491,7 +495,7 @@ if (!gotLock) {
     showSplash("Запуск сервера точки…");
     try {
       await ensurePointServer();
-      showSplash("Открытие окон…");
+      showSplash("Открытие интерфейса оператора…");
       openUiWindows();
     } catch (err) {
       const message = err && err.message ? err.message : String(err);

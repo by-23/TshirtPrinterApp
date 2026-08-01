@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Design } from "@tshirt/shared-types";
-import { fetchPopularDesigns, resolveDesignImageUrl } from "./pointServer.js";
+import { fetchPopularDesigns, resolveDesignThumbUrl } from "./pointServer.js";
 import { PRINT_CATALOG, printImageKey } from "./printCatalog.js";
 
 /** How often the home banner re-polls point-server for fresh usage stats (kiosk sits idle between orders). */
@@ -19,7 +19,7 @@ export interface BannerSlide {
 function fromDesign(design: Design): BannerSlide {
   return {
     id: `design-${design.id}`,
-    imageUrl: resolveDesignImageUrl(design.imageUrl),
+    imageUrl: resolveDesignThumbUrl(design.imageUrl),
     heartLabel: String(design.useCount),
     label: design.title,
   };

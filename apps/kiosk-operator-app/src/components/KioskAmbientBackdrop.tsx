@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { readCssNumber } from "../lib/popularPrintScale.js";
+import { isWeakClient } from "../lib/weakClient.js";
 
 /**
  * Dense work surfaces where ambient would compete with the UI.
@@ -76,33 +77,52 @@ function resizeOrbPool(orbs: Orb[], count: number) {
   }
 }
 
+/** Soft glow blobs driven only by CSS transforms — no canvas / RAF. */
+const CSS_ORB_COUNT = 4;
+
 /**
- * Ambient backdrop: a frosted-glass layer over a canvas of slowly drifting,
- * color-shifting glow orbs. Mounted once in `KioskShell.tsx` and kept alive
- * across every `/kiosk/*` route — only its opacity toggles on the editor
- * (and any future dense screens), so the animation stays "warm" instead of
- * restarting from a blank canvas.
+ * Ambient backdrop: frosted glass over drifting glow orbs.
  *
- * Pages that want it must leave their root background transparent so this
- * layer shows through (same pattern as `KioskHome`).
- *
- * Every tunable (orb count/size/speed, color-shift speed/amplitude, blur, frost
- * opacity, on/off) is a plain CSS custom property from `index.css`, read
- * live every frame — the same mechanism `ThemePanel.tsx` already uses for
- * every other kiosk visual, so its sliders retune this without a rebuild.
+ * Strong clients use a canvas + RAF loop (full ThemePanel fidelity).
+ * Weak clients (Android / low RAM) use CSS-animated radial blobs — compositor
+ * transforms only, no per-frame JS, no backdrop-filter.
  */
 export function KioskAmbientBackdrop() {
   const location = useLocation();
   const isVisible = !isAmbientHidden(location.pathname);
+  const weak = isWeakClient();
 
+  if (weak) {
+    return (
+      <div
+        aria-hidden
+        className={`kiosk-ambient kiosk-ambient--css ${isVisible ? "" : "kiosk-ambient--hidden"}`}
+      >
+        <div className="kiosk-ambient__base" />
+        <div className="kiosk-ambient__css-layer">
+          {Array.from({ length: CSS_ORB_COUNT }, (_, i) => (
+            <span key={i} className={`kiosk-ambient__css-orb kiosk-ambient__css-orb--${i + 1}`} />
+          ))}
+        </div>
+        <div className="kiosk-ambient__frost" />
+      </div>
+    );
+  }
+
+  return <CanvasAmbientBackdrop isVisible={isVisible} />;
+}
+
+function CanvasAmbientBackdrop({ isVisible }: { isVisible: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const orbsRef = useRef<Orb[]>([]);
+  const isVisibleRef = useRef(isVisible);
+  isVisibleRef.current = isVisible;
 
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
+    const ctx = canvas?.getContext("2d", { alpha: true });
     if (!container || !canvas || !ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -126,13 +146,16 @@ export function KioskAmbientBackdrop() {
 
     function frame(now: number) {
       rafId = requestAnimationFrame(frame);
+
+      if (document.hidden || !isVisibleRef.current) return;
+
+      const enabled = readCssNumber("--ambient-enabled", 1) > 0.5;
+      if (!enabled || width === 0 || height === 0) return;
+
       const dt = Math.min(64, now - lastTime) / 1000;
       lastTime = now;
 
       ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
-
-      const enabled = readCssNumber("--ambient-enabled", 1) > 0.5;
-      if (!enabled || width === 0 || height === 0) return;
 
       const count = Math.max(0, Math.round(readCssNumber("--ambient-orb-count", 8)));
       resizeOrbPool(orbsRef.current, count);

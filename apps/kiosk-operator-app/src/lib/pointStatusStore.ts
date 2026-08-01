@@ -30,5 +30,21 @@ export function initPointStatus(): void {
       // point-server unreachable — stay fail-open (config stays null == open).
     });
 
-  subscribePointConfigEvents((config) => usePointStatusStore.setState({ config }));
+  // Defer Socket.IO so the first kiosk paint isn't competing with WS handshake.
+  // Fallback poll keeps closed-status reasonably fresh on weak Android.
+  const connectRealtime = () => {
+    subscribePointConfigEvents((config) => usePointStatusStore.setState({ config }));
+  };
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(() => connectRealtime(), { timeout: 4000 });
+  } else {
+    setTimeout(connectRealtime, 1500);
+  }
+
+  const POLL_MS = 60_000;
+  window.setInterval(() => {
+    void fetchPointConfig()
+      .then((config) => usePointStatusStore.setState({ config }))
+      .catch(() => undefined);
+  }, POLL_MS);
 }

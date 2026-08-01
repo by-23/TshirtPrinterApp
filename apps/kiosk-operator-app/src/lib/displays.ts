@@ -1,4 +1,4 @@
-import { KIOSK_WINDOW_NAME, kioskReleaseUrl, setReleaseMode } from "./releaseMode.js";
+import { setReleaseMode } from "./releaseMode.js";
 
 const ASSIGNMENT_KEY = "tshirt.displayAssignment";
 
@@ -167,25 +167,9 @@ async function placeWindow(win: Window, screen: ScreenLike): Promise<void> {
   }
 }
 
-function openOrFocusKiosk(screen?: ScreenLike | null): Window | null {
-  const features = screen
-    ? [
-        `left=${screen.availLeft}`,
-        `top=${screen.availTop}`,
-        `width=${screen.availWidth}`,
-        `height=${screen.availHeight}`,
-        "popup=yes",
-      ].join(",")
-    : "popup=yes";
-
-  const win = window.open(kioskReleaseUrl(), KIOSK_WINDOW_NAME, features);
-  if (win) win.focus();
-  return win;
-}
-
 /**
- * Applies saved monitor roles: both windows go frameless fullscreen on their
- * assigned screens (kiosk canvas stays 1080×1920 portrait inside the display).
+ * Release helper: fullscreen the current (operator) window only.
+ * Kiosk no longer opens as a second PC window — it runs on a LAN Android display.
  */
 export async function applyDisplayAssignment(assignment: DisplayAssignment): Promise<void> {
   setReleaseMode(true);
@@ -193,36 +177,16 @@ export async function applyDisplayAssignment(assignment: DisplayAssignment): Pro
 
   if (typeof window.getScreenDetails !== "function") {
     await document.documentElement.requestFullscreen().catch(() => undefined);
-    const kioskWin = openOrFocusKiosk();
-    if (kioskWin) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (!kioskWin.closed) {
-        await kioskWin.document.documentElement.requestFullscreen().catch(() => undefined);
-      }
-    }
     return;
   }
 
   const details = await window.getScreenDetails();
   const operatorScreen =
     findScreen(details, assignment.operatorScreenId) ?? details.currentScreen ?? details.screens[0];
-  const kioskScreen =
-    findScreen(details, assignment.kioskScreenId) ??
-    details.screens.find((s) => s !== operatorScreen && s.height > s.width) ??
-    details.screens.find((s) => s !== operatorScreen) ??
-    operatorScreen;
 
   if (operatorScreen) {
     await placeWindow(window, operatorScreen);
   }
-
-  const kioskWin = openOrFocusKiosk(kioskScreen);
-  if (!kioskWin || !kioskScreen) return;
-
-  // Wait a tick so the kiosk document can load before move/fullscreen.
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  if (kioskWin.closed) return;
-  await placeWindow(kioskWin, kioskScreen);
 }
 
 /** Enter fullscreen on the current document (release boot helper). */

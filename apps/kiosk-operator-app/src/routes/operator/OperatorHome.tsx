@@ -12,7 +12,6 @@ import { DesignsPanel } from "./DesignsPanel.js";
 import { AiStylesPanel } from "./AiStylesPanel.js";
 import { AdsVideosPanel } from "./AdsVideosPanel.js";
 import { PrintAreaSettingsPanel } from "./PrintAreaSettingsPanel.js";
-import { DisplaysPanel } from "./DisplaysPanel.js";
 import { MaterialsPanel } from "./MaterialsPanel.js";
 
 /**
@@ -125,8 +124,6 @@ export function OperatorHome() {
           <AdsVideosPanel />
         ) : view === "printSettings" ? (
           <PrintAreaSettingsPanel />
-        ) : view === "displays" ? (
-          <DisplaysPanel />
         ) : view === "materials" ? (
           <MaterialsPanel />
         ) : (

@@ -1,11 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { PointServerStatus } from "./PointServerStatus.js";
-import { ThemePanel } from "./ThemePanel.js";
-import { EditorThemePanel } from "./EditorThemePanel.js";
-import { CheckoutThemePanel } from "./CheckoutThemePanel.js";
-import { GalleryThemePanel } from "./GalleryThemePanel.js";
-import { AiThemePanel } from "./AiThemePanel.js";
-import { DevViewSwitcher } from "./DevViewSwitcher.js";
 import { useReleaseMode } from "../hooks/useReleaseMode.js";
 import { enterReleaseFullscreen } from "../lib/displays.js";
 import { isPointDesktop } from "../lib/pointDesktop.js";
@@ -22,6 +16,10 @@ const OUTER_PADDING = 24;
 // only ever spills out on the right/bottom, never the left/top, which is why
 // the whole kiosk page reads as "shifted right" instead of just clipped evenly.
 const BEZEL_BORDER = 6;
+
+const DevPanels = lazy(() =>
+  import("./KioskDevPanels.js").then((m) => ({ default: m.KioskDevPanels })),
+);
 
 /**
  * Simulates the physical kiosk monitor: a fixed 1080×1920 canvas rendered
@@ -112,16 +110,12 @@ export function KioskFrame({ children }: { children: ReactNode }) {
       {/* Rendered outside the scaled/transformed kiosk canvas above (on purpose:
           a `transform` on an ancestor would turn this `fixed` panel into one
           that positions relative to that ancestor instead of the real
-          viewport), so it stays put and usable at any kiosk zoom level. */}
+          viewport), so it stays put and usable at any kiosk zoom level.
+          Dev-only panels are a separate lazy chunk — never downloaded in release. */}
       {!release && (
-        <>
-          <ThemePanel />
-          <EditorThemePanel />
-          <CheckoutThemePanel />
-          <GalleryThemePanel />
-          <AiThemePanel />
-          <DevViewSwitcher />
-        </>
+        <Suspense fallback={null}>
+          <DevPanels />
+        </Suspense>
       )}
     </div>
   );

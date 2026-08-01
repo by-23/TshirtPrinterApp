@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { designCategorySchema } from "@tshirt/shared-types";
 import { KioskFrame } from "./components/KioskFrame.js";
@@ -6,10 +7,15 @@ import { KioskShell } from "./components/KioskShell.js";
 import { KioskHome } from "./routes/kiosk/KioskHome.js";
 import { CategoryStub } from "./routes/kiosk/CategoryStub.js";
 import { CategoryGallery } from "./routes/kiosk/CategoryGallery.js";
-import { Editor } from "./routes/kiosk/Editor.js";
-import { AiFlow } from "./routes/kiosk/ai/AiFlow.js";
-import { Checkout } from "./routes/kiosk/checkout/Checkout.js";
-import { OperatorHome } from "./routes/operator/OperatorHome.js";
+
+const Editor = lazy(() => import("./routes/kiosk/Editor.js").then((m) => ({ default: m.Editor })));
+const AiFlow = lazy(() => import("./routes/kiosk/ai/AiFlow.js").then((m) => ({ default: m.AiFlow })));
+const Checkout = lazy(() =>
+  import("./routes/kiosk/checkout/Checkout.js").then((m) => ({ default: m.Checkout })),
+);
+const OperatorHome = lazy(() =>
+  import("./routes/operator/OperatorHome.js").then((m) => ({ default: m.OperatorHome })),
+);
 
 // Memes/anime/games are gallery categories (Stage 3); ai_style has its own
 // wizard (`/kiosk/ai`, Этап 9, see `getCategoryRoute`); everything else
@@ -25,6 +31,10 @@ function CategoryRoute() {
   return <CategoryStub />;
 }
 
+function RouteFallback() {
+  return <div className="flex h-full w-full items-center justify-center bg-ink-950 text-ink-400" />;
+}
+
 // The kiosk is a fixed-resolution 1080x1920 touchscreen — every /kiosk/* route
 // is rendered inside the same on-screen device simulator (see KioskFrame).
 function KioskLayout() {
@@ -37,23 +47,25 @@ function KioskLayout() {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/kiosk" replace />} />
-      <Route element={<KioskLayout />}>
-        <Route path="/kiosk" element={<KioskHome />} />
-        <Route path="/kiosk/category/:category" element={<CategoryRoute />} />
-        <Route path="/kiosk/ai" element={<AiFlow />} />
-        <Route path="/kiosk/editor" element={<Editor />} />
-        <Route path="/kiosk/checkout" element={<Checkout />} />
-      </Route>
-      <Route
-        path="/operator"
-        element={
-          <OperatorFrame>
-            <OperatorHome />
-          </OperatorFrame>
-        }
-      />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/kiosk" replace />} />
+        <Route element={<KioskLayout />}>
+          <Route path="/kiosk" element={<KioskHome />} />
+          <Route path="/kiosk/category/:category" element={<CategoryRoute />} />
+          <Route path="/kiosk/ai" element={<AiFlow />} />
+          <Route path="/kiosk/editor" element={<Editor />} />
+          <Route path="/kiosk/checkout" element={<Checkout />} />
+        </Route>
+        <Route
+          path="/operator"
+          element={
+            <OperatorFrame>
+              <OperatorHome />
+            </OperatorFrame>
+          }
+        />
+      </Routes>
+    </Suspense>
   );
 }

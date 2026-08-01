@@ -41,6 +41,8 @@ export async function writeManualImageFile(
   await mkdir(dir, { recursive: true });
   const destination = manualImageFilePath(category, centralDesignId);
   await writeFile(destination, data);
+  const { writeThumbBeside } = await import("./thumbs.js");
+  await writeThumbBeside(destination);
   return destination;
 }
 
@@ -113,6 +115,11 @@ export async function deleteStoredImageFile(imageUrl: string): Promise<void> {
     await unlink(filePath);
   } catch {
     // Best-effort — file may already be gone.
+  }
+  try {
+    await unlink(`${filePath}.thumb.webp`);
+  } catch {
+    // Best-effort thumb sibling.
   }
 }
 

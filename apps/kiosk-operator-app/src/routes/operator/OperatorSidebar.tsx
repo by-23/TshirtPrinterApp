@@ -8,7 +8,6 @@ import {
   Layers,
   ListOrdered,
   Bell,
-  Monitor,
   Palette,
   Printer,
   Settings,
@@ -25,7 +24,6 @@ export type OperatorView =
   | "aiStyles"
   | "ads"
   | "printSettings"
-  | "displays"
   | "materials";
 
 interface NavItem {
@@ -45,7 +43,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: "clients", label: "Клиенты", icon: Users },
   { id: "printer", label: "Принтер", icon: Printer },
   { id: "printSettings", label: "Настройки печати", icon: Settings, view: "printSettings" },
-  { id: "displays", label: "Экраны", icon: Monitor, view: "displays" },
   { id: "materials", label: "Материалы", icon: Layers, view: "materials" },
   { id: "schedule", label: "Расписание", icon: Calendar },
   { id: "notifications", label: "Уведомления", icon: Bell },

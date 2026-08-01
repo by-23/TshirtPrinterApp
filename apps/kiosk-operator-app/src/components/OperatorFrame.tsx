@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { DevViewSwitcher } from "./DevViewSwitcher.js";
-import { OperatorThemePanel } from "./OperatorThemePanel.js";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useReleaseMode } from "../hooks/useReleaseMode.js";
 import { enterReleaseFullscreen } from "../lib/displays.js";
 import { isPointDesktop } from "../lib/pointDesktop.js";
@@ -21,6 +19,10 @@ import { isPointDesktop } from "../lib/pointDesktop.js";
  * scaled uniformly so text/icons/spacing keep the mockup's proportions).
  */
 export const OPERATOR_HEIGHT = 960;
+
+const OperatorDevPanels = lazy(() =>
+  import("./OperatorDevPanels.js").then((m) => ({ default: m.OperatorDevPanels })),
+);
 
 export function OperatorFrame({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,10 +67,9 @@ export function OperatorFrame({ children }: { children: ReactNode }) {
           that positions relative to that ancestor instead of the real
           viewport) — see the same note in KioskFrame.tsx. */}
       {!release && (
-        <>
-          <OperatorThemePanel />
-          <DevViewSwitcher />
-        </>
+        <Suspense fallback={null}>
+          <OperatorDevPanels />
+        </Suspense>
       )}
     </div>
   );

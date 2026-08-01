@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { Canvas } from "fabric";
 import type { Design, DesignCategory } from "@tshirt/shared-types";
-import { appendDesignPage, fetchDesignsPage, fetchPopularDesigns, resolveDesignImageUrl } from "../../lib/pointServer.js";
+import { appendDesignPage, fetchDesignsPage, fetchPopularDesigns, resolveDesignImageUrl, resolveDesignThumbUrl } from "../../lib/pointServer.js";
 import { getKioskOverlayRoot } from "../../lib/kioskOverlayPortal.js";
 import { addImageFromUrl } from "../canvasImage.js";
 import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
@@ -30,6 +30,14 @@ export interface ImagePickerModalProps {
 }
 
 function DesignTile({ design, onSelect }: { design: Design; onSelect: () => void }) {
+  const full = design.imageUrl ? resolveDesignImageUrl(design.imageUrl) : null;
+  const thumb = design.imageUrl ? resolveDesignThumbUrl(design.imageUrl) : null;
+  const [src, setSrc] = useState(thumb);
+
+  useEffect(() => {
+    setSrc(thumb);
+  }, [thumb]);
+
   return (
     <button
       type="button"
@@ -37,10 +45,15 @@ function DesignTile({ design, onSelect }: { design: Design; onSelect: () => void
       aria-label={design.title}
       className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-ink-800 p-2 transition-transform hover:scale-105 hover:bg-ink-700"
     >
-      {design.imageUrl ? (
+      {src ? (
         <img
-          src={resolveDesignImageUrl(design.imageUrl)}
+          src={src}
           alt={design.title}
+          loading="lazy"
+          decoding="async"
+          onError={() => {
+            if (full && src !== full) setSrc(full);
+          }}
           className="h-full w-full object-contain"
         />
       ) : (

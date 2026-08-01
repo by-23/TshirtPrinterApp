@@ -54,6 +54,9 @@ export async function buildServer() {
   await app.register(fastifyStatic, {
     root: dataRoot,
     prefix: "/files/",
+    // Catalog thumbs + ads benefit from long cache on Android WebView over LAN.
+    maxAge: "7d",
+    immutable: false,
   });
   // Phone photo uploads (ИИ-раздел) + operator ads-video uploads (Этап 8).
   // `fileSize` mirrors `bodyLimit` above — @fastify/multipart falls back to
@@ -79,6 +82,9 @@ export async function buildServer() {
       root: uiDist,
       // First @fastify/static already decorated reply.sendFile — avoid FST_ERR_DEC_ALREADY_PRESENT.
       decorateReply: false,
+      maxAge: "1y",
+      // Vite hashed assets under /assets/ are content-addressed.
+      immutable: true,
     });
     app.setNotFoundHandler((request, reply) => {
       if (request.method === "GET") {

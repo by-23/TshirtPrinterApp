@@ -9,6 +9,7 @@ import { variantAt } from "./queryVariants.js";
 import { probeImage } from "./transparency.js";
 import { computePerceptualHash, isNearDuplicate } from "./phash.js";
 import { ensureCatalogDirs, moveToStorage, publicImageUrl, discardTempFile, cleanupTempDir } from "./storage.js";
+import { writeThumbBeside } from "./thumbs.js";
 import { markRunning, markSuccess, markError, advanceQueryVariant, getOrCreateState, isRunning } from "./state.js";
 import { getEnabledSources, type ScraperSource, type SourceCandidate } from "./sources/index.js";
 import {
@@ -100,6 +101,7 @@ async function acceptCandidates(
       if (hash) knownHashes.add(hash);
 
       const storedPath = await moveToStorage(candidate.filePath, storageDir);
+      await writeThumbBeside(storedPath);
       await db.insert(designs).values({
         category,
         title: candidate.alt || `${category}-${dedupeKey}`,
