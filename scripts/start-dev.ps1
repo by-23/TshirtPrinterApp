@@ -235,11 +235,12 @@ Local:
   Relay:      http://localhost:4100
 
 LAN ($lanIp):
-  Kiosk:      http://${lanIp}:5173/kiosk
-  Operator:   http://${lanIp}:5173/operator
-  Admin:      http://${lanIp}:5174
-  Point API:  http://${lanIp}:4000
-  Relay:      http://${lanIp}:4100
+  Kiosk (dev):     http://${lanIp}:5173/kiosk
+  Kiosk (release): http://${lanIp}:5173/kiosk?native=1
+  Operator:        http://${lanIp}:5173/operator
+  Admin:           http://${lanIp}:5174
+  Point API:       http://${lanIp}:4000
+  Relay:           http://${lanIp}:4100
 
 Admin login:  admin / admin123
 

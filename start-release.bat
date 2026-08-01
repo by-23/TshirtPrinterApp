@@ -6,7 +6,7 @@ color 0A
 
 echo.
 echo  TshirtPrinterApp RELEASE mode
-echo  Kiosk + Operator fullscreen Chrome windows
+echo  Operator fullscreen on PC; kiosk on Android with ?native=1
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-release.ps1"
@@ -32,7 +32,8 @@ if exist "%~dp0dev-urls.txt" (
 )
 
 echo.
-echo  Operator: sidebar -^> «Экраны» to pick monitors.
+echo  Android kiosk URL must include ?native=1
+echo  Example: http://YOUR-PC-IP:5173/kiosk?native=1
 echo  Stop all: stop-release.bat
 echo.
 

@@ -3,8 +3,26 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App.js";
 import { applyStoredUiFont } from "./lib/fonts.js";
+import { setReleaseMode } from "./lib/releaseMode.js";
 import "./lib/i18n.js";
 import "./index.css";
+
+// Persist release chrome when launched with ?native=1 / ?release=1 so React
+// Router navigations (which drop the query string) keep fullscreen / no bezel.
+try {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("native") === "1" || params.get("release") === "1") {
+    setReleaseMode(true);
+  }
+  // Design gear is opt-in only. Never keep a stale "on" flag from an old session.
+  if (params.get("dev") === "1") {
+    window.localStorage.setItem("tshirt.devPanels", "1");
+  } else {
+    window.localStorage.removeItem("tshirt.devPanels");
+  }
+} catch {
+  // ignore
+}
 
 applyStoredUiFont();
 

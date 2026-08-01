@@ -3,9 +3,8 @@ import { EditorThemePanel } from "./EditorThemePanel.js";
 import { CheckoutThemePanel } from "./CheckoutThemePanel.js";
 import { GalleryThemePanel } from "./GalleryThemePanel.js";
 import { AiThemePanel } from "./AiThemePanel.js";
-import { DevViewSwitcher } from "./DevViewSwitcher.js";
 
-/** Dev-only theme + view switcher chunk — imported only when `!release`. */
+/** Opt-in design panels (`?dev=1`) — no kiosk/operator view switcher. */
 export function KioskDevPanels() {
   return (
     <>
@@ -14,7 +13,6 @@ export function KioskDevPanels() {
       <CheckoutThemePanel />
       <GalleryThemePanel />
       <AiThemePanel />
-      <DevViewSwitcher />
     </>
   );
 }

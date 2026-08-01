@@ -150,7 +150,7 @@ try {
 
   Write-Step "Opening operator Chrome window (kiosk is LAN Android)"
   Write-Host ("  Operator -> {0}x{1} @ ({2},{3})" -f $ob.Width, $ob.Height, $ob.X, $ob.Y)
-  Write-Host "  Kiosk    -> open http://<PC-LAN-IP>:5173/kiosk on the Android display"
+  Write-Host "  Kiosk    -> open http://<PC-LAN-IP>:5173/kiosk?native=1 on the Android display"
 
   # Operator only: Chrome --kiosk = no title bar, no address bar, no OS window chrome.
   # Kiosk UI runs separately on an Android screen over the local network.
@@ -171,8 +171,9 @@ try {
 
   $configHint = @"
 Kiosk is no longer opened on a second PC monitor.
-On the Android display open: http://<this-PC-LAN-IP>:5173/kiosk
-(or the point-server port in packaged builds, usually :4000/kiosk).
+On the Android display open: http://<this-PC-LAN-IP>:5173/kiosk?native=1
+(or packaged point-server: http://<this-PC-LAN-IP>:4000/kiosk?native=1).
+Without ?native=1 the settings gear and Kiosk/Operator switcher stay visible (dev chrome).
 "@
 
   Write-Host ""

@@ -3,6 +3,7 @@ import { PointServerStatus } from "./PointServerStatus.js";
 import { useReleaseMode } from "../hooks/useReleaseMode.js";
 import { enterReleaseFullscreen } from "../lib/displays.js";
 import { isPointDesktop } from "../lib/pointDesktop.js";
+import { showDevDesignPanels } from "../lib/devPanels.js";
 
 /** Real kiosk touchscreen resolution — every kiosk route is designed pixel-for-pixel at this size. */
 export const KIOSK_WIDTH = 1080;
@@ -35,6 +36,11 @@ export function KioskFrame({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const release = useReleaseMode();
+  const [devPanels, setDevPanels] = useState(() => showDevDesignPanels());
+
+  useEffect(() => {
+    setDevPanels(showDevDesignPanels());
+  }, []);
 
   useEffect(() => {
     function updateScale() {
@@ -107,16 +113,12 @@ export function KioskFrame({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      {/* Rendered outside the scaled/transformed kiosk canvas above (on purpose:
-          a `transform` on an ancestor would turn this `fixed` panel into one
-          that positions relative to that ancestor instead of the real
-          viewport), so it stays put and usable at any kiosk zoom level.
-          Dev-only panels are a separate lazy chunk — never downloaded in release. */}
-      {!release && (
+      {/* Design panels: only with explicit ?dev=1 — never on release/Android kiosk. */}
+      {devPanels ? (
         <Suspense fallback={null}>
           <DevPanels />
         </Suspense>
-      )}
+      ) : null}
     </div>
   );
 }

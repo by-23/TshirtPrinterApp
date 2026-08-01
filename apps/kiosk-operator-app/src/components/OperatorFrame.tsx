@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "rea
 import { useReleaseMode } from "../hooks/useReleaseMode.js";
 import { enterReleaseFullscreen } from "../lib/displays.js";
 import { isPointDesktop } from "../lib/pointDesktop.js";
+import { showDevDesignPanels } from "../lib/devPanels.js";
 
 /**
  * Reference canvas the operator screen is designed at pixel-for-pixel —
@@ -28,6 +29,11 @@ export function OperatorFrame({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState({ scale: 1, width: 1440 });
   const release = useReleaseMode();
+  const [devPanels, setDevPanels] = useState(() => showDevDesignPanels());
+
+  useEffect(() => {
+    setDevPanels(showDevDesignPanels());
+  }, []);
 
   useEffect(() => {
     function update() {
@@ -62,15 +68,11 @@ export function OperatorFrame({ children }: { children: ReactNode }) {
         {children}
       </div>
 
-      {/* Rendered outside the scaled/transformed canvas above (on purpose:
-          a `transform` on an ancestor would turn this `fixed` panel into one
-          that positions relative to that ancestor instead of the real
-          viewport) — see the same note in KioskFrame.tsx. */}
-      {!release && (
+      {devPanels ? (
         <Suspense fallback={null}>
           <OperatorDevPanels />
         </Suspense>
-      )}
+      ) : null}
     </div>
   );
 }
