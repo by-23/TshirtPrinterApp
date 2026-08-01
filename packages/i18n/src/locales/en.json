@@ -67,7 +67,7 @@
       "addText": "Add text",
       "textPlaceholder": "Text",
       "image": "Image",
-      "stickers": "Stickers",
+      "emoji": "Emoji",
       "uploadPhoto": "Upload",
       "filters": "Filters",
       "effects": "Effects",
@@ -123,11 +123,6 @@
           "diagonal": "Diag."
         },
         "reset": "Reset"
-      },
-      "stickersList": {
-        "searchPlaceholder": "Search stickers",
-        "noApiKey": "Sticker search unavailable — no Giphy API key configured",
-        "trendingEmpty": "Couldn't load trending stickers"
       }
     },
     "controls": {

@@ -62,6 +62,8 @@ export function FabricCanvas({
       height: printArea.height * MOCKUP_DISPLAY_SCALE,
       backgroundColor: "transparent",
       preserveObjectStacking: true,
+      // Touch-first hit testing — same path for mouse and finger on the kiosk.
+      targetFindTolerance: 12,
     });
     configureCanvasSelectionStyle(canvas);
     const uninstallControlsRenderer = installUnmaskedControlsRenderer(canvas);

@@ -179,3 +179,29 @@ export const catalogManualPointState = pgTable(
   },
   (table) => [primaryKey({ columns: [table.pointId, table.designId] })],
 );
+
+export const managedFontKindEnum = pgEnum("managed_font_kind", ["system", "local", "google", "custom"]);
+export const managedFontFormatEnum = pgEnum("managed_font_format", ["truetype", "opentype", "woff", "woff2"]);
+
+/**
+ * Admin-managed editor fonts (built-in + custom uploads). Built-ins use
+ * stable string ids (`pt-sans-narrow`); custom rows use UUIDs. Synced to
+ * points via `sync:snapshot.fonts` — custom files are downloaded from
+ * `GET /fonts/:id/file` with point credentials.
+ */
+export const managedFonts = pgTable("managed_fonts", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  family: text("family").notNull(),
+  kind: managedFontKindEnum("kind").notNull(),
+  googleFamily: text("google_family"),
+  enabled: boolean("enabled").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  /** Absolute path on this host (`data/fonts/`) — only for `kind: "custom"`. */
+  storagePath: text("storage_path"),
+  format: managedFontFormatEnum("format"),
+  revision: integer("revision").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});

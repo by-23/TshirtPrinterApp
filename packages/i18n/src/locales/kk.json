@@ -67,7 +67,7 @@
       "addText": "Мәтін қосу",
       "textPlaceholder": "Мәтін",
       "image": "Сурет",
-      "stickers": "Стикерлер",
+      "emoji": "Эмодзи",
       "uploadPhoto": "Жүктеу",
       "filters": "Сүзгілер",
       "effects": "Эффектілер",
@@ -123,11 +123,6 @@
           "diagonal": "Диаг."
         },
         "reset": "Тастау"
-      },
-      "stickersList": {
-        "searchPlaceholder": "Стикерлерді іздеу",
-        "noApiKey": "Стикерлерді іздеу қолжетімсіз — Giphy API кілті орнатылмаған",
-        "trendingEmpty": "Танымал стикерлерді жүктеу мүмкін болмады"
       }
     },
     "controls": {

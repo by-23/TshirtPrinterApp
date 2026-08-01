@@ -46,7 +46,11 @@ body,
 
 body {
   background: #000;
+  /* Kiosk is a touchscreen: disable double-tap zoom / 300ms delay everywhere,
+     including when a mouse is used inside the scaled KioskFrame. */
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 @property --operator-scroll-size {
@@ -73,11 +77,40 @@ textarea {
   font-family: var(--font-family);
 }
 
-/* Tool popovers next to the left rail (text, upload, filters, effects, stickers). */
+/* Tool popovers next to the left rail (text, upload, filters, effects, emoji). */
 .editor-theme-root .editor-tool-popover {
   width: var(--editor-tool-popover-width);
   padding: var(--editor-tool-popover-padding);
   border-radius: var(--editor-tool-popover-radius);
+  z-index: 40;
+}
+
+.editor-theme-root .editor-tool-popover--emoji {
+  width: var(--editor-tool-emoji-popover-width);
+}
+
+.editor-theme-root .editor-tool-popover-drag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: calc(var(--editor-tool-popover-padding) * -0.35) 0 var(--editor-tool-gap);
+  padding: 14px 0 8px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.editor-theme-root .editor-tool-popover-drag:active {
+  cursor: grabbing;
+}
+
+.editor-theme-root .editor-tool-popover-drag-grip {
+  display: block;
+  width: 56px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .editor-theme-root .editor-tool-panel {
@@ -156,8 +189,34 @@ textarea {
   height: var(--editor-tool-search-icon-size);
 }
 
-.editor-theme-root .editor-tool-sticker-grid {
-  min-height: var(--editor-tool-sticker-grid-min-height);
+.editor-theme-root .editor-tool-emoji-grid {
+  min-height: var(--editor-tool-emoji-grid-min-height);
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 78, 205, 0.75) rgba(255, 255, 255, 0.08);
+}
+
+.editor-theme-root .editor-tool-emoji-grid::-webkit-scrollbar {
+  width: 10px;
+  height: 0;
+}
+
+.editor-theme-root .editor-tool-emoji-grid::-webkit-scrollbar-track {
+  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+}
+
+.editor-theme-root .editor-tool-emoji-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff6ad5 0%, #ff2eb6 100%);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.editor-theme-root .editor-tool-emoji-grid::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff8ae0 0%, #ff4ec4 100%);
+  background-clip: padding-box;
 }
 /* ==========================================================================
    Live theme tokens
@@ -572,6 +631,7 @@ textarea {
   --editor-tips-block-width: 100%;
 
   --editor-tool-popover-width: 500px;
+  --editor-tool-emoji-popover-width: 720px;
   --editor-tool-popover-padding: 30px;
   --editor-tool-popover-radius: 28px;
   --editor-tool-gap: 22px;
@@ -595,7 +655,7 @@ textarea {
   --editor-tool-search-padding-x: 20px;
   --editor-tool-search-padding-y: 16px;
   --editor-tool-search-icon-size: 30px;
-  --editor-tool-sticker-grid-min-height: 256px;
+  --editor-tool-emoji-grid-min-height: 256px;
 /* ========================================================================
      Checkout screen ("/kiosk/checkout") — own independent token set, tuned
      from CheckoutThemePanel.tsx the same way the editor tokens above are

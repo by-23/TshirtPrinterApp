@@ -52,7 +52,6 @@ import {
   MOCKUP_DISPLAY_SCALE,
   MOCKUP_HEIGHT,
   MOCKUP_WIDTH,
-  useFabricShadingOverlayStyle,
   useGarmentSilhouetteUrl,
 } from "../../editor/mockup/index.js";
 
@@ -192,7 +191,6 @@ export function Editor() {
   const printAreas = usePrintAreaStore((state) => state.areas);
   const printArea = printAreas[garmentType][side];
   const garmentImageUrl = useGarmentSilhouetteUrl(garmentType, side);
-  const fabricShadingOverlayStyle = useFabricShadingOverlayStyle(garmentType, side, color, printArea);
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
   const mockupPixelHeight = MOCKUP_HEIGHT * MOCKUP_DISPLAY_SCALE;
 
@@ -323,7 +321,7 @@ export function Editor() {
         >
           <div className="flex flex-col lg:flex-row lg:items-start" style={{ gap: "var(--editor-main-columns-gap)" }}>
             <aside
-              className={isPreview ? "editor-preview-dimmed" : undefined}
+              className={isPreview ? "editor-preview-dimmed relative z-40" : "relative z-40"}
               aria-hidden={isPreview}
               data-editor-selection-ui
               style={{ width: "var(--editor-rail-width)", flexShrink: 0 }}
@@ -375,7 +373,6 @@ export function Editor() {
                       className="h-full w-full"
                       onReady={setCanvas}
                     />
-                    <div className="absolute inset-0" style={fabricShadingOverlayStyle} />
                   </div>
 
                   <ObjectControls canvas={canvas} printArea={printArea} />
@@ -383,7 +380,7 @@ export function Editor() {
               </div>
 
               <div
-                className={isPreview ? "editor-preview-dimmed relative z-20 w-full" : "relative z-20 w-full"}
+                className={isPreview ? "editor-preview-dimmed relative z-10 w-full" : "relative z-10 w-full"}
                 aria-hidden={isPreview}
               >
                 <CanvasControlStrip canvas={canvas} />

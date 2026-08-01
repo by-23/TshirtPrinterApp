@@ -67,7 +67,7 @@
       "addText": "添加文字",
       "textPlaceholder": "文字",
       "image": "图片",
-      "stickers": "贴纸",
+      "emoji": "表情",
       "uploadPhoto": "上传",
       "filters": "滤镜",
       "effects": "效果",
@@ -123,11 +123,6 @@
           "diagonal": "对角"
         },
         "reset": "重置"
-      },
-      "stickersList": {
-        "searchPlaceholder": "搜索贴纸",
-        "noApiKey": "贴纸搜索不可用——未配置Giphy API密钥",
-        "trendingEmpty": "无法加载热门贴纸"
       }
     },
     "controls": {

@@ -6,6 +6,7 @@ import { PricingPage } from "./routes/PricingPage.js";
 import { MaterialsPage } from "./routes/MaterialsPage.js";
 import { StatsPage } from "./routes/StatsPage.js";
 import { CatalogPage } from "./routes/CatalogPage.js";
+import { FontsPage } from "./routes/FontsPage.js";
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/materials" element={<MaterialsPage />} />
         <Route path="/catalog" element={<CatalogPage />} />
+        <Route path="/fonts" element={<FontsPage />} />
         <Route path="/stats" element={<StatsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

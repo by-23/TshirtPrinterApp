@@ -7,6 +7,7 @@ import {
   LogoutOutlined,
   PictureOutlined,
   AppstoreOutlined,
+  FontSizeOutlined,
 } from "@ant-design/icons";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../lib/authStore.js";
@@ -18,10 +19,11 @@ const NAV_ITEMS: MenuProps["items"] = [
   { key: "/pricing", icon: <DollarOutlined />, label: "Цены" },
   { key: "/materials", icon: <AppstoreOutlined />, label: "Материалы" },
   { key: "/catalog", icon: <PictureOutlined />, label: "Каталог" },
+  { key: "/fonts", icon: <FontSizeOutlined />, label: "Шрифты" },
   { key: "/stats", icon: <BarChartOutlined />, label: "Статистика" },
 ];
 
-const NAV_KEYS = ["/points", "/pricing", "/materials", "/catalog", "/stats"];
+const NAV_KEYS = ["/points", "/pricing", "/materials", "/catalog", "/fonts", "/stats"];
 
 export function AdminLayout() {
   const token = useAuthStore((s) => s.token);

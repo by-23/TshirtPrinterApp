@@ -10,6 +10,7 @@ import { garmentAvailabilityRoutes } from "./modules/garment-availability/routes
 import { statsRoutes } from "./modules/stats/routes.js";
 import { uploadRelayRoutes } from "./modules/upload-relay/routes.js";
 import { catalogManualRoutes } from "./modules/catalog-manual/routes.js";
+import { fontsRoutes } from "./modules/fonts/routes.js";
 import { initRealtime } from "./realtime/socket.js";
 
 /**
@@ -46,6 +47,7 @@ export async function buildServer() {
   await app.register(statsRoutes);
   await app.register(uploadRelayRoutes);
   await app.register(catalogManualRoutes);
+  await app.register(fontsRoutes);
 
   return app;
 }

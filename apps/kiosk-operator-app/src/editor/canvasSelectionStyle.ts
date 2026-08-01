@@ -10,7 +10,9 @@ const OBJECT_SELECTION_STYLE = {
   transparentCorners: false,
   borderScaleFactor: 2.5,
   borderOpacityWhenMoving: 1,
-  cornerSize: 14,
+  // Kiosk is touch-first: always use the large touch hit targets, even when
+  // a mouse drives the CSS-scaled KioskFrame in development.
+  cornerSize: 28,
   touchCornerSize: 28,
 } as const;
 

@@ -300,3 +300,25 @@ export const adsVideos = sqliteTable("ads_videos", {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });
+
+/**
+ * Editor fonts synced from central admin (`sync:snapshot.fonts`). Built-ins
+ * are seeded locally so the kiosk works offline / before first sync; custom
+ * faces store a file under `data/fonts/` served at `/files/fonts/`.
+ */
+export const managedFonts = sqliteTable("managed_fonts", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  family: text("family").notNull(),
+  kind: text("kind", { enum: ["system", "local", "google", "custom"] }).notNull(),
+  googleFamily: text("google_family"),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  revision: integer("revision").notNull().default(1),
+  /** Relative public path (`/files/fonts/...`) for custom faces. */
+  localFileUrl: text("local_file_url"),
+  format: text("format", { enum: ["truetype", "opentype", "woff", "woff2"] }),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});

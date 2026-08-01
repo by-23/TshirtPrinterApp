@@ -5,6 +5,7 @@ import {
   ORDER_EVENT_CHANNEL,
   type AiPhotoReceivedPayload,
   type GarmentAvailabilityEvent,
+  type ManagedFont,
   type Order,
   type OrderEvent,
   type PointConfigSnapshot,
@@ -19,6 +20,8 @@ export const POINT_CONFIG_EVENT_CHANNEL = "point-config:event";
 export const PRICING_EVENT_CHANNEL = "pricing:event";
 /** Local event when garment availability changes (operator save or central admin override). */
 export const GARMENT_AVAILABILITY_EVENT_CHANNEL = "garment-availability:event";
+/** Local event when the enabled editor font catalog changes after a central sync. */
+export const FONTS_EVENT_CHANNEL = "fonts:event";
 
 /**
  * Attaches Socket.IO to the same underlying HTTP server Fastify listens on
@@ -58,6 +61,12 @@ export function emitPricingEvent(config: PriceConfig): void {
 export function emitGarmentAvailabilityEvent(payload: GarmentAvailabilityEvent): void {
   if (!io) return;
   io.emit(GARMENT_AVAILABILITY_EVENT_CHANNEL, payload);
+}
+
+/** Broadcasts the enabled editor font list so TextTool refreshes without a reload. */
+export function emitFontsEvent(fonts: ManagedFont[]): void {
+  if (!io) return;
+  io.emit(FONTS_EVENT_CHANNEL, fonts);
 }
 
 /**

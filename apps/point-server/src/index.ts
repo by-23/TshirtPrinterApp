@@ -13,6 +13,7 @@ import { ensureStylePreviews } from "./modules/ai/local/previewCache.js";
 import { getAllStylesForPreviewRender } from "./modules/ai/styles.js";
 import { repairOrderImagePaths } from "./modules/orders/repairImagePaths.js";
 import { startDailyBackupScheduler } from "./modules/backup/daily.js";
+import { ensureLocalBuiltinFonts } from "./modules/fonts/service.js";
 
 /** Safety-net interval for `sync_queue` retries — connect/order-create already nudge a drain, this just catches anything left behind after a failed attempt. */
 const SYNC_QUEUE_DRAIN_INTERVAL_MS = 30_000;
@@ -25,6 +26,7 @@ ensureDataDir();
 // see docs/PLAN.md Этап 3 discussion. Safe on every boot: drizzle no-ops
 // once a migration is already recorded as applied.
 runMigrations();
+void ensureLocalBuiltinFonts();
 
 const app = await buildServer();
 void repairOrderImagePaths(app.log);// Dev restarts (tsx watch reloads, crashed terminals, killed processes) can

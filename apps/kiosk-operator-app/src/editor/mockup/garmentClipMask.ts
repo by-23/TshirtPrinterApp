@@ -109,5 +109,7 @@ export function getFabricShadingOverlayStyle(input: GarmentClipMaskInput): CSSPr
     filter: "grayscale(1) brightness(1.12) contrast(0.9)",
     mixBlendMode: "multiply",
     pointerEvents: "none",
+    // Alpha folds (not luminance) — matches PhotoGarmentMockup tint masking.
+    ...({ WebkitMaskMode: "alpha", maskMode: "alpha" } as CSSProperties),
   };
 }

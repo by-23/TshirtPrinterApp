@@ -28,6 +28,9 @@ apps/point-server/data/orders/
 apps/point-server/data/catalog/
 apps/point-server/data/catalog-tmp/
 
+# Synced custom editor fonts from central admin
+apps/point-server/data/fonts/
+
 # Downloaded local AI-stylization model weights + rendered preview thumbnails
 # (point-server, hybrid AI stylization) — re-downloaded/re-rendered on boot.
 apps/point-server/data/ai-models/

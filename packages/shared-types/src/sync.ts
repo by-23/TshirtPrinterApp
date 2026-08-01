@@ -3,6 +3,7 @@ import { pointStatusSchema, uploadModeSchema } from "./point.js";
 import { priceConfigSchema } from "./pricing.js";
 import { garmentAvailabilityConfigSchema, garmentTypeSchema, printSizeSchema } from "./garment.js";
 import { orderStatusSchema } from "./order.js";
+import { managedFontSchema } from "./fonts.js";
 
 /** Socket.IO event names on the `/relay-socket` channel (Stage 7). */
 export const SYNC_SNAPSHOT_EVENT = "sync:snapshot";
@@ -34,6 +35,12 @@ export const syncSnapshotSchema = z.object({
   priceConfig: priceConfigSchema,
   garmentAvailabilityOverrideActive: z.boolean().default(false),
   garmentAvailability: garmentAvailabilityConfigSchema.optional(),
+  /**
+   * Editor font catalog from central admin. When omitted (older relay), the
+   * point keeps its last-applied / seeded local list. When present (even
+   * empty), the point replaces its catalog wholesale.
+   */
+  fonts: z.array(managedFontSchema).optional(),
 });
 export type SyncSnapshotPayload = z.infer<typeof syncSnapshotSchema>;
 

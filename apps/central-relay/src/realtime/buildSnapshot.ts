@@ -13,6 +13,7 @@ import {
   pointPriceOverrides,
   points,
 } from "../db/schema.js";
+import { listFontsForSnapshot } from "../modules/fonts/service.js";
 
 const GLOBAL_ROW_ID = "global";
 
@@ -64,8 +65,8 @@ function mergePriceConfig(global: PriceConfig, override: PartialPriceConfig | un
 
 /**
  * Builds the full `sync:snapshot` payload for a single point — point
- * identity/status, effective price config, and optional garment-availability
- * admin override. Returns `null` if the point no longer exists.
+ * identity/status, effective price config, optional garment-availability
+ * admin override, and the editor font catalog.
  */
 export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapshotPayload | null> {
   const [point] = await db.select().from(points).where(eq(points.id, pointId));
@@ -86,6 +87,7 @@ export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapsh
 
   const global = withPriceConfigDefaults(globalRow?.config);
   const priceConfig = mergePriceConfig(global, overrideRow?.config);
+  const fonts = await listFontsForSnapshot();
 
   if (garmentOverrideRow) {
     return {
@@ -93,6 +95,7 @@ export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapsh
       priceConfig,
       garmentAvailabilityOverrideActive: true,
       garmentAvailability: withGarmentAvailabilityDefaults(garmentOverrideRow.availability),
+      fonts,
     };
   }
 
@@ -100,6 +103,7 @@ export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapsh
     pointConfig: { name: point.name, status: point.status, uploadMode: point.uploadMode },
     priceConfig,
     garmentAvailabilityOverrideActive: false,
+    fonts,
   };
 }
 

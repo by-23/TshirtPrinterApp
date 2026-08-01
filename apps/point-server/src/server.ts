@@ -14,6 +14,7 @@ import { garmentAvailabilityRoutes } from "./modules/garment-availability/routes
 import { aiRoutes } from "./modules/ai/routes.js";
 import { stickerRoutes } from "./modules/stickers/routes.js";
 import { adsRoutes } from "./modules/ads/routes.js";
+import { fontsRoutes } from "./modules/fonts/routes.js";
 import { initRealtime } from "./realtime/socket.js";
 import { env } from "./env.js";
 import { ensureDataDir } from "./lib/dataDir.js";
@@ -69,6 +70,7 @@ export async function buildServer() {
   await app.register(aiRoutes);
   await app.register(stickerRoutes);
   await app.register(adsRoutes);
+  await app.register(fontsRoutes);
 
   const uiDist = resolveUiDistPath();
   if (uiDist) {

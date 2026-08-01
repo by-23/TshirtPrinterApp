@@ -60,7 +60,7 @@ export function AiCameraCapture() {
       </div>
 
       <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center">
-        <div className="relative aspect-square w-[min(100%,72vmin)] overflow-hidden rounded-3xl border-2 border-neon-pink bg-ink-900 shadow-neon-pink">
+        <div className="relative aspect-[9/16] h-[min(100%,70%)] w-auto max-w-full overflow-hidden rounded-3xl border-2 border-neon-pink bg-ink-900 shadow-neon-pink">
           {error ? (
             <div className="flex h-full w-full items-center justify-center px-6">
               <p className="text-center text-sm text-ink-200">{t("ai.camera.error")}</p>

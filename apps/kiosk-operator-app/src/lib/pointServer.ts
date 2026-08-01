@@ -35,11 +35,11 @@ import {
   type GarmentAvailabilityConfig,
   type GarmentAvailabilityEvent,
   type SetDesignIsolatedInput,
-  type StickerSearchResponse,
   type StylizeResponse,
   type UpdateCatalogScrapeConfigInput,
   type UpdatePrintAreaConfigInput,
   type UpdateGarmentAvailabilityConfigInput,
+  type ManagedFont,
   orderEventSchema,
 } from "@tshirt/shared-types";
 
@@ -50,6 +50,7 @@ import {
 const POINT_CONFIG_EVENT_CHANNEL = "point-config:event";
 const PRICING_EVENT_CHANNEL = "pricing:event";
 const GARMENT_AVAILABILITY_EVENT_CHANNEL = "garment-availability:event";
+const FONTS_EVENT_CHANNEL = "fonts:event";
 
 /** Same host as the UI (LAN IP on phones), so API calls don't hit the device's own localhost. */
 function resolvePointServerUrl(): string {
@@ -381,6 +382,25 @@ export function subscribeGarmentAvailabilityEvents(
   };
 }
 
+/** Enabled editor fonts from point-server (synced from central admin). */
+export async function fetchFonts(): Promise<ManagedFont[]> {
+  const res = await fetch(`${POINT_SERVER_URL}/fonts`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch fonts: ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Realtime push when the enabled editor font catalog changes after a central sync. */
+export function subscribeFontsEvents(callback: (fonts: ManagedFont[]) => void): () => void {
+  const socket = getSocket();
+  const handler = (payload: ManagedFont[]) => callback(payload);
+  socket.on(FONTS_EVENT_CHANNEL, handler);
+  return () => {
+    socket.off(FONTS_EVENT_CHANNEL, handler);
+  };
+}
+
 // --- Pinterest catalog scraper (Этап 3) — settings tab in the operator panel ---
 
 export interface PrintAreaConfigResponse {
@@ -686,40 +706,6 @@ export async function uploadAiStylePreview(id: number, file: File): Promise<void
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? `Failed to upload AI style preview: ${res.status}`);
   }
-}
-
-// --- Стикеры (editor "Стикеры" tool) — live Giphy Stickers search, proxied through point-server ---
-
-export async function searchStickers(query: string): Promise<StickerSearchResponse> {
-  const url = new URL(`${POINT_SERVER_URL}/stickers/search`);
-  url.searchParams.set("q", query);
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed to search stickers: ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function fetchTrendingStickers(): Promise<StickerSearchResponse> {
-  const res = await fetch(`${POINT_SERVER_URL}/stickers/trending`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch trending stickers: ${res.status}`);
-  }
-  return res.json();
-}
-
-/** Downloads + caches the picked sticker as a PNG on the point, returning a stable `/files/...` URL for `addImageFromUrl`. */
-export async function selectSticker(giphyId: string, previewUrl: string): Promise<string> {
-  const res = await fetch(`${POINT_SERVER_URL}/stickers/select`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ giphyId, previewUrl }),
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to select sticker: ${res.status}`);
-  }
-  const body = (await res.json()) as { url: string };
-  return resolveDesignImageUrl(body.url);
 }
 
 // --- Ads / screensaver videos (Этап 8) ---

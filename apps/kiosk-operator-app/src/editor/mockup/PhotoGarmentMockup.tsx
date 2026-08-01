@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { GarmentType } from "@tshirt/shared-types";
 import { useGarmentMockupImage } from "../../lib/kioskImages.js";
 import type { GarmentMockupProps } from "./garmentShape.js";
@@ -9,10 +10,12 @@ const GARMENT_ASPECT_RATIO = "1 / 1";
 /**
  * Renders the real client-provided flat-lay garment photo (t-shirt, sweatshirt,
  * cap, or shopper — one photo per type/side) instead of a drawn shape.
- * Non-white palette colors are achieved by tinting the white photo with a
- * `mix-blend-mode: multiply` overlay clipped to the garment's own alpha
- * silhouette, so folds/shadows stay intact. Pass `imageUrl` to use a
- * different photo (home popular-prints mockup).
+ *
+ * Flat-lay PNGs are near-white in RGB with folds stored in alpha. Non-white
+ * colors are a solid fill clipped to that alpha (same end state as sharp's
+ * white×multiply + dest-in on the server). Using `mix-blend-mode: multiply`
+ * against the dark editor backdrop made opaque fabric darker than the
+ * semi-transparent folds — a false "negative" look.
  */
 export function PhotoGarmentMockup({
   garmentType,
@@ -34,18 +37,11 @@ export function PhotoGarmentMockup({
         className="relative h-full max-h-full w-full max-w-full"
         style={{ aspectRatio: aspectRatio ?? GARMENT_ASPECT_RATIO }}
       >
-        <img
-          src={baseImage}
-          alt=""
-          draggable={false}
-          className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
-        />
-        {needsTint && (
+        {needsTint ? (
           <div
             className="pointer-events-none absolute inset-0"
             style={{
               backgroundColor: color,
-              mixBlendMode: "multiply",
               WebkitMaskImage: `url(${baseImage})`,
               maskImage: `url(${baseImage})`,
               WebkitMaskSize: "contain",
@@ -54,7 +50,15 @@ export function PhotoGarmentMockup({
               maskPosition: "center",
               WebkitMaskRepeat: "no-repeat",
               maskRepeat: "no-repeat",
+              ...({ WebkitMaskMode: "alpha", maskMode: "alpha" } as CSSProperties),
             }}
+          />
+        ) : (
+          <img
+            src={baseImage}
+            alt=""
+            draggable={false}
+            className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
           />
         )}
       </div>

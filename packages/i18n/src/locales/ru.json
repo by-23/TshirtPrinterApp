@@ -67,7 +67,7 @@
       "addText": "Добавить текст",
       "textPlaceholder": "Текст",
       "image": "Картинка",
-      "stickers": "Стикеры",
+      "emoji": "Эмодзи",
       "uploadPhoto": "Загрузить",
       "filters": "Фильтры",
       "effects": "Эффекты",
@@ -123,11 +123,6 @@
           "diagonal": "Диаг."
         },
         "reset": "Сбросить"
-      },
-      "stickersList": {
-        "searchPlaceholder": "Поиск стикеров",
-        "noApiKey": "Поиск стикеров недоступен — не настроен ключ Giphy API",
-        "trendingEmpty": "Не удалось загрузить популярные стикеры"
       }
     },
     "controls": {

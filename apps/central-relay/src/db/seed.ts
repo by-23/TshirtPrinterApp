@@ -5,6 +5,7 @@ import { DEFAULT_PRICE_CONFIG } from "@tshirt/shared-types";
 import { db, pool } from "./client.js";
 import { admins, globalPriceConfig, ordersArchive, points } from "./schema.js";
 import { env } from "../env.js";
+import { ensureBuiltinFontsSeeded } from "../modules/fonts/service.js";
 
 const SALT_ROUNDS = 10;
 const GLOBAL_ROW_ID = "global";
@@ -92,6 +93,8 @@ async function seedDemoPointAndStats() {
 async function seed() {
   await seedAdmin();
   await seedGlobalPriceConfig();
+  await ensureBuiltinFontsSeeded();
+  console.log("Built-in editor fonts seeded");
   await seedDemoPointAndStats();
 }
 

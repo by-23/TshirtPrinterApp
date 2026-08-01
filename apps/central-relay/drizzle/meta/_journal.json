@@ -50,6 +50,13 @@
       "when": 1784904000000,
       "tag": "0006_garment_availability_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785542000000,
+      "tag": "0007_managed_fonts",
+      "breakpoints": true
     }
   ]
 }

@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IText, type Canvas } from "fabric";
 import { TouchButton } from "@tshirt/ui-kit";
-import { FONTS, TEXT_COLORS } from "../types.js";
+import { TEXT_COLORS } from "../types.js";
 import { ColorPickerPopover } from "./ColorPickerPopover.js";
 import { recordHistoryEntry } from "../history.js";
+import {
+  EDITOR_FONTS,
+  applyManagedFonts,
+  type FontOption,
+} from "../../lib/fonts.js";
+import { fetchFonts, resolveDesignImageUrl, subscribeFontsEvents } from "../../lib/pointServer.js";
 
 export interface TextToolProps {
   canvas: Canvas | null;
@@ -12,8 +18,36 @@ export interface TextToolProps {
 
 export function TextTool({ canvas }: TextToolProps) {
   const { t } = useTranslation();
-  const [fontFamily, setFontFamily] = useState(FONTS[0]!.family);
+  const [fonts, setFonts] = useState<FontOption[]>(EDITOR_FONTS);
+  const [fontFamily, setFontFamily] = useState(EDITOR_FONTS[0]!.family);
   const [color, setColor] = useState(TEXT_COLORS[0]!);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    function applyList(managed: Awaited<ReturnType<typeof fetchFonts>>) {
+      if (cancelled) return;
+      const next = applyManagedFonts(managed, resolveDesignImageUrl);
+      if (next.length > 0) {
+        setFonts(next);
+        setFontFamily((current) =>
+          next.some((font) => font.family === current) ? current : next[0]!.family,
+        );
+      }
+    }
+
+    void fetchFonts()
+      .then(applyList)
+      .catch(() => {
+        // Fail-open: keep bundled EDITOR_FONTS when point-server is unreachable.
+      });
+
+    const unsubscribe = subscribeFontsEvents(applyList);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   function applyToSelection(props: Partial<{ fontFamily: string; fill: string }>) {
     if (!canvas) return;
@@ -61,7 +95,7 @@ export function TextTool({ canvas }: TextToolProps) {
         {t("editor.toolbar.addText")}
       </TouchButton>
       <div className="flex flex-wrap gap-2">
-        {FONTS.map((font) => (
+        {fonts.map((font) => (
           <button
             key={font.id}
             type="button"

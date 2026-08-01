@@ -15,11 +15,12 @@ import {
   Smile,
 } from "../../components/icons.js";
 import { TextTool } from "./TextTool.js";
-import { StickerPicker } from "./StickerPicker.js";
+import { EmojiPicker } from "./EmojiPicker.js";
 import { UploadTool } from "./UploadTool.js";
 import { FiltersTool } from "./FiltersTool.js";
 import { EffectsTool } from "./EffectsTool.js";
 import { ImagePickerModal } from "./ImagePickerModal.js";
+import { DraggableToolPopover } from "./DraggableToolPopover.js";
 import { EDITOR_TOOL_UI_SELECTOR } from "../canvasSelectionStyle.js";
 import { blockBorderStyle, dividerStyle } from "../borderStyle.js";
 import { useHistoryStore, undoLastEntry, redoLastEntry } from "../history.js";
@@ -28,12 +29,12 @@ export interface ToolRailProps {
   canvas: Canvas | null;
 }
 
-type PopoverTool = "text" | "upload" | "stickers" | "filters" | "effects";
+type PopoverTool = "text" | "upload" | "emoji" | "filters" | "effects";
 
 const POPOVER_CONTENT: Record<PopoverTool, (canvas: Canvas | null) => ReactNode> = {
   text: (canvas) => <TextTool canvas={canvas} />,
   upload: (canvas) => <UploadTool canvas={canvas} />,
-  stickers: (canvas) => <StickerPicker canvas={canvas} />,
+  emoji: (canvas) => <EmojiPicker canvas={canvas} />,
   filters: (canvas) => <FiltersTool canvas={canvas} />,
   effects: (canvas) => <EffectsTool canvas={canvas} />,
 };
@@ -175,13 +176,13 @@ export function ToolRail({ canvas }: ToolRailProps) {
       ),
     },
     {
-      key: "stickers",
+      key: "emoji",
       node: (
         <RailButton
           icon={<Smile className={RAIL_ICON_CLASS} />}
-          label={t("editor.toolbar.stickers")}
-          active={openTool === "stickers"}
-          onClick={() => toggle("stickers")}
+          label={t("editor.toolbar.emoji")}
+          active={openTool === "emoji"}
+          onClick={() => toggle("emoji")}
         />
       ),
     },
@@ -226,9 +227,12 @@ export function ToolRail({ canvas }: ToolRailProps) {
             <div className="relative">
               {button.node}
               {openTool === button.key && (
-                <div className="editor-tool-popover absolute left-full top-0 z-20 ml-4 border border-ink-600 bg-ink-900 shadow-xl">
+                <DraggableToolPopover
+                  key={button.key}
+                  className={button.key === "emoji" ? "editor-tool-popover--emoji" : undefined}
+                >
                   {POPOVER_CONTENT[button.key](canvas)}
-                </div>
+                </DraggableToolPopover>
               )}
             </div>
           ) : (

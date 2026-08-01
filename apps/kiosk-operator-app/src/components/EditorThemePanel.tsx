@@ -361,8 +361,18 @@ const SECTIONS: Section[] = [
         defaultValue: 500,
         type: "range",
         min: 240,
-        max: 600,
-        step: 1,
+        max: 800,
+        step: 4,
+        unit: "px",
+      },
+      {
+        key: "--editor-tool-emoji-popover-width",
+        label: "Ширина панели эмодзи",
+        defaultValue: 720,
+        type: "range",
+        min: 320,
+        max: 1000,
+        step: 4,
         unit: "px",
       },
       { key: "--editor-tool-popover-padding", label: "Внутренний отступ", defaultValue: 30, ...GAP_RANGE },
@@ -407,8 +417,8 @@ const SECTIONS: Section[] = [
       { key: "--editor-tool-search-padding-y", label: "Поиск — отступ по вертикали", defaultValue: 16, ...GAP_RANGE },
       { key: "--editor-tool-search-icon-size", label: "Поиск — иконка", defaultValue: 30, ...SIZE_RANGE },
       {
-        key: "--editor-tool-sticker-grid-min-height",
-        label: "Сетка стикеров — мин. высота",
+        key: "--editor-tool-emoji-grid-min-height",
+        label: "Сетка эмодзи — мин. высота",
         defaultValue: 256,
         type: "range",
         min: 80,
@@ -827,6 +837,10 @@ function loadStoredValues(): Record<string, string> {
     const parsed = JSON.parse(raw) as Record<string, string>;
     if (parsed["--editor-popular-tile-gap"] && !parsed["--editor-popular-image-gap"]) {
       parsed["--editor-popular-image-gap"] = parsed["--editor-popular-tile-gap"];
+    }
+    // Undo the temporary global 1000px popover width — only emoji stays wider.
+    if (parsed["--editor-tool-popover-width"] === "1000") {
+      parsed["--editor-tool-popover-width"] = "500";
     }
     const normalized: Record<string, string> = {};
     for (const [key, value] of Object.entries(parsed)) {

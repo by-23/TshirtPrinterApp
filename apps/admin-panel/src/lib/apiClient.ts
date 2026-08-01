@@ -67,6 +67,13 @@ export const apiClient = {
     return request<T>(path, { method: "POST", body: formData });
   },
   /**
+   * Multipart upload with arbitrary FormData fields (font uploads need
+   * `label` / `familyName` alongside the binary).
+   */
+  uploadForm: async <T>(path: string, formData: FormData): Promise<T> => {
+    return request<T>(path, { method: "POST", body: formData });
+  },
+  /**
    * Fetches a protected binary (the manual catalog's `GET
    * /catalog-manual/:id/file`) with the admin's Bearer token attached — an
    * `<img src>` can't carry an Authorization header itself, so callers turn

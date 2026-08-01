@@ -12,7 +12,6 @@ import {
   MOCKUP_DISPLAY_SCALE,
   MOCKUP_HEIGHT,
   MOCKUP_WIDTH,
-  useFabricShadingOverlayStyle,
   useGarmentClipMaskStyle,
 } from "../../../editor/mockup/index.js";
 import { blockBorderStyle } from "./borderStyle.js";
@@ -82,7 +81,6 @@ export function CheckoutPreview({ garment }: CheckoutPreviewProps) {
 
   const printArea = printAreas[garment.type][previewSide];
   const garmentClipMaskStyle = useGarmentClipMaskStyle(garment.type, previewSide, garment.color, printArea);
-  const fabricShadingOverlayStyle = useFabricShadingOverlayStyle(garment.type, previewSide, garment.color, printArea);
   const canvasWidthPx = printArea.width * MOCKUP_DISPLAY_SCALE;
   const canvasHeightPx = printArea.height * MOCKUP_DISPLAY_SCALE;
   const mockupPixelWidth = MOCKUP_WIDTH * MOCKUP_DISPLAY_SCALE;
@@ -140,7 +138,6 @@ export function CheckoutPreview({ garment }: CheckoutPreviewProps) {
                 widthPx={canvasWidthPx}
                 heightPx={canvasHeightPx}
               />
-              <div className="absolute inset-0" style={fabricShadingOverlayStyle} />
             </div>
           </div>
         </div>
