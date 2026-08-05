@@ -88,7 +88,7 @@ export function FiltersTool({ canvas }: FiltersToolProps) {
   }
 
   return (
-    <div className="editor-tool-panel max-h-[70vh] overflow-y-auto">
+    <div className="editor-tool-panel editor-tool-panel--scroll">
       <h4 className="editor-tool-title">{t("editor.toolbar.filters")}</h4>
 
       <div className="flex flex-wrap gap-2">

@@ -33,7 +33,21 @@ export function useOpenSections(storageKey: string) {
     });
   }
 
-  return { isOpen, toggle };
+  function ensureOpen(id: string) {
+    setOpenSections((prev) => {
+      if (prev[id] === true) return prev;
+      const next = { ...prev, [id]: true };
+      window.localStorage.setItem(storageKey, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  return { isOpen, toggle, ensureOpen };
+}
+
+/** Scroll the design-panel accordion header for `id` into view. */
+export function scrollToSection(id: string) {
+  document.getElementById(`${id}-header`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 /** Stable id for a settings accordion section keyed by its title. */
@@ -77,6 +91,7 @@ export function SettingsPanelSection({
   onToggle,
   children,
   nested = false,
+  highlighted = false,
 }: {
   id: string;
   title: string;
@@ -84,13 +99,19 @@ export function SettingsPanelSection({
   onToggle: () => void;
   children: ReactNode;
   nested?: boolean;
+  /** Soft accent when this section was picked from the page. */
+  highlighted?: boolean;
 }) {
   return (
     <div
       className={
         nested
-          ? "overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
-          : "overflow-hidden rounded-2xl border-2 border-white/10 bg-white/[0.03]"
+          ? `overflow-hidden rounded-2xl border bg-white/[0.03] ${
+              highlighted ? "border-[var(--brand-primary)]/70" : "border-white/10"
+            }`
+          : `overflow-hidden rounded-2xl border-2 bg-white/[0.03] ${
+              highlighted ? "border-[var(--brand-primary)]/70" : "border-white/10"
+            }`
       }
     >
       <button
@@ -100,8 +121,8 @@ export function SettingsPanelSection({
         aria-controls={`${id}-body`}
         onClick={onToggle}
         className={`flex w-full items-center justify-between gap-4 text-left transition-colors hover:bg-white/[0.04] ${
-          nested ? "px-4 py-3" : "px-5 py-4"
-        }`}
+          highlighted ? "bg-[var(--brand-primary)]/10" : ""
+        } ${nested ? "px-4 py-3" : "px-5 py-4"}`}
       >
         <span
           className={`font-bold uppercase tracking-wider ${

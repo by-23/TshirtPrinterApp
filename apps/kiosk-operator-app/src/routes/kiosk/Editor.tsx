@@ -28,6 +28,7 @@ import {
   deselectCanvasSelection,
   shouldDeselectCanvasOnPointerDown,
 } from "../../editor/canvasSelectionStyle.js";
+import { editorThemeSection } from "../../editor/themeSections.js";
 import { useEditorStore } from "../../editor/store.js";
 import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
@@ -270,7 +271,7 @@ export function Editor() {
       className="editor-theme-root flex h-full w-full flex-col overflow-hidden px-4 py-8 text-white"
       style={{ backgroundColor: "var(--editor-page-bg)", gap: "var(--editor-page-section-gap)" }}
     >
-      <header className="relative flex items-center justify-between gap-4">
+      <header className="relative flex items-center justify-between gap-4" {...editorThemeSection("header")}>
         <Link
           to={backRoute}
           aria-label={t("common.back")}
@@ -334,6 +335,7 @@ export function Editor() {
             <div className="flex min-w-0 flex-1 flex-col items-center" style={{ gap: "var(--editor-center-column-gap)" }}>
               <div
                 className="relative flex items-center justify-center overflow-visible"
+                {...editorThemeSection("canvasCard")}
                 style={{
                   width: "var(--editor-canvas-card-width)",
                   height: "var(--editor-canvas-card-height)",
@@ -389,11 +391,16 @@ export function Editor() {
         <aside
           className={`flex w-full flex-shrink-0 flex-col lg:w-[var(--editor-right-panel-width)] ${isPreview ? "editor-preview-dimmed" : ""}`}
           aria-hidden={isPreview}
+          {...editorThemeSection("rightPanel")}
           style={{ gap: "var(--editor-right-panel-gap)" }}
         >
           <GarmentPicker />
 
-          <div className="flex flex-col overflow-hidden" style={blockBorderStyle("secondary-block")}>
+          <div
+            className="flex flex-col overflow-hidden"
+            {...editorThemeSection("preview")}
+            style={blockBorderStyle("secondary-block")}
+          >
             <button
               type="button"
               onClick={() => setIsPreview(true)}

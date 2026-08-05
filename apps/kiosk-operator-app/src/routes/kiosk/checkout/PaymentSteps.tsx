@@ -14,6 +14,7 @@ import {
   type CheckoutQrStepId,
 } from "../../../lib/kioskImages.js";
 import { blockBorderStyle } from "./borderStyle.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 const STEP_KEYS = ["openApp", "scanQr", "confirmPayment", "orderToPrint"] as const satisfies readonly CheckoutQrStepId[];
 
@@ -75,7 +76,7 @@ export function PaymentSteps() {
   const { t } = useTranslation();
 
   return (
-    <section style={blockBorderStyle("steps-block")}>
+    <section style={blockBorderStyle("steps-block")} {...checkoutThemeSection("steps")}>
       <h3
         className="text-center font-bold uppercase tracking-wide text-white"
         style={{ fontSize: "var(--checkout-steps-title-size)" }}

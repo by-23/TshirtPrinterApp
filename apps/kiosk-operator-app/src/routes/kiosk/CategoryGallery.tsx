@@ -7,6 +7,7 @@ import { appendDesignPage, fetchDesignsPage, resolveDesignImageUrl, resolveDesig
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
 import { ArrowLeft, FilmIcon, GamepadIcon, Heart, PhotoIcon, SearchIcon, SpinnerIcon } from "../../components/icons.js";
+import { galleryThemeSection } from "./themeSectionsGallery.js";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -69,7 +70,7 @@ function DesignCard({ design, index, onSelect }: { design: Design; index: number
   }, [src, fullSrc]);
 
   return (
-    <div className="gallery-card-shell relative">
+    <div className="gallery-card-shell relative" {...galleryThemeSection("cardColors")}>
       <button
         type="button"
         onClick={onSelect}
@@ -121,7 +122,7 @@ function DesignCard({ design, index, onSelect }: { design: Design; index: number
 
 function LoadingMoreCard() {
   return (
-    <div className="gallery-card-shell">
+    <div className="gallery-card-shell" {...galleryThemeSection("loadMore")}>
       <div
         className="gallery-card gallery-card--loading flex aspect-[9/16] flex-col items-center justify-center gap-3"
         style={{ color: "var(--gallery-card-loading-icon-color)" }}
@@ -299,13 +300,17 @@ export function CategoryGallery() {
       ref={scrollRootRef}
       // Background intentionally left transparent: KioskAmbientBackdrop shows through.
       className="gallery-theme-root flex h-full w-full flex-col overflow-y-auto overflow-x-hidden text-white"
+      {...galleryThemeSection("page")}
       style={{
         paddingInline: "var(--gallery-page-padding-x)",
         paddingBlock: "var(--gallery-page-padding-y)",
         gap: "var(--gallery-page-section-gap)",
       }}
     >
-      <header className="relative z-10 flex flex-shrink-0 items-center justify-between gap-4">
+      <header
+        className="relative z-10 flex flex-shrink-0 items-center justify-between gap-4"
+        {...galleryThemeSection("header")}
+      >
         <Link
           to="/kiosk"
           aria-label={t("common.back")}
@@ -334,7 +339,10 @@ export function CategoryGallery() {
         <LanguageSwitcherSlot />
       </header>
 
-      <div className="gallery-search relative z-10 flex flex-shrink-0 items-center gap-3 px-6">
+      <div
+        className="gallery-search relative z-10 flex flex-shrink-0 items-center gap-3 px-6"
+        {...galleryThemeSection("search")}
+      >
         <SearchIcon
           aria-hidden
           className="pointer-events-none flex-shrink-0"
@@ -373,7 +381,7 @@ export function CategoryGallery() {
       )}
 
       {state === "ready" && designs.length > 0 && (
-        <div className="gallery-grid">
+        <div className="gallery-grid" {...galleryThemeSection("grid")}>
           {designs.map((design, index) => (
             <DesignCard
               key={design.id}

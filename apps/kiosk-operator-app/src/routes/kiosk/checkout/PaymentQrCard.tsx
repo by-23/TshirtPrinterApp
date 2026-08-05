@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import { POINT_SERVER_URL } from "../../../lib/pointServer.js";
 import { blockBorderStyle, cardGradientStyle, contentBoxStyle } from "./borderStyle.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 const TIMER_SECONDS = 15 * 60;
 
@@ -35,6 +36,7 @@ export function PaymentQrCard({ orderId }: PaymentQrCardProps) {
   return (
     <div
       className="flex flex-1 flex-col items-center"
+      {...checkoutThemeSection("qrCard")}
       style={{
         ...cardGradientStyle("qr-card"),
         gap: "var(--checkout-qr-card-gap)",

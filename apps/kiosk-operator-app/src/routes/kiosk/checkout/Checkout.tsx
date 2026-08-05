@@ -15,6 +15,7 @@ import { PaymentSteps } from "./PaymentSteps.js";
 import { CheckoutFooter } from "./CheckoutFooter.js";
 import { AcceptedNotice } from "./AcceptedNotice.js";
 import { CancelledNotice } from "./CancelledNotice.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -94,9 +95,10 @@ export function Checkout() {
     <div
       // Background intentionally left transparent: KioskAmbientBackdrop shows through.
       className="checkout-theme-root flex h-full w-full flex-col overflow-y-auto px-4 py-8 text-white"
+      {...checkoutThemeSection("spacing")}
       style={{ gap: "var(--checkout-page-section-gap)" }}
     >
-      <header className="relative flex items-center justify-between gap-4">
+      <header className="relative flex items-center justify-between gap-4" {...checkoutThemeSection("header")}>
         <Link
           to="/kiosk/editor"
           aria-label={t("checkout.backTitle")}
@@ -146,7 +148,11 @@ export function Checkout() {
         </div>
       </div>
 
-      <section className="flex flex-col" style={{ gap: "var(--checkout-payment-section-gap)" }}>
+      <section
+        className="flex flex-col"
+        {...checkoutThemeSection("paymentTitle")}
+        style={{ gap: "var(--checkout-payment-section-gap)" }}
+      >
         <h2
           className="text-center font-bold uppercase tracking-wide text-white"
           style={{ fontSize: "var(--checkout-payment-title-size)" }}
@@ -172,7 +178,11 @@ export function Checkout() {
 
       <PaymentSteps />
 
-      <p style={{ ...blockBorderStyle("info-bar"), fontSize: "var(--checkout-info-bar-font-size)" }} className="text-center text-ink-200">
+      <p
+        {...checkoutThemeSection("infoBar")}
+        style={{ ...blockBorderStyle("info-bar"), fontSize: "var(--checkout-info-bar-font-size)" }}
+        className="text-center text-ink-200"
+      >
         ⓘ {t("checkout.infoBar")}
       </p>
 

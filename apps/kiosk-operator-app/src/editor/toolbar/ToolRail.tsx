@@ -33,6 +33,7 @@ import { DraggableToolPopover } from "./DraggableToolPopover.js";
 import { EDITOR_SELECTION_UI_SELECTOR, EDITOR_TOOL_UI_SELECTOR } from "../canvasSelectionStyle.js";
 import { blockBorderStyle, dividerStyle } from "../borderStyle.js";
 import { useHistoryStore, undoLastEntry, redoLastEntry } from "../history.js";
+import { editorThemeSection } from "../themeSections.js";
 
 export interface ToolRailProps {
   canvas: Canvas | null;
@@ -124,7 +125,8 @@ export function ToolRail({ canvas, bottomToolDockRef }: ToolRailProps) {
     function syncTextPanelOnSelection() {
       const active = canvas!.getActiveObject();
       if (active instanceof IText) {
-        setOpenTool("text");
+        // Same rule as mouse:down — don't steal Effects/Filters/etc. when text is selected.
+        setOpenTool((current) => (current === null || current === "text" ? "text" : current));
         return;
       }
       setOpenTool((current) => (current === "text" ? null : current));
@@ -287,6 +289,7 @@ export function ToolRail({ canvas, bottomToolDockRef }: ToolRailProps) {
     <div
       data-editor-tool-ui
       className="relative flex flex-col"
+      {...editorThemeSection("rail")}
       style={{ gap: "var(--editor-rail-gap)", ...blockBorderStyle("rail-block") }}
     >
       {buttons.map((button, index) => (
@@ -316,6 +319,7 @@ export function ToolRail({ canvas, bottomToolDockRef }: ToolRailProps) {
           <div
             data-editor-tool-ui
             className="editor-tool-popover editor-tool-popover--bottom border border-ink-600 bg-ink-900 shadow-xl"
+            {...editorThemeSection("toolPopovers")}
           >
             {POPOVER_CONTENT[bottomDockedTool](canvas)}
           </div>,

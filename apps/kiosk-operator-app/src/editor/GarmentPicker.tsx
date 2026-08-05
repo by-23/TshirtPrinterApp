@@ -15,6 +15,7 @@ import { Diamond, RAIL_ICON_CLASS } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
 import { blockBorderStyle, blockContentRowStyle } from "./borderStyle.js";
 import { useGarmentAvailabilityStore } from "../lib/garmentAvailabilityStore.js";
+import { editorThemeSection } from "./themeSections.js";
 
 const FABRIC_ICONS: Partial<Record<GarmentFabric, ReactNode>> = {
   premium: <Diamond className={RAIL_ICON_CLASS} />,
@@ -42,7 +43,7 @@ export function GarmentPicker() {
 
   return (
     <div className="flex flex-col" style={{ gap: "var(--editor-garment-blocks-gap)" }}>
-      <section style={blockBorderStyle("color-block")}>
+      <section style={blockBorderStyle("color-block")} {...editorThemeSection("color")}>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.color")}
         </h3>
@@ -74,7 +75,7 @@ export function GarmentPicker() {
         </div>
       </section>
 
-      <section style={blockBorderStyle("size-block")}>
+      <section style={blockBorderStyle("size-block")} {...editorThemeSection("size")}>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.size")}
         </h3>
@@ -104,7 +105,7 @@ export function GarmentPicker() {
         </div>
       </section>
 
-      <section style={blockBorderStyle("fabric-block")}>
+      <section style={blockBorderStyle("fabric-block")} {...editorThemeSection("fabric")}>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.fabric")}
         </h3>

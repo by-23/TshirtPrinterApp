@@ -6,6 +6,7 @@ import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "../mockup/garmentShape
 import { SELECTION_BORDER_COLOR, SELECTION_CORNER_COLOR } from "../canvasSelectionStyle.js";
 import { useEditorStore } from "../store.js";
 import { recordHistoryEntry } from "../history.js";
+import { editorThemeSection } from "../themeSections.js";
 
 export interface ObjectControlsProps {
   canvas: Canvas | null;
@@ -295,6 +296,7 @@ export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
       >
         <div
           className="pointer-events-auto flex items-center gap-2 bg-ink-950/90 px-2 py-1.5 shadow-lg backdrop-blur"
+          {...editorThemeSection("objectControls")}
           style={{ borderRadius: "var(--editor-objctrl-bar-radius)" }}
         >
           <button

@@ -6,6 +6,7 @@ import { LanguageSwitcherSlot } from "../../../components/KioskShell.js";
 import { KioskPageTransition } from "../../../components/KioskPageTransition.js";
 import { ArrowLeft } from "../../../components/icons.js";
 import type { PageTransitionDirection } from "../../../lib/pageTransitionStore.js";
+import { aiThemeSection } from "./themeSections.js";
 import { AiSourceSelect } from "./AiSourceSelect.js";
 import { AiCameraCapture } from "./AiCameraCapture.js";
 import { AiQrUpload } from "./AiQrUpload.js";
@@ -80,12 +81,16 @@ export function AiFlow() {
       // Camera step covers itself with `bg-black` so the live feed stays clean.
       className={`flex h-full w-full flex-col overflow-hidden text-white ${isThemedHeaderStep ? "ai-theme-root" : ""}`}
     >
-      <header className={isThemedHeaderStep ? "ai-flow-header" : "relative flex flex-shrink-0 items-center justify-between px-5 py-4"}>
+      <header
+        className={isThemedHeaderStep ? "ai-flow-header" : "relative flex flex-shrink-0 items-center justify-between px-5 py-4"}
+        {...(isThemedHeaderStep ? aiThemeSection("header") : {})}
+      >
         <button
           type="button"
           onClick={handleBack}
           aria-label={t("common.back")}
           className={isThemedHeaderStep ? "ai-flow-back-btn" : "ai-flow-back-btn flex items-center gap-2 px-3 py-2 text-white transition-colors hover:brightness-125"}
+          {...(isThemedHeaderStep ? aiThemeSection("back") : {})}
           style={
             isThemedHeaderStep
               ? undefined

@@ -9,10 +9,12 @@ import {
   SettingsPanelGroup,
   SettingsPanelSection,
   pickSectionsByTitle,
+  scrollToSection,
   settingsSectionId,
   useOpenSections,
 } from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
+import { THEME_PANEL_CHROME_ATTR, useThemePickMode } from "../lib/themePick.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
@@ -358,7 +360,7 @@ const SECTIONS: Section[] = [
       {
         key: "--editor-tool-popover-width",
         label: "Ширина панели",
-        defaultValue: 500,
+        defaultValue: 580,
         type: "range",
         min: 240,
         max: 800,
@@ -838,9 +840,9 @@ function loadStoredValues(): Record<string, string> {
     if (parsed["--editor-popular-tile-gap"] && !parsed["--editor-popular-image-gap"]) {
       parsed["--editor-popular-image-gap"] = parsed["--editor-popular-tile-gap"];
     }
-    // Undo the temporary global 1000px popover width — only emoji stays wider.
-    if (parsed["--editor-tool-popover-width"] === "1000") {
-      parsed["--editor-tool-popover-width"] = "500";
+    // Migrate previous defaults (temporary 1000px / prior 500px) to the wider panel.
+    if (parsed["--editor-tool-popover-width"] === "1000" || parsed["--editor-tool-popover-width"] === "500") {
+      parsed["--editor-tool-popover-width"] = "580";
     }
     const normalized: Record<string, string> = {};
     for (const [key, value] of Object.entries(parsed)) {
@@ -892,15 +894,36 @@ function clearToken(key: string) {
 export function EditorThemePanel() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const { containerRef, style: dragStyle, dragHandleProps } = useDraggablePanel("editor-theme-panel-position");
   const [values, setValues] = useState<Record<string, string>>(() => ({
     ...getBaselineValues(),
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("editor-theme-panel-open-sections");
+  const {
+    isOpen: isSectionOpen,
+    toggle: toggleSection,
+    ensureOpen,
+  } = useOpenSections("editor-theme-panel-open-sections");
 
   const isEditorRoute = location.pathname === "/kiosk/editor";
+  const pickActive = isEditorRoute && open;
+
+  useThemePickMode({
+    active: pickActive,
+    rootSelector: SCOPE_SELECTOR,
+    activeSectionId,
+    onPick: (sectionId) => {
+      setActiveSectionId(sectionId);
+      ensureOpen(sectionId);
+      requestAnimationFrame(() => scrollToSection(sectionId));
+    },
+  });
+
+  useEffect(() => {
+    if (!open) setActiveSectionId(null);
+  }, [open]);
 
   useEffect(() => {
     function applyAll() {
@@ -1037,7 +1060,12 @@ export function EditorThemePanel() {
   }
 
   return (
-    <div ref={containerRef} className="fixed right-6 top-32 z-50 flex flex-col items-end gap-5" style={dragStyle}>
+    <div
+      ref={containerRef}
+      {...{ [THEME_PANEL_CHROME_ATTR]: "" }}
+      className="fixed right-6 top-32 z-50 flex flex-col items-end gap-5"
+      style={dragStyle}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1074,6 +1102,10 @@ export function EditorThemePanel() {
             </button>
           </div>
 
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/55">
+            Кликните по элементу на экране, чтобы открыть его секцию. Рамки показывают границы блоков.
+          </p>
+
           {PANEL_GROUPS.map((group) => (
             <SettingsPanelGroup key={group.label} label={group.label}>
               {pickSectionsByTitle(SECTIONS, group.titles).map((section) => {
@@ -1085,6 +1117,7 @@ export function EditorThemePanel() {
                     title={section.title}
                     open={isSectionOpen(id)}
                     onToggle={() => toggleSection(id)}
+                    highlighted={activeSectionId === id}
                   >
                     {section.tokens.map((token) => renderToken(token))}
                   </SettingsPanelSection>

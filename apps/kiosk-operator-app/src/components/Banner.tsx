@@ -10,6 +10,7 @@ import { usePopularPrintSlides } from "../lib/popularPrints.js";
 import { useCssNumberVar } from "../lib/popularPrintScale.js";
 import { ChevronLeft, ChevronRight, SparkleStar } from "./icons.js";
 import { PopularPrintSlideContent } from "./PopularPrintSlide.js";
+import { homeThemeSection } from "../routes/kiosk/themeSectionsHome.js";
 
 function PopularBannerTitle({ title }: { title: string }) {
   return (
@@ -32,7 +33,7 @@ export function Banner() {
 
   if (slides.length === 0) {
     return (
-      <section className="flex flex-col gap-5">
+      <section className="flex flex-col gap-5" {...homeThemeSection("popular")}>
         <PopularBannerTitle title={bannerTitle} />
         <p className="text-center text-base text-white/50">
           Добавьте PNG или WebP в папку <code className="text-white/70">src/assets/prints/</code> и обновите страницу.
@@ -42,7 +43,7 @@ export function Banner() {
   }
 
   return (
-    <section className="flex flex-col gap-5">
+    <section className="flex flex-col gap-5" {...homeThemeSection("popular")}>
       <PopularBannerTitle title={bannerTitle} />
 
       <div className="relative">

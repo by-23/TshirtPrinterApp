@@ -8,7 +8,7 @@ export interface EffectsState {
   shadowBlur: number;
   shadowOffsetX: number;
   shadowOffsetY: number;
-  /** Native `stroke`/`strokeWidth` for `IText`; approximated as a 0-blur/0-offset shadow (a colored silhouette outline) for raster images — see `EffectsTool.tsx`. */
+  /** Native `stroke`/`strokeWidth` for `IText`; for raster images approximated as a colored silhouette shadow whose blur follows `strokeWidth`. */
   strokeEnabled: boolean;
   strokeColor: string;
   strokeWidth: number;
@@ -132,7 +132,11 @@ export function applyEffects(object: FabricObject, state: EffectsState): void {
   if (state.shadowEnabled) {
     object.set("shadow", new Shadow({ color: state.shadowColor, blur: state.shadowBlur, offsetX: state.shadowOffsetX, offsetY: state.shadowOffsetY }));
   } else if (!isText && state.strokeEnabled) {
-    object.set("shadow", new Shadow({ color: state.strokeColor, blur: 0, offsetX: 0, offsetY: 0 }));
+    // Silhouette outline: blur ≈ thickness (Fabric has a single shadow slot).
+    object.set(
+      "shadow",
+      new Shadow({ color: state.strokeColor, blur: Math.max(0.5, state.strokeWidth), offsetX: 0, offsetY: 0 }),
+    );
   } else {
     object.set("shadow", null);
   }

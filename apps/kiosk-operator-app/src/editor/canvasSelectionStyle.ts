@@ -58,5 +58,9 @@ export function shouldDeselectCanvasOnPointerDown(
   if (!(target instanceof Node)) return false;
   if (printAreaElement?.contains(target)) return false;
   if (target instanceof Element && target.closest(EDITOR_SELECTION_UI_SELECTOR)) return false;
+  // Portaled tool UI (color picker on `document.body`) is outside the print
+  // area DOM, but React still bubbles pointer events through the tool tree to
+  // Editor's capture handler — do not clear selection while interacting there.
+  if (target instanceof Element && target.closest(EDITOR_TOOL_UI_SELECTOR)) return false;
   return true;
 }

@@ -85,7 +85,7 @@ export function EffectsTool({ canvas }: EffectsToolProps) {
   }
 
   return (
-    <div className="editor-tool-panel max-h-[70vh] overflow-y-auto">
+    <div className="editor-tool-panel editor-tool-panel--scroll">
       <h4 className="editor-tool-title">{t("editor.toolbar.effects")}</h4>
 
       <div className="flex flex-wrap gap-2">
@@ -154,23 +154,21 @@ export function EffectsTool({ canvas }: EffectsToolProps) {
               <span className="editor-tool-caption text-ink-300">{t("editor.toolbar.effectsList.color")}</span>
               <ColorPickerPopover color={state.strokeColor} onChange={(color) => update({ strokeColor: color })} />
             </div>
-            {isText && (
-              <label className="editor-tool-label flex flex-col gap-1.5 text-ink-200">
-                <span className="flex items-center justify-between">
-                  <span>{t("editor.toolbar.effectsList.strokeWidth")}</span>
-                  <span>{state.strokeWidth}</span>
-                </span>
-                <input
-                  type="range"
-                  min={0.5}
-                  max={10}
-                  step={0.5}
-                  value={state.strokeWidth}
-                  onChange={(event) => update({ strokeWidth: Number(event.target.value) })}
-                  className="h-8 w-full accent-neon-pink"
-                />
-              </label>
-            )}
+            <label className="editor-tool-label flex flex-col gap-1.5 text-ink-200">
+              <span className="flex items-center justify-between">
+                <span>{t("editor.toolbar.effectsList.strokeWidth")}</span>
+                <span>{state.strokeWidth}</span>
+              </span>
+              <input
+                type="range"
+                min={0.5}
+                max={10}
+                step={0.5}
+                value={state.strokeWidth}
+                onChange={(event) => update({ strokeWidth: Number(event.target.value) })}
+                className="h-8 w-full accent-neon-pink"
+              />
+            </label>
             {!isText && <p className="editor-tool-caption text-ink-400">{t("editor.toolbar.effectsList.strokeImageHint")}</p>}
           </div>
         )}

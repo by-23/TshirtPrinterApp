@@ -6,6 +6,7 @@ import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
 import { createAiUploadSession, subscribeAiPhotoReceived } from "../../../lib/pointServer.js";
 import { Camera, Image, QrCode, SpinnerIcon, type IconProps } from "../../../components/icons.js";
 import { blockBorderStyle, cardGradientStyle, contentBoxStyle } from "./borderStyle.js";
+import { aiThemeSection } from "./themeSections.js";
 
 const SESSION_SECONDS = 15 * 60;
 const WAITING_DOT_COUNT = 12;
@@ -79,8 +80,8 @@ export function AiQrUpload() {
   }, [session, setSourcePhoto, setStep]);
 
   return (
-    <div className="ai-qr-screen">
-      <div className="ai-qr-header">
+    <div className="ai-qr-screen" {...aiThemeSection("qrScreen")}>
+      <div className="ai-qr-header" {...aiThemeSection("qrHeader")}>
         <h1 className="ai-qr-header-title">{t("ai.qr.title")}</h1>
         <p className="ai-qr-header-subtitle">{t("ai.qr.subtitle")}</p>
       </div>
@@ -88,6 +89,7 @@ export function AiQrUpload() {
       <div className="ai-qr-main">
         <div
           className="ai-qr-card"
+          {...aiThemeSection("qrCard")}
           style={{
             ...cardGradientStyle("card"),
             gap: "var(--ai-qr-card-gap)",
@@ -99,6 +101,7 @@ export function AiQrUpload() {
 
           <div
             className="ai-qr-code-wrap"
+            {...aiThemeSection("qrCode")}
             style={{
               width: "var(--ai-qr-code-size)",
               height: "var(--ai-qr-code-size)",
@@ -115,7 +118,11 @@ export function AiQrUpload() {
             )}
           </div>
 
-          <div className="flex flex-col items-center" style={contentBoxStyle("timer-box")}>
+          <div
+            className="flex flex-col items-center"
+            {...aiThemeSection("qrTimer")}
+            style={contentBoxStyle("timer-box")}
+          >
             <span
               className="text-center font-semibold uppercase tracking-wide"
               style={{ fontSize: "var(--ai-qr-timer-label-size)", color: "var(--ai-qr-timer-label-color)" }}
@@ -136,12 +143,12 @@ export function AiQrUpload() {
 
       <div className="ai-qr-footer">
         <div className="ai-qr-footer-guide">
-          <div className="ai-qr-waiting">
+          <div className="ai-qr-waiting" {...aiThemeSection("qrWaiting")}>
             <WaitingDotsSpinner />
             {t("ai.qr.waiting")}
           </div>
 
-          <div className="ai-qr-steps-wrap">
+          <div className="ai-qr-steps-wrap" {...aiThemeSection("qrSteps")}>
           <div className="ai-qr-steps-numbers">
             {STEP_ITEMS.map(({ n }, index) => (
               <Fragment key={n}>
@@ -169,7 +176,12 @@ export function AiQrUpload() {
         </div>
         </div>
 
-        <button type="button" onClick={() => setStep("camera")} className="ai-qr-camera-link">
+        <button
+          type="button"
+          onClick={() => setStep("camera")}
+          className="ai-qr-camera-link"
+          {...aiThemeSection("qrCameraLink")}
+        >
           {t("ai.qr.useCameraInstead")}
         </button>
       </div>

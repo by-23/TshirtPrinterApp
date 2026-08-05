@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { HexColorPicker } from "react-colorful";
 import { useTranslation } from "react-i18next";
 import { Palette } from "../../components/icons.js";
+import { getKioskOverlayRoot } from "../../lib/kioskOverlayPortal.js";
 
 export interface ColorPickerPopoverProps {
   color: string;
@@ -12,10 +13,10 @@ export interface ColorPickerPopoverProps {
 }
 
 /**
- * Touch-friendly "any color" picker — a small trigger button (paints itself
- * in the current color) that opens a floating `react-colorful` panel on top
- * of everything else via a portal, since it's used from inside narrow
- * `ToolRail` popovers (`w-64`) that would otherwise clip a full SV square.
+ * Touch-friendly "any color" picker — a small trigger button that opens a
+ * floating `react-colorful` panel via the kiosk overlay root (inside the
+ * scaled frame), so it is not clipped by narrow tool popovers and stays
+ * aligned with the kiosk transform.
  */
 export function ColorPickerPopover({ color, onChange, triggerClassName = "" }: ColorPickerPopoverProps) {
   const { t } = useTranslation();
@@ -24,16 +25,27 @@ export function ColorPickerPopover({ color, onChange, triggerClassName = "" }: C
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     const trigger = triggerRef.current;
-    if (trigger) {
-      const rect = trigger.getBoundingClientRect();
-      setPosition({ left: rect.left, top: rect.bottom + 8 });
-    }
+    const overlay = getKioskOverlayRoot();
+    if (!trigger) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+    const scale = overlay.offsetWidth > 0 ? overlayRect.width / overlay.offsetWidth : 1;
+    setPosition({
+      left: (triggerRect.left - overlayRect.left) / scale,
+      top: (triggerRect.bottom - overlayRect.top) / scale + 8,
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
 
     function handlePointerDown(event: PointerEvent) {
-      const target = event.target as Node;
+      const target = event.target;
+      if (!(target instanceof Node)) return;
       if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
       setOpen(false);
     }
@@ -60,8 +72,9 @@ export function ColorPickerPopover({ color, onChange, triggerClassName = "" }: C
             <div
               ref={panelRef}
               data-editor-tool-ui
-              className="fixed z-[999] flex flex-col gap-2 rounded-2xl border border-ink-600 bg-ink-900 p-3 shadow-xl"
+              className="pointer-events-auto absolute z-[999] flex flex-col gap-2 rounded-2xl border border-ink-600 bg-ink-900 p-3 shadow-xl"
               style={{ left: position.left, top: position.top }}
+              onPointerDown={(event) => event.stopPropagation()}
             >
               <HexColorPicker color={color} onChange={onChange} className="!h-56 !w-56" />
               <div className="flex items-center gap-2">
@@ -74,7 +87,7 @@ export function ColorPickerPopover({ color, onChange, triggerClassName = "" }: C
                 />
               </div>
             </div>,
-            document.body,
+            getKioskOverlayRoot(),
           )
         : null}
     </>

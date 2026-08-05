@@ -7,9 +7,10 @@ import {
   SettingsPanelSection,
   pickSectionsByTitle,
   settingsSectionId,
-  useOpenSections,
 } from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
+import { THEME_PANEL_CHROME_ATTR } from "../lib/themePick.js";
+import { useDesignPanelPick } from "../lib/useDesignPanelPick.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
@@ -1108,11 +1109,19 @@ export function AiThemePanel() {
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("ai-theme-panel-open-sections");
 
   const isAiThemedScreen =
     location.pathname === "/kiosk/ai" &&
     (step === "source" || step === "qr" || step === "style" || step === "processing" || step === "result");
+  const {
+    activeSectionId,
+    isOpen: isSectionOpen,
+    toggle: toggleSection,
+  } = useDesignPanelPick({
+    active: isAiThemedScreen && open,
+    rootSelector: SCOPE_SELECTOR,
+    sectionsStorageKey: "ai-theme-panel-open-sections",
+  });
 
   useEffect(() => {
     function applyAll() {
@@ -1253,7 +1262,12 @@ export function AiThemePanel() {
   }
 
   return (
-    <div ref={containerRef} className="fixed right-6 top-[31.5rem] z-50 flex flex-col items-end gap-5" style={dragStyle}>
+    <div
+      ref={containerRef}
+      {...{ [THEME_PANEL_CHROME_ATTR]: "" }}
+      className="fixed right-6 top-[31.5rem] z-50 flex flex-col items-end gap-5"
+      style={dragStyle}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1288,6 +1302,10 @@ export function AiThemePanel() {
             </button>
           </div>
 
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/55">
+            Кликните по элементу на экране, чтобы открыть его секцию. Рамки показывают границы блоков.
+          </p>
+
           <SettingsPanelGroup label="Общие">
             {pickSectionsByTitle(SECTIONS, AI_COMMON_TITLES).map((section) => {
               const id = settingsSectionId(section.title);
@@ -1298,6 +1316,7 @@ export function AiThemePanel() {
                   title={section.title}
                   open={isSectionOpen(id)}
                   onToggle={() => toggleSection(id)}
+                  highlighted={activeSectionId === id}
                 >
                   {section.tokens.map((token) => renderToken(token))}
                 </SettingsPanelSection>
@@ -1321,6 +1340,7 @@ export function AiThemePanel() {
                       title={section.title}
                       open={isSectionOpen(id)}
                       onToggle={() => toggleSection(id)}
+                      highlighted={activeSectionId === id}
                     >
                       {section.tokens.map((token) => renderToken(token))}
                     </SettingsPanelSection>

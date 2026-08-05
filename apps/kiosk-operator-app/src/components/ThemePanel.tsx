@@ -1,13 +1,16 @@
 import { useEffect, useId, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { GripVertical, Settings } from "./icons.js";
 import {
   SettingsPanelGroup,
   SettingsPanelSection,
   pickSectionsByTitle,
   settingsSectionId,
-  useOpenSections,
 } from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
+import { THEME_PANEL_CHROME_ATTR } from "../lib/themePick.js";
+import { useDesignPanelPick } from "../lib/useDesignPanelPick.js";
+import { HOME_LANG_PICK_ROOT, HOME_THEME_PICK_ROOT } from "../routes/kiosk/themeSectionsHome.js";
 import { DEFAULT_UI_FONT, THEME_FONT_OPTIONS } from "../lib/fonts.js";
 import {
   PAGE_TRANSITION_DURATION_MS,
@@ -1002,6 +1005,7 @@ function sectionsByTitles(titles: readonly string[]): Section[] {
  * `index.css` (dev server only) so they become the shipped baseline.
  */
 export function ThemePanel() {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const { containerRef, style: dragStyle, dragHandleProps } = useDraggablePanel("kiosk-theme-panel-position");
   const [values, setValues] = useState<Record<string, string>>(() => ({
@@ -1009,13 +1013,24 @@ export function ThemePanel() {
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("kiosk-theme-panel-open-sections");
   const imageOverrides = useKioskImageOverrides();
   const pageTransition = usePageTransitionStore((state) => state.type);
   const pageTransitionDuration = usePageTransitionStore((state) => state.durationMs);
   const setPageTransition = usePageTransitionStore((state) => state.setType);
   const setPageTransitionDuration = usePageTransitionStore((state) => state.setDurationMs);
   const resetPageTransition = usePageTransitionStore((state) => state.reset);
+
+  const isHomeRoute = location.pathname === "/kiosk";
+  const {
+    activeSectionId,
+    isOpen: isSectionOpen,
+    toggle: toggleSection,
+  } = useDesignPanelPick({
+    active: isHomeRoute && open,
+    rootSelector: HOME_THEME_PICK_ROOT,
+    extraRootSelectors: [HOME_LANG_PICK_ROOT],
+    sectionsStorageKey: "kiosk-theme-panel-open-sections",
+  });
 
   const basicSections = sectionsByTitles(BASIC_SECTION_TITLES);
   const navSections = sectionsByTitles(NAV_SECTION_TITLES);
@@ -1040,6 +1055,9 @@ export function ThemePanel() {
       applyValue(key, value);
     }
   }, [open, values]);
+
+  // Home gear only — other routes have their own design panels.
+  if (!isHomeRoute) return null;
 
   function persist(next: Record<string, string>) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -1166,7 +1184,12 @@ export function ThemePanel() {
   }
 
   return (
-    <div ref={containerRef} className="fixed right-6 top-6 z-50 flex flex-col items-end gap-5" style={dragStyle}>
+    <div
+      ref={containerRef}
+      {...{ [THEME_PANEL_CHROME_ATTR]: "" }}
+      className="fixed right-6 top-6 z-50 flex flex-col items-end gap-5"
+      style={dragStyle}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1203,6 +1226,10 @@ export function ThemePanel() {
             </button>
           </div>
 
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/55">
+            Кликните по элементу на экране, чтобы открыть его секцию. Рамки показывают границы блоков.
+          </p>
+
           <SettingsPanelGroup label="Основные">
             {basicSections.map((section) => {
               const id = settingsSectionId(section.title);
@@ -1213,6 +1240,7 @@ export function ThemePanel() {
                   title={section.title}
                   open={isSectionOpen(id)}
                   onToggle={() => toggleSection(id)}
+                  highlighted={activeSectionId === id}
                 >
                   {section.tokens.map((token) => renderToken(token))}
                 </SettingsPanelSection>
@@ -1230,6 +1258,7 @@ export function ThemePanel() {
                   title={section.title}
                   open={isSectionOpen(id)}
                   onToggle={() => toggleSection(id)}
+                  highlighted={activeSectionId === id}
                 >
                   {section.tokens.map((token) => renderToken(token))}
                 </SettingsPanelSection>
@@ -1240,6 +1269,7 @@ export function ThemePanel() {
               title="Переходы между экранами"
               open={isSectionOpen("section-page-transitions")}
               onToggle={() => toggleSection("section-page-transitions")}
+              highlighted={activeSectionId === "section-page-transitions"}
             >
               <div className="flex flex-col gap-5">
                 <div className="flex items-center justify-between gap-6 text-xl">
@@ -1373,6 +1403,7 @@ export function ThemePanel() {
                   title={section.title}
                   open={isSectionOpen(id)}
                   onToggle={() => toggleSection(id)}
+                  highlighted={activeSectionId === id}
                 >
                   {section.tokens.map((token) => renderToken(token))}
                 </SettingsPanelSection>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { editorThemeSection } from "../themeSections.js";
 
 export interface DraggableToolPopoverProps {
   children: ReactNode;
@@ -108,7 +109,9 @@ export function DraggableToolPopover({ children, className = "" }: DraggableTool
   return (
     <div
       ref={panelRef}
+      data-editor-tool-ui
       className={`editor-tool-popover absolute left-full top-0 z-40 ml-4 border border-ink-600 bg-ink-900 shadow-xl ${className}`.trim()}
+      {...editorThemeSection("toolPopovers")}
       style={{ willChange: "transform" }}
     >
       <div className="editor-tool-popover-drag" onPointerDown={handlePointerDown}>

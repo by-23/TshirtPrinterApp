@@ -3,6 +3,7 @@ import { garmentSideSchema, garmentHasSelectableBackSide } from "@tshirt/shared-
 import { PillButton } from "@tshirt/ui-kit";
 import { RAIL_ICON_CLASS, TshirtIcon } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
+import { editorThemeSection } from "./themeSections.js";
 
 /**
  * Print side (front/back) switch shown below the editor header, matching
@@ -19,7 +20,11 @@ export function PrintSideToggle() {
   const hasBackSide = garmentHasSelectableBackSide(garmentType);
 
   return (
-    <div className="flex items-center justify-center" style={{ gap: "var(--editor-toggle-gap)" }}>
+    <div
+      className="flex items-center justify-center"
+      {...editorThemeSection("printSide")}
+      style={{ gap: "var(--editor-toggle-gap)" }}
+    >
       <span
         className="font-semibold uppercase tracking-wide text-ink-200"
         style={{ fontSize: "var(--editor-toggle-label-size)" }}

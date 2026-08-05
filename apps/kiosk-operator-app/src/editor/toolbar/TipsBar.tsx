@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Camera, Image, SlidersHorizontal, Target, type LucideIcon } from "lucide-react";
 import { blockBorderStyle } from "../borderStyle.js";
+import { editorThemeSection } from "../themeSections.js";
 
 const TIP_ICONS: LucideIcon[] = [Image, Target, SlidersHorizontal, Camera];
 
@@ -10,7 +11,11 @@ export function TipsBar() {
   const tips = t("editor.tips", { returnObjects: true }) as string[];
 
   return (
-    <div className="mt-auto flex w-full flex-col gap-3" style={{ ...blockBorderStyle("tips-block"), width: "100%" }}>
+    <div
+      className="mt-auto flex w-full flex-col gap-3"
+      {...editorThemeSection("tips")}
+      style={{ ...blockBorderStyle("tips-block"), width: "100%" }}
+    >
       <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-200">
         {t("editor.tipsTitle")}
       </h3>

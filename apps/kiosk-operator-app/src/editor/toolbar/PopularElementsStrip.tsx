@@ -7,6 +7,7 @@ import { blockBorderStyle, tileBorderStyle } from "../borderStyle.js";
 import { syncPopularScrollElement } from "../popularScrollTheme.js";
 import { useKioskImage } from "../../lib/kioskImages.js";
 import { usePopularPrintSlides, type BannerSlide } from "../../lib/popularPrints.js";
+import { editorThemeSection } from "../themeSections.js";
 
 export interface PopularElementsStripProps {
   canvas: Canvas | null;
@@ -108,6 +109,7 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
   return (
     <section
       className="flex w-full min-w-0 flex-col"
+      {...editorThemeSection("popular")}
       style={{
         ...blockBorderStyle("popular-block"),
         width: "100%",

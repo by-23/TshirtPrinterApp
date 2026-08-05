@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { POINT_SERVER_URL } from "../../../lib/pointServer.js";
 import { Gift, Headset } from "../../../components/icons.js";
 import { blockBorderStyle } from "./borderStyle.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 /**
  * Bottom row on `checkout.png` — "Нужна помощь? Позвать оператора" and the
@@ -27,6 +28,7 @@ export function CheckoutFooter() {
         type="button"
         onClick={() => showPlaceholder("help")}
         className="flex flex-1 items-center justify-center text-white transition-colors hover:brightness-125"
+        {...checkoutThemeSection("footerHelp")}
         style={{
           gap: "var(--checkout-footer-help-gap)",
           backgroundColor: "var(--checkout-footer-help-bg)",
@@ -48,6 +50,7 @@ export function CheckoutFooter() {
         type="button"
         onClick={() => showPlaceholder("promo")}
         className="flex flex-1 items-center text-left transition-colors hover:brightness-110"
+        {...checkoutThemeSection("footerPromo")}
         style={{
           gap: "var(--checkout-footer-promo-gap)",
           backgroundColor: "var(--checkout-footer-promo-bg)",

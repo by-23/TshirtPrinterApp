@@ -5,6 +5,7 @@ import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
 import { fetchAiProviders, fetchAiStyles, resolveDesignImageUrl } from "../../../lib/pointServer.js";
 import { initPricingConfig, usePricingConfigStore } from "../../../lib/pricingConfigStore.js";
 import { CircleCheck } from "../../../components/icons.js";
+import { aiThemeSection } from "./themeSections.js";
 
 function providerToTier(provider: AiProvider): AiStyleTier {
   return provider === "standard" ? "standard" : "premium";
@@ -77,20 +78,20 @@ export function AiStyleSelect() {
       : t("ai.style.stylize");
 
   return (
-    <div className="ai-style-screen">
-      <div className="ai-style-header">
+    <div className="ai-style-screen" {...aiThemeSection("styleScreen")}>
+      <div className="ai-style-header" {...aiThemeSection("styleHeader")}>
         <h1 className="ai-style-header-title">{t("ai.style.title")}</h1>
         <p className="ai-style-header-subtitle">{t("ai.style.subtitle")}</p>
       </div>
 
-      <div className="ai-style-photo-row">
+      <div className="ai-style-photo-row" {...aiThemeSection("stylePhoto")}>
         {sourcePhoto ? <img src={sourcePhoto} alt="" className="ai-style-photo" /> : null}
         <div className="ai-style-photo-meta">
-          <span className="ai-style-photo-badge">
+          <span className="ai-style-photo-badge" {...aiThemeSection("styleBadge")}>
             {t("ai.style.photoLoaded")}
             <CircleCheck aria-hidden className="ai-style-photo-badge-icon" />
           </span>
-          <label className="ai-style-bg-option">
+          <label className="ai-style-bg-option" {...aiThemeSection("styleBgOption")}>
             <input
               type="checkbox"
               checked={removeBackground}
@@ -107,7 +108,11 @@ export function AiStyleSelect() {
         </div>
       </div>
 
-      {error ? <p className="ai-style-error">{error}</p> : null}
+      {error ? (
+        <p className="ai-style-error" {...aiThemeSection("styleError")}>
+          {error}
+        </p>
+      ) : null}
 
       <div className="ai-style-toolbar">
         <h2 className="ai-style-toolbar-title">{t("ai.style.chooseStyle")}</h2>
@@ -138,7 +143,7 @@ export function AiStyleSelect() {
 
       {isPremium ? <p className="ai-style-premium-hint">{t("ai.style.premiumHint")}</p> : null}
 
-      <div className="ai-style-cards">
+      <div className="ai-style-cards" {...aiThemeSection("styleCards")}>
         {styles.map((style) => {
           const selected = style.key === selectedStyleKey;
           return (
@@ -179,7 +184,7 @@ export function AiStyleSelect() {
         </div>
       </div>
 
-      <div className="ai-style-footer">
+      <div className="ai-style-footer" {...aiThemeSection("styleButtons")}>
         <button type="button" onClick={() => setStep("source")} className="ai-style-back-btn">
           {t("common.back")}
         </button>

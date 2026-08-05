@@ -8,6 +8,7 @@ import {
   useKioskImage,
 } from "../../../lib/kioskImages.js";
 import { blockBorderStyle, cardGradientStyle, contentBoxStyle } from "./borderStyle.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 /** Offset so a fresh point-server (order #1, #2...) still shows a realistic-looking 4-digit number, like on `checkout.png` ("№ 1247"). */
 const ORDER_NUMBER_OFFSET = 1000;
@@ -34,6 +35,7 @@ export function PaymentCashCard({ orderId }: PaymentCashCardProps) {
   return (
     <div
       className="flex flex-1 flex-col items-center"
+      {...checkoutThemeSection("cashCard")}
       style={{
         ...cardGradientStyle("cash-card"),
         gap: "var(--checkout-cash-card-gap)",

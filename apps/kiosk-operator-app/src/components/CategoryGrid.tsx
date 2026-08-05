@@ -6,6 +6,7 @@ import { getCategoryRoute } from "../lib/categoryLabels.js";
 import { getCategoryHomeLabel } from "../lib/homeLabels.js";
 import { categoryImageKey, useKioskImage } from "../lib/kioskImages.js";
 import { BrushIcon, FilmIcon, GamepadIcon, PhotoIcon, RobotIcon, UploadIcon } from "./icons.js";
+import { homeThemeSection } from "../routes/kiosk/themeSectionsHome.js";
 
 interface CategoryImageVars {
   scale: string;
@@ -181,7 +182,7 @@ export function CategoryGrid() {
   const categories = designCategorySchema.options;
 
   return (
-    <div className="grid grid-cols-3 gap-6">
+    <div className="grid grid-cols-3 gap-6" {...homeThemeSection("categories")}>
       {categories.map((category) => {
         const label = getCategoryHomeLabel(category, i18n.language);
         const accent = CATEGORY_ACCENT_TEXT[category];

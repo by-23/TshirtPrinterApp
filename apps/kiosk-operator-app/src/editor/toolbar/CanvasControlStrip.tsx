@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Canvas, FabricObject } from "fabric";
 import { useEditorStore } from "../store.js";
 import { recordHistoryEntry } from "../history.js";
+import { editorThemeSection } from "../themeSections.js";
 
 export interface CanvasControlStripProps {
   canvas: Canvas | null;
@@ -140,6 +141,7 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
     <div
       data-editor-selection-ui
       className="relative z-10 grid w-full grid-cols-2 gap-3 sm:grid-cols-4"
+      {...editorThemeSection("controlStrip")}
       style={{
         borderStyle: "solid",
         borderWidth: "var(--editor-strip-border-width)",

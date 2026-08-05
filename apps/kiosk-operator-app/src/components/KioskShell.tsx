@@ -15,6 +15,7 @@ import { SCREENSAVER_IDLE_MS, useScreensaverPlaylist } from "../lib/screensaverV
 import { useKioskIdle } from "../lib/useKioskIdle.js";
 import { isWeakClient } from "../lib/weakClient.js";
 import { ClosedScreen } from "../routes/kiosk/ClosedScreen.js";
+import { homeThemeSection } from "../routes/kiosk/themeSectionsHome.js";
 
 /**
  * Persistent kiosk chrome: language switcher stays mounted across every
@@ -71,9 +72,10 @@ export function KioskShell() {
       <KioskAmbientBackdrop />
 
       <div
-        className="kiosk-theme-root pointer-events-auto absolute z-50"
+        className="kiosk-theme-root kiosk-lang-switcher pointer-events-auto absolute z-50"
         style={{ top: "var(--kiosk-lang-top)", right: "var(--kiosk-lang-right)" }}
         aria-label="Переключатель языка"
+        {...homeThemeSection("language")}
       >
         <LanguageSwitcher />
       </div>

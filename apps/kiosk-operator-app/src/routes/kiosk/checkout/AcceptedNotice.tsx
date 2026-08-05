@@ -5,6 +5,7 @@ import { CircleCheck } from "../../../components/icons.js";
 import { useEditorStore } from "../../../editor/store.js";
 import { resetAllHistory } from "../../../editor/history.js";
 import { useCheckoutStore } from "../../../lib/checkoutStore.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 /** How long "Заказ принят, ждите 5 мин" stays on screen before returning to the kiosk home — see `docs/PLAN.md` Этап 4 ("автоскрытие 15–20 сек"). */
 const AUTO_HIDE_MS = 18000;
@@ -42,6 +43,7 @@ export function AcceptedNotice() {
     >
       <div
         className="flex flex-col items-center text-center"
+        {...checkoutThemeSection("accepted")}
         style={{
           gap: "var(--checkout-accepted-gap)",
           padding: "var(--checkout-accepted-padding)",

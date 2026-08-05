@@ -14,9 +14,10 @@ import {
   SettingsPanelSection,
   pickSectionsByTitle,
   settingsSectionId,
-  useOpenSections,
 } from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
+import { THEME_PANEL_CHROME_ATTR } from "../lib/themePick.js";
+import { useDesignPanelPick } from "../lib/useDesignPanelPick.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
@@ -674,9 +675,17 @@ export function CheckoutThemePanel() {
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const imageOverrides = useKioskImageOverrides();
-  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("checkout-theme-panel-open-sections");
 
   const isCheckoutRoute = location.pathname === "/kiosk/checkout";
+  const {
+    activeSectionId,
+    isOpen: isSectionOpen,
+    toggle: toggleSection,
+  } = useDesignPanelPick({
+    active: isCheckoutRoute && open,
+    rootSelector: SCOPE_SELECTOR,
+    sectionsStorageKey: "checkout-theme-panel-open-sections",
+  });
 
   useEffect(() => {
     for (const key of DEPRECATED_TOKEN_KEYS) {
@@ -825,7 +834,12 @@ export function CheckoutThemePanel() {
   }
 
   return (
-    <div ref={containerRef} className="fixed right-6 top-[15.5rem] z-50 flex flex-col items-end gap-5" style={dragStyle}>
+    <div
+      ref={containerRef}
+      {...{ [THEME_PANEL_CHROME_ATTR]: "" }}
+      className="fixed right-6 top-[15.5rem] z-50 flex flex-col items-end gap-5"
+      style={dragStyle}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -860,6 +874,10 @@ export function CheckoutThemePanel() {
             </button>
           </div>
 
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/55">
+            Кликните по элементу на экране, чтобы открыть его секцию. Рамки показывают границы блоков.
+          </p>
+
           {PANEL_GROUPS.map((group) => (
             <SettingsPanelGroup key={group.label} label={group.label}>
               {pickSectionsByTitle(SECTIONS, group.titles).map((section) => {
@@ -871,6 +889,7 @@ export function CheckoutThemePanel() {
                     title={section.title}
                     open={isSectionOpen(id)}
                     onToggle={() => toggleSection(id)}
+                    highlighted={activeSectionId === id}
                   >
                     {section.tokens.map((token) => renderToken(token))}
                   </SettingsPanelSection>
@@ -885,6 +904,7 @@ export function CheckoutThemePanel() {
               title="Иллюстрации и шаги QR"
               open={isSectionOpen("section-checkout-images")}
               onToggle={() => toggleSection("section-checkout-images")}
+              highlighted={activeSectionId === "section-checkout-images"}
             >
               {CHECKOUT_IMAGE_DEFINITIONS.map((image) => (
                 <CheckoutImagePickerRow

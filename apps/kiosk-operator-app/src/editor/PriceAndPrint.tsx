@@ -7,6 +7,7 @@ import { useEditorStore } from "./store.js";
 import { usePricingConfigStore } from "../lib/pricingConfigStore.js";
 import { useAiFlowStore } from "../lib/aiFlowStore.js";
 import { blockBorderStyle } from "./borderStyle.js";
+import { editorThemeSection } from "./themeSections.js";
 
 export interface PriceAndPrintProps {
   onPrint: () => void;
@@ -43,7 +44,7 @@ export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
 
   return (
     <div className="flex flex-col" style={{ gap: "var(--editor-price-section-gap)" }}>
-      <div style={blockBorderStyle("price-block")}>
+      <div style={blockBorderStyle("price-block")} {...editorThemeSection("price")}>
         <h3
           className="font-semibold uppercase tracking-wide text-ink-200"
           style={{ fontSize: "var(--editor-price-label-size)" }}
@@ -64,6 +65,7 @@ export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
       <TouchButton
         onClick={onPrint}
         disabled={isSubmitting}
+        {...editorThemeSection("price")}
         className="flex w-full items-center justify-center font-bold uppercase tracking-wide text-white shadow-neon-pink transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
         style={{
           height: "var(--editor-print-btn-height)",
@@ -77,6 +79,7 @@ export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
 
       <p
         className="text-ink-200"
+        {...editorThemeSection("orderNote")}
         style={{ fontSize: "var(--editor-ordernote-text-size)", ...blockBorderStyle("ordernote-block") }}
       >
         🔒 {t("editor.orderSavedNote")}

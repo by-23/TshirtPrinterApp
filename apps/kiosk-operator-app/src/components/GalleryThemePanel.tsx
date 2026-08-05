@@ -6,9 +6,10 @@ import {
   SettingsPanelSection,
   pickSectionsByTitle,
   settingsSectionId,
-  useOpenSections,
 } from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
+import { THEME_PANEL_CHROME_ATTR } from "../lib/themePick.js";
+import { useDesignPanelPick } from "../lib/useDesignPanelPick.js";
 
 const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
@@ -359,9 +360,17 @@ export function GalleryThemePanel() {
     ...loadStoredValues(),
   }));
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("gallery-theme-panel-open-sections");
 
   const isGalleryRoute = /^\/kiosk\/category\//.test(location.pathname);
+  const {
+    activeSectionId,
+    isOpen: isSectionOpen,
+    toggle: toggleSection,
+  } = useDesignPanelPick({
+    active: isGalleryRoute && open,
+    rootSelector: SCOPE_SELECTOR,
+    sectionsStorageKey: "gallery-theme-panel-open-sections",
+  });
 
   useEffect(() => {
     function applyAll() {
@@ -489,7 +498,12 @@ export function GalleryThemePanel() {
   }
 
   return (
-    <div ref={containerRef} className="fixed right-6 top-[23.5rem] z-50 flex flex-col items-end gap-5" style={dragStyle}>
+    <div
+      ref={containerRef}
+      {...{ [THEME_PANEL_CHROME_ATTR]: "" }}
+      className="fixed right-6 top-[23.5rem] z-50 flex flex-col items-end gap-5"
+      style={dragStyle}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -526,6 +540,10 @@ export function GalleryThemePanel() {
             </button>
           </div>
 
+          <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/55">
+            Кликните по элементу на экране, чтобы открыть его секцию. Рамки показывают границы блоков.
+          </p>
+
           {PANEL_GROUPS.map((group) => (
             <SettingsPanelGroup key={group.label} label={group.label}>
               {pickSectionsByTitle(SECTIONS, group.titles).map((section) => {
@@ -537,6 +555,7 @@ export function GalleryThemePanel() {
                     title={section.title}
                     open={isSectionOpen(id)}
                     onToggle={() => toggleSection(id)}
+                    highlighted={activeSectionId === id}
                   >
                     {section.tokens.map((token) => renderToken(token))}
                   </SettingsPanelSection>

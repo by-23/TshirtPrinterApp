@@ -15,6 +15,7 @@ import {
   useGarmentClipMaskStyle,
 } from "../../../editor/mockup/index.js";
 import { blockBorderStyle } from "./borderStyle.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 interface ReadOnlyCanvasProps {
   side: GarmentSide;
@@ -89,6 +90,7 @@ export function CheckoutPreview({ garment }: CheckoutPreviewProps) {
   return (
     <div
       className="flex w-full flex-col items-center overflow-hidden"
+      {...checkoutThemeSection("preview")}
       style={{
         backgroundColor: "var(--checkout-preview-card-bg)",
         ...blockBorderStyle("preview-card"),

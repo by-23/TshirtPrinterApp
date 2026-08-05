@@ -6,6 +6,7 @@ import { Clock, type IconProps, Layers, Ruler, Sparkles, TshirtIcon } from "../.
 import type { CheckoutGarment } from "../../../lib/checkoutStore.js";
 import { useAiFlowStore } from "../../../lib/aiFlowStore.js";
 import { blockBorderStyle, dividerStyle } from "./borderStyle.js";
+import { checkoutThemeSection } from "./themeSections.js";
 
 export interface OrderSummaryProps {
   garment: CheckoutGarment;
@@ -71,6 +72,7 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
   return (
     <section
       className="flex h-full w-full flex-col"
+      {...checkoutThemeSection("summary")}
       style={{
         ...blockBorderStyle("summary-block"),
         // Clip overflowing rows so «ИТОГО» never paints over the last line item
