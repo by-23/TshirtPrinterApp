@@ -112,6 +112,15 @@ if (-not (Test-Path (Join-Path $pointPack "node_modules\better-sqlite3\package.j
 
 New-Item -ItemType Directory -Force -Path (Join-Path $pointPack "data") | Out-Null
 
+# Pack sync credentials so packaged Electron uses the cloud relay (api.kyoma.uk).
+$pointEnvSrc = Join-Path $pointSrc ".env"
+if (Test-Path $pointEnvSrc) {
+  Copy-Item -Force $pointEnvSrc (Join-Path $pointPack ".env")
+  Write-Host "Copied point-server .env (CENTRAL_RELAY_URL / POINT_SYNC_*) into pack"
+} else {
+  Write-Host "WARNING: apps/point-server/.env missing — packaged app will run without cloud sync" -ForegroundColor Yellow
+}
+
 # Bundled assets (garment templates for mockup rendering) — read from cwd/assets.
 $assetsSrc = Join-Path $pointSrc "assets"
 if (Test-Path $assetsSrc) {

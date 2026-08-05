@@ -5,6 +5,7 @@ title Build Tshirt Printer Windows apps (Operator + Kiosk)
 
 echo.
 echo  Building Operator + Kiosk Windows installers...
+echo  Packs apps\point-server\.env (cloud relay https://api.kyoma.uk).
 echo  This downloads Node.js runtime and may take several minutes.
 echo.
 

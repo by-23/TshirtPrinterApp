@@ -1,0 +1,6 @@
+{$DOMAIN:api.kyoma.uk} {
+	encode gzip
+
+	# Socket.IO + phone uploads + admin SPA + API
+	reverse_proxy relay:8000
+}

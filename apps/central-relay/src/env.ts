@@ -25,4 +25,8 @@ export const env = {
   // is minted over a Socket.IO event with no HTTP request to read a Host
   // header from, so it needs an explicit public URL.
   PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL ?? "http://localhost:4100",
+  // Packaged cloud deploy (Koyeb): built admin-panel dist served under /admin/.
+  ADMIN_DIST_PATH: process.env.ADMIN_DIST_PATH,
+  // Run idempotent seed on boot (create default admin / demo point if missing).
+  SEED_ON_START: process.env.SEED_ON_START === "1" || process.env.SEED_ON_START === "true",
 };

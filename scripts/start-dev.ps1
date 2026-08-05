@@ -4,6 +4,10 @@ $ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $Root
 
+# Cloud central-relay (Oracle Always Free). Local Postgres / relay / admin are not started.
+$RemoteRelayUrl = "https://api.kyoma.uk"
+$RemoteAdminUrl = "https://api.kyoma.uk/admin/"
+
 function Write-Step([string]$msg) {
   Write-Host ""
   Write-Host "==> $msg" -ForegroundColor Cyan
@@ -15,14 +19,15 @@ function Assert-Command([string]$name) {
   }
 }
 
-function Wait-Postgres {
-  $deadline = (Get-Date).AddMinutes(2)
-  do {
-    docker exec tshirt-central-postgres pg_isready -U tshirt -d tshirt_central 2>$null | Out-Null
-    if ($LASTEXITCODE -eq 0) { return }
-    Start-Sleep -Seconds 1
-  } while ((Get-Date) -lt $deadline)
-  throw "Postgres did not become ready in 2 minutes. Check Docker Desktop."
+function Get-EnvFileValue([string]$path, [string]$key) {
+  if (-not (Test-Path $path)) { return $null }
+  foreach ($line in Get-Content -Path $path -Encoding UTF8) {
+    if ($line -match "^\s*#") { continue }
+    if ($line -match ("^\s*" + [regex]::Escape($key) + "\s*=\s*(.*)\s*$")) {
+      return $Matches[1].Trim().Trim('"').Trim("'")
+    }
+  }
+  return $null
 }
 
 function Upsert-EnvValue([string]$path, [string]$key, [string]$value) {
@@ -49,20 +54,6 @@ function Upsert-EnvValue([string]$path, [string]$key, [string]$value) {
   Set-Content -Path $path -Value $updated -Encoding UTF8
 }
 
-function Get-PointSyncCreds {
-  $raw = docker exec tshirt-central-postgres `
-    psql -U tshirt -d tshirt_central -t -A -F "|" `
-    -c "SELECT id, sync_token FROM points ORDER BY created_at NULLS LAST, id LIMIT 1;"
-  if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($raw)) {
-    throw "No points in DB. central-relay seed did not create a demo point."
-  }
-  $parts = $raw.Trim().Split("|")
-  if ($parts.Length -lt 2) {
-    throw "Failed to read id/sync_token from Postgres."
-  }
-  return @{ Id = $parts[0]; Token = $parts[1] }
-}
-
 function Get-LanIp {
   try {
     $ip = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
@@ -79,9 +70,6 @@ function Get-LanIp {
 }
 
 function Stop-OldDevServices {
-  # Only kill processes whose command line looks like OUR pnpm filter services.
-  # Never blind taskkill by stale PID (PID reuse can kill this launcher).
-  # taskkill "process not found" must never abort startup.
   $markers = @(
     "@tshirt/central-relay",
     "@tshirt/admin-panel",
@@ -105,7 +93,6 @@ function Stop-OldDevServices {
         return $false
       } |
       ForEach-Object {
-        # Redirect inside cmd so stderr never becomes a PS terminating error
         cmd.exe /c "taskkill /PID $($_.ProcessId) /T /F >nul 2>&1"
       }
   } finally {
@@ -119,7 +106,6 @@ function Stop-OldDevServices {
 }
 
 function Start-DevService([string]$name, [string]$filterArgs, [string]$logFile) {
-  # Use cmd /c with CreateNoWindow. Do NOT WindowStyle Hidden on a shared console.
   $pnpmCmd = (Get-Command pnpm.cmd -ErrorAction SilentlyContinue)
   if (-not $pnpmCmd) { $pnpmCmd = Get-Command pnpm }
   $pnpmPath = $pnpmCmd.Source
@@ -134,13 +120,67 @@ function Start-DevService([string]$name, [string]$filterArgs, [string]$logFile) 
   return $proc.Id
 }
 
+function Ensure-RemotePointEnv {
+  $pointEnv = Join-Path $Root "apps\point-server\.env"
+  $pointExample = Join-Path $Root "apps\point-server\.env.example"
+  $oracleEnv = Join-Path $Root ".tmp-pw\oracle-kyoma.env"
+
+  if (-not (Test-Path $pointEnv)) {
+    if (-not (Test-Path $pointExample)) {
+      throw "Missing apps/point-server/.env.example"
+    }
+    Copy-Item $pointExample $pointEnv
+    Write-Host "Created apps/point-server/.env from .env.example"
+  }
+
+  Upsert-EnvValue $pointEnv "CENTRAL_RELAY_URL" $RemoteRelayUrl
+
+  $syncId = Get-EnvFileValue $pointEnv "POINT_SYNC_ID"
+  $syncToken = Get-EnvFileValue $pointEnv "POINT_SYNC_TOKEN"
+
+  if ([string]::IsNullOrWhiteSpace($syncId) -or [string]::IsNullOrWhiteSpace($syncToken)) {
+    $syncId = Get-EnvFileValue $oracleEnv "POINT_SYNC_ID"
+    $syncToken = Get-EnvFileValue $oracleEnv "POINT_SYNC_TOKEN"
+    if (-not [string]::IsNullOrWhiteSpace($syncId) -and -not [string]::IsNullOrWhiteSpace($syncToken)) {
+      Upsert-EnvValue $pointEnv "POINT_SYNC_ID" $syncId
+      Upsert-EnvValue $pointEnv "POINT_SYNC_TOKEN" $syncToken
+      Write-Host "Filled POINT_SYNC_* from .tmp-pw\oracle-kyoma.env"
+    }
+  }
+
+  $syncId = Get-EnvFileValue $pointEnv "POINT_SYNC_ID"
+  $syncToken = Get-EnvFileValue $pointEnv "POINT_SYNC_TOKEN"
+  if ([string]::IsNullOrWhiteSpace($syncId) -or [string]::IsNullOrWhiteSpace($syncToken)) {
+    throw "POINT_SYNC_ID / POINT_SYNC_TOKEN missing in apps/point-server/.env. Create a point in $RemoteAdminUrl and paste id + syncToken."
+  }
+
+  return @{
+    EnvPath = $pointEnv
+    Id = $syncId
+    Token = $syncToken
+  }
+}
+
+function Test-RemoteRelay {
+  $healthUrl = "$RemoteRelayUrl/health"
+  try {
+    $resp = Invoke-WebRequest -Uri $healthUrl -UseBasicParsing -TimeoutSec 15
+    if ($resp.StatusCode -lt 200 -or $resp.StatusCode -ge 300) {
+      throw "Unexpected status $($resp.StatusCode)"
+    }
+    Write-Host "Remote relay OK: $healthUrl"
+  } catch {
+    throw "Remote relay unreachable ($healthUrl). Check internet / DNS / Oracle VM. $($_.Exception.Message)"
+  }
+}
+
 $exitCode = 0
 try {
-  Write-Host "TshirtPrinterApp auto-start" -ForegroundColor Green
+  Write-Host "TshirtPrinterApp auto-start (remote relay)" -ForegroundColor Green
   Write-Host "Root: $Root"
+  Write-Host "Relay: $RemoteRelayUrl"
 
   Write-Step "Checking tools"
-  Assert-Command docker
   Assert-Command node
   Assert-Command pnpm
 
@@ -152,46 +192,17 @@ try {
     Write-Host "Warning: package.json wants Node >= 24, you have $(node -v). Usually fine." -ForegroundColor Yellow
   }
 
-  docker info 1>$null 2>$null
-  if ($LASTEXITCODE -ne 0) {
-    throw "Docker is not responding. Start Docker Desktop and wait until Ready."
-  }
-
   Write-Step "pnpm install"
   pnpm install
   if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
 
-  Write-Step "Docker Postgres"
-  docker compose up -d
-  if ($LASTEXITCODE -ne 0) { throw "docker compose up failed" }
-  Wait-Postgres
-  Write-Host "Postgres is ready."
+  Write-Step "Remote relay"
+  Test-RemoteRelay
 
-  Write-Step "central-relay: migrate + seed"
-  pnpm --filter @tshirt/central-relay db:migrate
-  if ($LASTEXITCODE -ne 0) { throw "central-relay migrate failed" }
-  pnpm --filter @tshirt/central-relay db:seed
-  if ($LASTEXITCODE -ne 0) { throw "central-relay seed failed" }
-
-  $creds = Get-PointSyncCreds
-  Write-Host "Point id=$($creds.Id)"
-  Write-Host "Token=$($creds.Token)"
-
-  Write-Step "point-server .env"
-  $pointEnv = Join-Path $Root "apps\point-server\.env"
-  $pointExample = Join-Path $Root "apps\point-server\.env.example"
-  if (-not (Test-Path $pointEnv)) {
-    if (-not (Test-Path $pointExample)) {
-      throw "Missing apps/point-server/.env.example"
-    }
-    Copy-Item $pointExample $pointEnv
-    Write-Host "Created apps/point-server/.env from .env.example"
-  }
-
-  Upsert-EnvValue $pointEnv "CENTRAL_RELAY_URL" "http://localhost:4100"
-  Upsert-EnvValue $pointEnv "POINT_SYNC_ID" $creds.Id
-  Upsert-EnvValue $pointEnv "POINT_SYNC_TOKEN" $creds.Token
-  Write-Host "Wrote CENTRAL_RELAY_URL / POINT_SYNC_ID / POINT_SYNC_TOKEN"
+  Write-Step "point-server .env (cloud sync)"
+  $creds = Ensure-RemotePointEnv
+  Write-Host "CENTRAL_RELAY_URL=$RemoteRelayUrl"
+  Write-Host "POINT_SYNC_ID=$($creds.Id)"
 
   Write-Step "point-server: migrate + seed"
   pnpm --filter @tshirt/point-server db:migrate
@@ -199,17 +210,16 @@ try {
   pnpm --filter @tshirt/point-server db:seed
   if ($LASTEXITCODE -ne 0) { throw "point-server seed failed" }
 
-  Write-Step "Starting services (background)"
+  Write-Step "Starting local services (background)"
   $logDir = Join-Path $Root "logs"
   New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
   Stop-OldDevServices
 
+  # Local only: point API + kiosk/operator UI. Admin/relay live in the cloud.
   $services = @(
-    @{ Name = "central-relay"; Args = "--filter @tshirt/central-relay dev" },
-    @{ Name = "admin-panel";   Args = "--filter @tshirt/admin-panel dev" },
-    @{ Name = "point-server";  Args = "--filter @tshirt/point-server dev" },
-    @{ Name = "kiosk";         Args = "--filter @tshirt/kiosk-operator-app dev" }
+    @{ Name = "point-server"; Args = "--filter @tshirt/point-server dev" },
+    @{ Name = "kiosk";        Args = "--filter @tshirt/kiosk-operator-app dev" }
   )
 
   $pids = @()
@@ -227,23 +237,21 @@ try {
   $lanIp = Get-LanIp
 
   $summary = @"
-Local:
+Local (this PC):
   Kiosk:      http://localhost:5173/kiosk
   Operator:   http://localhost:5173/operator
-  Admin:      http://localhost:5174
   Point API:  http://localhost:4000
-  Relay:      http://localhost:4100
 
 LAN ($lanIp):
   Kiosk (dev):     http://${lanIp}:5173/kiosk
   Kiosk (release): http://${lanIp}:5173/kiosk?native=1
   Operator:        http://${lanIp}:5173/operator
-  (design gear is on in Vite; hide with ?dev=0 or ?native=1)
-  Admin:           http://${lanIp}:5174
   Point API:       http://${lanIp}:4000
-  Relay:           http://${lanIp}:4100
 
-Admin login:  admin / admin123
+Cloud:
+  Relay:      $RemoteRelayUrl
+  Admin:      $RemoteAdminUrl
+  Health:     $RemoteRelayUrl/health
 
 POINT_SYNC_ID:    $($creds.Id)
 POINT_SYNC_TOKEN: $($creds.Token)
@@ -254,7 +262,7 @@ Stop: stop-dev.bat
 
   Write-Host ""
   Write-Host "========================================" -ForegroundColor Green
-  Write-Host "  STARTED"
+  Write-Host "  STARTED (remote relay)"
   Write-Host "========================================" -ForegroundColor Green
   Write-Host ""
   Write-Host $summary

@@ -6,6 +6,8 @@ color 0A
 
 echo.
 echo  TshirtPrinterApp auto-start
+echo  Local: kiosk + operator + point-server
+echo  Cloud: https://api.kyoma.uk  (admin / QR / sync)
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-dev.ps1"
@@ -34,7 +36,7 @@ if exist "%~dp0dev-urls.txt" (
 
 echo.
 echo  This window stays open. Close with the X button.
-echo  Stop all: stop-dev.bat
+echo  Stop all local: stop-dev.bat
 echo.
 
 :hold

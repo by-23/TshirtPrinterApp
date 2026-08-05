@@ -1,6 +1,10 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
+import { env } from "./env.js";
 import { healthRoutes } from "./routes/health.js";
 import { registerAuth } from "./modules/auth/plugin.js";
 import { authRoutes } from "./modules/auth/routes.js";
@@ -22,6 +26,18 @@ import { initRealtime } from "./realtime/socket.js";
  * cameras with headroom.
  */
 const MAX_REQUEST_BODY_BYTES = 20 * 1024 * 1024;
+
+function resolveAdminDistPath(): string | null {
+  if (env.ADMIN_DIST_PATH) {
+    const configured = path.resolve(env.ADMIN_DIST_PATH);
+    if (existsSync(path.join(configured, "index.html"))) return configured;
+  }
+  const sibling = path.resolve("..", "admin-panel", "dist");
+  if (existsSync(path.join(sibling, "index.html"))) return sibling;
+  const bundled = path.resolve("admin-dist");
+  if (existsSync(path.join(bundled, "index.html"))) return bundled;
+  return null;
+}
 
 export async function buildServer() {
   const app = Fastify({ logger: true, bodyLimit: MAX_REQUEST_BODY_BYTES });
@@ -48,6 +64,28 @@ export async function buildServer() {
   await app.register(uploadRelayRoutes);
   await app.register(catalogManualRoutes);
   await app.register(fontsRoutes);
+
+  const adminDist = resolveAdminDistPath();
+  if (adminDist) {
+    app.log.info(`Serving admin-panel from ${adminDist} at /admin/`);
+    await app.register(fastifyStatic, {
+      root: adminDist,
+      prefix: "/admin/",
+      decorateReply: true,
+      maxAge: "1y",
+      immutable: true,
+    });
+    app.get("/", async (_request, reply) => reply.redirect("/admin/"));
+    app.setNotFoundHandler((request, reply) => {
+      if (request.method === "GET") {
+        const urlPath = request.url.split("?")[0] ?? "";
+        if (urlPath === "/admin" || urlPath.startsWith("/admin/")) {
+          return reply.type("text/html").sendFile("index.html", adminDist);
+        }
+      }
+      return reply.status(404).send({ error: "Not Found" });
+    });
+  }
 
   return app;
 }

@@ -90,6 +90,9 @@ importers:
       '@fastify/multipart':
         specifier: ^9.0.3
         version: 9.4.0
+      '@fastify/static':
+        specifier: ^9.1.3
+        version: 9.1.3
       '@tshirt/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types

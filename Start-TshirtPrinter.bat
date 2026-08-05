@@ -2,6 +2,12 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
+echo.
+echo  Tshirt Printer (packaged)
+echo  Sync/QR via cloud: https://api.kyoma.uk
+echo  Credentials: apps\point-server\.env  (CENTRAL_RELAY_URL / POINT_SYNC_*)
+echo.
+
 REM Kill stale instances (including orphaned node point-server)
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "Get-CimInstance Win32_Process | Where-Object { $_.Name -like '*Tshirt*' -or ($_.CommandLine -and ($_.CommandLine -like '*Tshirt Printer*' -or $_.CommandLine -like '*point-server*dist*index.js*')) } | ForEach-Object { taskkill /PID $_.ProcessId /T /F 2>$null }; Remove-Item -Force -ErrorAction SilentlyContinue \"$env:APPDATA\@tshirt\point-desktop\SingletonLock\",\"$env:APPDATA\@tshirt\point-desktop\SingletonCookie\",\"$env:APPDATA\@tshirt\point-desktop\SingletonSocket\""

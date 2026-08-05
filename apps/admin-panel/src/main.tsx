@@ -9,7 +9,7 @@ import "./index.css";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ConfigProvider locale={ruRU}>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "") || undefined}>
         <App />
       </BrowserRouter>
     </ConfigProvider>

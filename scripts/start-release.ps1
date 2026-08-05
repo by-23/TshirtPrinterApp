@@ -103,10 +103,11 @@ function Stop-ReleaseBrowsers([string]$profilesRoot) {
 
 $exitCode = 0
 try {
-  Write-Host "TshirtPrinterApp RELEASE start" -ForegroundColor Green
+  Write-Host "TshirtPrinterApp RELEASE start (remote relay)" -ForegroundColor Green
   Write-Host "Root: $Root"
+  Write-Host "Relay: https://api.kyoma.uk"
 
-  Write-Step "Starting backend services (same as start-dev)"
+  Write-Step "Starting local services (same as start-dev — cloud relay)"
   & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "start-dev.ps1")
   $devExit = 0
   $devExitFile = Join-Path $Root "dev-exitcode.txt"
@@ -174,6 +175,8 @@ Kiosk is no longer opened on a second PC monitor.
 On the Android display open: http://<this-PC-LAN-IP>:5173/kiosk?native=1
 (or packaged point-server: http://<this-PC-LAN-IP>:4000/kiosk?native=1).
 Without ?native=1 the settings gear and Kiosk/Operator switcher stay visible (dev chrome).
+Admin (cloud): https://api.kyoma.uk/admin/
+QR / sync go through https://api.kyoma.uk — local central-relay is not started.
 "@
 
   Write-Host ""

@@ -7,6 +7,7 @@ color 0A
 echo.
 echo  TshirtPrinterApp RELEASE mode
 echo  Operator fullscreen on PC; kiosk on Android with ?native=1
+echo  Cloud relay: https://api.kyoma.uk
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-release.ps1"
@@ -34,7 +35,8 @@ if exist "%~dp0dev-urls.txt" (
 echo.
 echo  Android kiosk URL must include ?native=1
 echo  Example: http://YOUR-PC-IP:5173/kiosk?native=1
-echo  Stop all: stop-release.bat
+echo  Admin (cloud): https://api.kyoma.uk/admin/
+echo  Stop all local: stop-release.bat
 echo.
 
 :hold
