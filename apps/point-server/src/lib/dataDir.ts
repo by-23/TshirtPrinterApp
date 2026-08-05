@@ -18,6 +18,7 @@ const RUNTIME_SUBDIRS = [
   "catalog",
   "catalog-tmp",
   "orders",
+  "dtf-print-jobs",
   "ads-videos",
   "stickers",
   "stickers-tmp",

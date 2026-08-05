@@ -164,6 +164,8 @@ export const orders = sqliteTable("orders", {
   printCount: integer("print_count").notNull().default(0),
   mockupImagePath: text("mockup_image_path"),
   designImagePath: text("design_image_path"),
+  /** Relative path to DTF RIP file (`orders/{id}/dtf-print.png`), prepared on demand. */
+  dtfPrintImagePath: text("dtf_print_image_path"),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -262,6 +264,20 @@ export const catalogManualQueue = sqliteTable("catalog_manual_queue", {
 export const printAreaConfig = sqliteTable("print_area_config", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   areasJson: text("areas_json", { mode: "json" }).$type<import("@tshirt/shared-types").PrintAreaConfig>().notNull(),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+/**
+ * Singleton (id=1) Epson L1800 / DTF RIP settings — physical mm, DPI, mirror,
+ * hotfolder. Edited from the operator printer panel.
+ */
+export const printerConfig = sqliteTable("printer_config", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  configJson: text("config_json", { mode: "json" })
+    .$type<import("@tshirt/shared-types").DtfPrinterConfig>()
+    .notNull(),
   updatedAt: text("updated_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),

@@ -10,3 +10,4 @@ export * from "./ai.js";
 export * from "./stickers.js";
 export * from "./ads.js";
 export * from "./fonts.js";
+export * from "./printer.js";

@@ -1,4 +1,10 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
+<#
+  Optional Windows code signing (recommended OV cert for SmartScreen):
+    $env:CSC_LINK = "C:\path\to\certificate.pfx"
+    $env:CSC_KEY_PASSWORD = "your-pfx-password"
+  electron-builder picks these up automatically when set.
+#>
 $ErrorActionPreference = "Stop"
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -118,16 +124,16 @@ if (Test-Path $pointEnvSrc) {
   Copy-Item -Force $pointEnvSrc (Join-Path $pointPack ".env")
   Write-Host "Copied point-server .env (CENTRAL_RELAY_URL / POINT_SYNC_*) into pack"
 } else {
-  Write-Host "WARNING: apps/point-server/.env missing — packaged app will run without cloud sync" -ForegroundColor Yellow
+  Write-Host "WARNING: apps/point-server/.env missing - packaged app will run without cloud sync" -ForegroundColor Yellow
 }
 
-# Bundled assets (garment templates for mockup rendering) — read from cwd/assets.
+# Bundled assets (garment templates for mockup rendering) - read from cwd/assets.
 $assetsSrc = Join-Path $pointSrc "assets"
 if (Test-Path $assetsSrc) {
   Copy-Item -Recurse -Force $assetsSrc (Join-Path $pointPack "assets")
 }
 
-# Seed media for first launch on any PC → copied into %LOCALAPPDATA%\TshirtPrinter\data
+# Seed media for first launch on any PC -> copied into %LOCALAPPDATA%\TshirtPrinter\data
 $dataSrc = Join-Path $pointSrc "data"
 $packData = Join-Path $pointPack "data"
 $srcDb = Join-Path $dataSrc "point.db"
@@ -261,10 +267,22 @@ try {
 
 $releaseDir = Join-Path $desktop "release"
 $kioskReleaseDir = Join-Path $kioskDesktop "release"
+
+Write-Step "Build combined installer (Operator or Kiosk in one setup.exe)"
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root "scripts\build-combined-installer.ps1") `
+  -OutDir (Join-Path $Root "dist-combined")
+if ($LASTEXITCODE -ne 0) { throw "combined installer failed" }
+
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  BUILD COMPLETE"
 Write-Host "========================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "Combined installer (give this file to the client):"
+Get-ChildItem (Join-Path $Root "dist-combined") -Filter "TshirtPrinter-Setup-*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+  $mb = [math]::Round($_.Length / 1MB, 1)
+  Write-Host ("  {0}  ({1} MB)" -f $_.FullName, $mb) -ForegroundColor Green
+}
 Write-Host ""
 Write-Host "Operator artifacts:"
 Get-ChildItem $releaseDir -File -ErrorAction SilentlyContinue | ForEach-Object {
@@ -279,3 +297,12 @@ Get-ChildItem $kioskReleaseDir -File -ErrorAction SilentlyContinue | ForEach-Obj
   Write-Host ("  {0}  ({1} MB)" -f $_.Name, $mb)
 }
 Write-Host "Folder: $kioskReleaseDir"
+Write-Host ""
+Write-Host "To publish updates to GitHub Releases:"
+Write-Host "  powershell -File scripts\publish-windows-update.ps1"
+Write-Host "  (or -SkipBuild if artifacts above are already fresh)"
+if ($env:CSC_LINK) {
+  Write-Host "Code signing: CSC_LINK is set"
+} else {
+  Write-Host "Code signing: not set (SmartScreen may warn). Set CSC_LINK + CSC_KEY_PASSWORD for OV/EV cert." -ForegroundColor Yellow
+}

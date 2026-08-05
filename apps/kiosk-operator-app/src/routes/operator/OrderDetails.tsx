@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Order } from "@tshirt/shared-types";
 import { updateOrderStatus } from "../../lib/pointServer.js";
-import { printOrderDesign } from "../../lib/printOrder.js";
+import { describeDtfPrintJob, sendOrderToDtfPrint } from "../../lib/printOrder.js";
 import { StatusBadge } from "./StatusBadge.js";
 import { OrderImage } from "./OrderImage.js";
 import {
@@ -26,6 +26,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | null; onUpdated: (order: Order) => void }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [printHint, setPrintHint] = useState<string | null>(null);
 
   if (!orderProp) {
     return (
@@ -54,20 +55,24 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
       if (!window.confirm(message)) return;
     }
     setError(null);
+    setPrintHint(null);
     setIsUpdating(true);
     try {
       if (status === "accepted") {
         if (!order.designImageUrl) {
           throw new Error("no design");
         }
-        await printOrderDesign(order.designImageUrl, `Заказ №${order.id}`);
+        // Prepare RIP-ready DTF PNG (mm @ 300 DPI, mirror) → hotfolder + Explorer.
+        const prepared = await sendOrderToDtfPrint(order.id);
+        setPrintHint(describeDtfPrintJob(prepared.printJob));
+        onUpdated(prepared.order);
       }
       const updated = await updateOrderStatus(order.id, status);
       onUpdated(updated);
     } catch {
       setError(
         status === "accepted"
-          ? "Не удалось отправить на печать. Проверьте файл дизайна и попробуйте ещё раз."
+          ? "Не удалось подготовить файл для DTF. Проверьте дизайн и настройки принтера."
           : "Не удалось обновить заказ. Попробуйте ещё раз.",
       );
     } finally {
@@ -214,7 +219,7 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
                 )}
               </div>
               <span style={{ fontSize: "var(--operator-details-meta-size)", color: "var(--operator-text-muted)" }}>
-                Размер печати соответствует области дизайна на макете
+                Для Epson L1800 (DTF) готовится PNG 300 DPI под RIP (AcroRIP)
               </span>
             </div>
           </div>
@@ -223,6 +228,14 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
 
       <div className="mt-auto flex flex-shrink-0 flex-col gap-3 pt-5">
         {error && <p className="text-sm font-semibold text-red-400">{error}</p>}
+        {printHint && (
+          <p
+            className="whitespace-pre-line text-sm font-semibold"
+            style={{ color: "var(--operator-printer-ready-color, #4ade80)" }}
+          >
+            {printHint}
+          </p>
+        )}
         <div className="flex flex-row" style={{ gap: "var(--operator-details-buttons-gap)" }}>
           {(isNew || isFinal) && (
             <button

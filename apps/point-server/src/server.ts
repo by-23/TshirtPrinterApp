@@ -11,6 +11,7 @@ import { catalogScrapeRoutes } from "./modules/catalog-scraper/routes.js";
 import { ordersRoutes } from "./modules/orders/routes.js";
 import { configRoutes } from "./modules/config/routes.js";
 import { printAreaRoutes } from "./modules/print-area/routes.js";
+import { printerRoutes } from "./modules/printer/routes.js";
 import { garmentAvailabilityRoutes } from "./modules/garment-availability/routes.js";
 import { aiRoutes } from "./modules/ai/routes.js";
 import { stickerRoutes } from "./modules/stickers/routes.js";
@@ -71,6 +72,7 @@ export async function buildServer() {
   await app.register(ordersRoutes);
   await app.register(configRoutes);
   await app.register(printAreaRoutes);
+  await app.register(printerRoutes);
   await app.register(garmentAvailabilityRoutes);
   await app.register(aiRoutes);
   await app.register(stickerRoutes);

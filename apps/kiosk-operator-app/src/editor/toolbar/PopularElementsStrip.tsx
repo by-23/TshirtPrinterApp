@@ -112,7 +112,7 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
       {...editorThemeSection("popular")}
       style={{
         ...blockBorderStyle("popular-block"),
-        width: "100%",
+        maxWidth: "100%",
         gap: "var(--editor-popular-title-gap)",
       }}
     >

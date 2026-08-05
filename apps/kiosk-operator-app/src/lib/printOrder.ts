@@ -1,100 +1,50 @@
+import { prepareOrderPrint, type PrepareOrderPrintResult } from "./pointServer.js";
+import { isPointDesktop } from "./pointDesktop.js";
+
+export type SendOrderToPrintResult = PrepareOrderPrintResult;
+
+function formatSizeCm(widthMm: number, heightMm: number): string {
+  const w = (widthMm / 10).toFixed(widthMm % 10 === 0 ? 0 : 1);
+  const h = (heightMm / 10).toFixed(heightMm % 10 === 0 ? 0 : 1);
+  return `${w}×${h} см`;
+}
+
+/** Short operator-facing summary after a DTF file is ready. */
+export function describeDtfPrintJob(job: PrepareOrderPrintResult["printJob"]): string {
+  const mirror = job.mirrored ? "зеркало вкл." : "без зеркала";
+  return (
+    `Файл для ${job.printerModel} готов: ${formatSizeCm(job.widthMm, job.heightMm)}, ` +
+    `${job.dpi} DPI, ${mirror}, плёнка ${job.mediaSize}.\n\n` +
+    `Откройте файл в AcroRIP и нажмите Print.\n` +
+    `Папка печати: ${job.hotfolderDir}`
+  );
+}
+
 /**
- * Opens the system print dialog (Windows print UI in the browser) for an
- * order's design PNG. Uses an off-screen iframe so the operator screen itself
- * is not sent to the printer.
+ * Prepares a RIP-ready DTF PNG on point-server, opens it for the operator
+ * (Explorer on desktop / new tab in browser), and returns job metadata.
+ * Does NOT change order status — caller still PATCHes `accepted`.
  */
-export function printOrderDesign(imageUrl: string, title: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const iframe = document.createElement("iframe");
-    iframe.setAttribute("aria-hidden", "true");
-    // Full-size off-screen frame — zero-size / visibility:hidden frames often
-    // produce a blank print job in Chromium.
-    iframe.style.cssText =
-      "position:fixed;inset:0;width:100%;height:100%;border:0;opacity:0;pointer-events:none;z-index:-1;";
-    document.body.appendChild(iframe);
+export async function sendOrderToDtfPrint(orderId: string): Promise<SendOrderToPrintResult> {
+  const result = await prepareOrderPrint(orderId);
+  const { printJob } = result;
 
-    const win = iframe.contentWindow;
-    const doc = win?.document;
-    if (!win || !doc) {
-      iframe.remove();
-      reject(new Error("Не удалось открыть окно печати"));
-      return;
+  if (isPointDesktop() && window.pointDesktop?.showItemInFolder) {
+    try {
+      await window.pointDesktop.showItemInFolder(printJob.absolutePath);
+    } catch {
+      // fail-open — file is still on disk / hotfolder
     }
-
-    const safeTitle = title.replace(/[<>&"]/g, "");
-    const safeUrl = imageUrl.replace(/"/g, "%22");
-
-    doc.open();
-    doc.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>${safeTitle}</title>
-  <style>
-    @page { margin: 0; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: #fff;
+  } else if (isPointDesktop() && window.pointDesktop?.openPath) {
+    try {
+      await window.pointDesktop.openPath(printJob.absolutePath);
+    } catch {
+      // fail-open
     }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    img {
-      display: block;
-      max-width: 100%;
-      max-height: 100vh;
-      object-fit: contain;
-    }
-  </style>
-</head>
-<body>
-  <img src="${safeUrl}" alt="${safeTitle}" />
-</body>
-</html>`);
-    doc.close();
+  } else {
+    // Browser / Android operator: open the PNG so it can be saved or dragged into RIP.
+    window.open(printJob.fileUrl, "_blank", "noopener,noreferrer");
+  }
 
-    const img = doc.querySelector("img");
-    if (!img) {
-      iframe.remove();
-      reject(new Error("Не удалось подготовить изображение для печати"));
-      return;
-    }
-
-    const removeFrame = () => {
-      try {
-        iframe.remove();
-      } catch {
-        // already detached
-      }
-    };
-
-    const runPrint = () => {
-      try {
-        win.focus();
-        win.addEventListener("afterprint", removeFrame);
-        window.setTimeout(removeFrame, 60_000);
-        win.print();
-        resolve();
-      } catch (err) {
-        removeFrame();
-        reject(err instanceof Error ? err : new Error("Печать не удалась"));
-      }
-    };
-
-    if (img.complete && img.naturalWidth > 0) {
-      runPrint();
-      return;
-    }
-
-    img.onload = () => runPrint();
-    img.onerror = () => {
-      removeFrame();
-      reject(new Error("Не удалось загрузить изображение дизайна"));
-    };
-  });
+  return result;
 }

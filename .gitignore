@@ -22,6 +22,9 @@ logs/
 apps/point-desktop/resources/
 apps/point-desktop/release/
 apps/point-desktop/node_modules/
+apps/kiosk-desktop/release/
+apps/kiosk-desktop/node_modules/
+dist-combined/
 
 # Generated per-order design/mockup PNGs (point-server, Stage 5)
 apps/point-server/data/orders/

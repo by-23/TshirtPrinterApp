@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, screen, dialog } = require("electron");
 const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
+const { setupAutoUpdater } = require("./updater.cjs");
 
 /** @type {BrowserWindow | null} */
 let kioskWindow = null;
@@ -200,6 +201,7 @@ function showSetup(statusText = "") {
   const y = Math.round(primary.bounds.y + (primary.bounds.height - height) / 2);
 
   if (setupWindow && !setupWindow.isDestroyed()) {
+    setupWindow.webContents.once("did-finish-load", () => injectUpdateOverlay(setupWindow));
     setupWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(setupHtml(statusText, config.host, config.port))}`,
     );
@@ -228,6 +230,9 @@ function showSetup(statusText = "") {
     },
   });
   setupWindow.setMenuBarVisibility(false);
+  setupWindow.webContents.on("did-finish-load", () => {
+    injectUpdateOverlay(setupWindow);
+  });
   setupWindow.loadURL(
     `data:text/html;charset=utf-8,${encodeURIComponent(setupHtml(statusText, config.host, config.port))}`,
   );
@@ -278,6 +283,7 @@ function showReconnect(config) {
   if (setupWindow && !setupWindow.isDestroyed()) {
     setupWindow.setBounds({ x, y, width, height });
     setupWindow.setFullScreen(true);
+    setupWindow.webContents.once("did-finish-load", () => injectUpdateOverlay(setupWindow));
     setupWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(reconnectHtml(pointOrigin(config)))}`,
     );
@@ -302,6 +308,9 @@ function showReconnect(config) {
     },
   });
   setupWindow.setMenuBarVisibility(false);
+  setupWindow.webContents.on("did-finish-load", () => {
+    injectUpdateOverlay(setupWindow);
+  });
   setupWindow.loadURL(
     `data:text/html;charset=utf-8,${encodeURIComponent(reconnectHtml(pointOrigin(config)))}`,
   );
@@ -360,6 +369,10 @@ function openKiosk(config) {
     }
   }, 4000);
 
+  kioskWindow.webContents.on("did-finish-load", () => {
+    injectUpdateOverlay(kioskWindow);
+  });
+
   kioskWindow.loadURL(url);
   kioskWindow.on("closed", () => {
     kioskWindow = null;
@@ -394,6 +407,65 @@ async function tryConnect(config) {
   writeConfig(config);
   openKiosk(config);
   return { ok: true };
+}
+
+/**
+ * Floating "Обновить" control injected into kiosk/setup pages.
+ * Download runs in the background; install only on click.
+ */
+function injectUpdateOverlay(win) {
+  if (!win || win.isDestroyed()) return;
+  const script = `(() => {
+    if (window.__tshirtUpdateOverlayInstalled) return;
+    window.__tshirtUpdateOverlayInstalled = true;
+    const api = window.kioskDesktop;
+    if (!api || !api.onUpdateStatus) return;
+
+    const root = document.createElement('div');
+    root.id = 'tshirt-update-overlay';
+    root.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;display:none;font-family:Segoe UI,system-ui,sans-serif;';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'padding:12px 18px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35);';
+    root.appendChild(btn);
+    document.documentElement.appendChild(root);
+
+    function render(status) {
+      if (!status) return;
+      if (status.state === 'downloading') {
+        root.style.display = 'block';
+        btn.disabled = true;
+        btn.style.opacity = '.75';
+        btn.textContent = 'Скачивание ' + (status.version ? 'v' + status.version + ' ' : '') + (status.percent != null ? status.percent + '%' : '…');
+        return;
+      }
+      if (status.state === 'ready') {
+        root.style.display = 'block';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.textContent = 'Обновить' + (status.version ? ' до v' + status.version : '');
+        return;
+      }
+      if (status.state === 'installing') {
+        root.style.display = 'block';
+        btn.disabled = true;
+        btn.textContent = 'Установка…';
+        return;
+      }
+      root.style.display = 'none';
+    }
+
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = 'Установка…';
+      api.installUpdate();
+    });
+
+    api.getUpdateStatus().then(render).catch(() => undefined);
+    api.onUpdateStatus(render);
+  })();`;
+  win.webContents.executeJavaScript(script).catch(() => undefined);
 }
 
 function registerIpc() {
@@ -448,6 +520,13 @@ if (!gotLock) {
     }
     log(`App ready packaged=${app.isPackaged}`);
     registerIpc();
+    const updater = setupAutoUpdater({
+      log,
+      BrowserWindow,
+      ipcMain,
+      channel: "kiosk",
+    });
+    updater.start();
 
     const config = readConfig();
     if (!config.host) {

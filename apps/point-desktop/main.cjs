@@ -1,9 +1,10 @@
-const { app, BrowserWindow, ipcMain, screen, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, screen, dialog, shell } = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
+const { setupAutoUpdater } = require("./updater.cjs");
 
 // Never inherit a random PORT from the parent shell (breaks packaged launches).
 const POINT_PORT = Number(process.env.TSHIRT_POINT_PORT || 4000);
@@ -569,6 +570,30 @@ function registerIpc() {
     openUiWindows(readDisplayConfig());
     return { ok: true };
   });
+
+  // DTF print jobs: reveal prepared PNG in Explorer so the operator can open it in RIP.
+  ipcMain.handle("shell:showItemInFolder", (_event, filePath) => {
+    const target = typeof filePath === "string" ? filePath.trim() : "";
+    if (!target) return { ok: false, error: "empty path" };
+    try {
+      if (!fs.existsSync(target)) return { ok: false, error: "not found" };
+      shell.showItemInFolder(target);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err && err.message ? String(err.message) : "failed" };
+    }
+  });
+
+  ipcMain.handle("shell:openPath", async (_event, targetPath) => {
+    const target = typeof targetPath === "string" ? targetPath.trim() : "";
+    if (!target) return { ok: false, error: "empty path" };
+    try {
+      const error = await shell.openPath(target);
+      return error ? { ok: false, error } : { ok: true };
+    } catch (err) {
+      return { ok: false, error: err && err.message ? String(err.message) : "failed" };
+    }
+  });
 }
 
 const gotLock = app.requestSingleInstanceLock();
@@ -607,12 +632,19 @@ if (!gotLock) {
     }
     log(`App ready packaged=${app.isPackaged} resources=${resourcesRoot()}`);
     registerIpc();
+    const updater = setupAutoUpdater({
+      log,
+      BrowserWindow,
+      ipcMain,
+      channel: "operator",
+    });
 
     showSplash("Запуск сервера точки…");
     try {
       await ensurePointServer();
       showSplash("Открытие интерфейса оператора…");
       openUiWindows();
+      updater.start();
     } catch (err) {
       const message = err && err.message ? err.message : String(err);
       log(`FATAL: ${message}`);

@@ -42,8 +42,11 @@ function readSelectionGeometry(canvas: Canvas, printArea: PrintAreaRect): Select
   if (!active) return null;
 
   active.setCoords();
-  const [tl, tr, br, bl] = active.getCoords();
-  const corners = [tl, tr, br, bl].map((point) => sceneToMockup(printArea, point.x, point.y));
+  const raw = active.getCoords();
+  if (!raw[0] || !raw[1] || !raw[2] || !raw[3]) return null;
+  const corners = [raw[0], raw[1], raw[2], raw[3]].map((point) =>
+    sceneToMockup(printArea, point.x, point.y),
+  );
 
   const minX = Math.min(...corners.map((c) => c.x));
   const maxX = Math.max(...corners.map((c) => c.x));
@@ -63,8 +66,15 @@ function midpoint(
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
-function handlePosition(corners: { x: number; y: number }[], key: HandleKey) {
-  const [tl, tr, br, bl] = corners;
+function handlePosition(
+  corners: { x: number; y: number }[],
+  key: HandleKey,
+): { x: number; y: number } | null {
+  const tl = corners[0];
+  const tr = corners[1];
+  const br = corners[2];
+  const bl = corners[3];
+  if (!tl || !tr || !br || !bl) return null;
   switch (key) {
     case "tl":
       return tl;
@@ -243,7 +253,11 @@ export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
   };
 
   const iconSize = "calc(var(--editor-objctrl-btn-width) * 0.45)";
-  const [tl, tr, br, bl] = geometry.corners;
+  const tl = geometry.corners[0];
+  const tr = geometry.corners[1];
+  const br = geometry.corners[2];
+  const bl = geometry.corners[3];
+  if (!tl || !tr || !br || !bl) return null;
   const polygonPoints = `${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`;
 
   return (
@@ -264,6 +278,7 @@ export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
 
       {HANDLE_KEYS.map((key) => {
         const pos = handlePosition(geometry.corners, key);
+        if (!pos) return null;
         return (
           <div
             key={key}

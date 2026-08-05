@@ -639,6 +639,7 @@ textarea {
   --editor-canvas-card-padding: 0px;
   --editor-canvas-scale: 1;
 
+  --editor-strip-width: var(--editor-canvas-card-width);
   --editor-strip-radius: 16px;
   --editor-strip-bg: #02060d;
   --editor-strip-border-color: #1c1e26;
@@ -652,7 +653,7 @@ textarea {
   --editor-strip-btn-height: 32px;
   --editor-strip-btn-radius: 0px;
   --editor-strip-label-font-size: 12px;
-    --editor-strip-value-font-size: 16px;
+  --editor-strip-value-font-size: 16px;
 
   --editor-objctrl-bar-radius: 999px;
   --editor-objctrl-btn-width: 36px;
@@ -788,7 +789,7 @@ textarea {
   --editor-tips-block-radius: 16px;
   --editor-tips-block-padding: 16px;
   --editor-tips-block-height: auto;
-  --editor-tips-block-width: 100px;
+  --editor-tips-block-width: 100%;
   --editor-tips-block-content-align: start;
 
   --editor-tool-popover-width: 580px;

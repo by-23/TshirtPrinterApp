@@ -14,7 +14,7 @@ export function TipsBar() {
     <div
       className="mt-auto flex w-full flex-col gap-3"
       {...editorThemeSection("tips")}
-      style={{ ...blockBorderStyle("tips-block"), width: "100%" }}
+      style={{ ...blockBorderStyle("tips-block"), maxWidth: "100%" }}
     >
       <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-200">
         {t("editor.tipsTitle")}

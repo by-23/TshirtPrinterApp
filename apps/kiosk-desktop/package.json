@@ -1,13 +1,14 @@
 {
   "name": "@tshirt/kiosk-desktop",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Thin Windows client for the kiosk PC (connects to operator point-server over LAN)",
   "main": "main.cjs",
   "scripts": {
     "dev": "electron .",
     "pack": "electron-builder --win --dir",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "publish": "electron-builder --win --publish always"
   },
   "build": {
     "appId": "com.tshirtprinter.kiosk",
@@ -20,7 +21,16 @@
     "files": [
       "main.cjs",
       "preload.cjs",
+      "updater.cjs",
       "package.json"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "by-23",
+        "repo": "TshirtPrinterApp",
+        "channel": "kiosk"
+      }
     ],
     "win": {
       "target": [
@@ -47,6 +57,9 @@
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "electron": "^37.2.0",

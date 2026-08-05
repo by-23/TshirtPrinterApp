@@ -3,8 +3,11 @@ import { eq, sql } from "drizzle-orm";
 import { createOrderSchema, updateOrderStatusSchema, type SyncOrderPushPayload } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { orders } from "../../db/schema.js";
+import { dataPath } from "../../lib/dataDir.js";
 import { emitOrderEvent } from "../../realtime/socket.js";
 import { generateOrderImages } from "./mockup.js";
+import { getDtfPrinterConfig } from "../printer/config.js";
+import { prepareDtfPrint } from "../printer/dtfExport.js";
 import { drainSyncQueue, enqueueOrderPush } from "../sync/queue.js";
 import { getSyncSocket } from "../sync/client.js";
 
@@ -50,6 +53,7 @@ function serializeOrder(row: OrderRow, request: FastifyRequest) {
     printCount: row.printCount,
     mockupImageUrl: row.mockupImagePath ? fileUrl(request, row.mockupImagePath) : null,
     designImageUrl: row.designImagePath ? fileUrl(request, row.designImagePath) : null,
+    dtfPrintImageUrl: row.dtfPrintImagePath ? fileUrl(request, row.dtfPrintImagePath) : null,
     createdAt: row.createdAt,
   };
 }
@@ -114,6 +118,67 @@ export async function ordersRoutes(app: FastifyInstance) {
     emitOrderEvent("created", serialized);
     pushOrderToCentral(app, finalRow);
     return reply.status(201).send(serialized);
+  });
+
+  /**
+   * Builds a RIP-ready DTF PNG for Epson L1800 (physical mm @ DPI, mirror),
+   * copies it into the hotfolder, and returns paths for the operator/desktop.
+   */
+  app.post<{ Params: { id: string } }>("/orders/:id/prepare-print", async (request, reply) => {
+    const id = parseId(request.params.id);
+    if (id === null) {
+      return reply.status(400).send({ error: "Invalid id" });
+    }
+
+    const [row] = await db.select().from(orders).where(eq(orders.id, id));
+    if (!row) {
+      return reply.status(404).send({ error: "Order not found" });
+    }
+    if (!row.designImagePath) {
+      return reply.status(400).send({ error: "Order has no design image" });
+    }
+
+    try {
+      const { config } = await getDtfPrinterConfig();
+      const designAbsolutePath = dataPath(row.designImagePath);
+      const job = await prepareDtfPrint({
+        orderId: String(row.id),
+        garmentType: row.garmentType,
+        side: row.side,
+        designAbsolutePath,
+        config,
+      });
+
+      const [updated] = await db
+        .update(orders)
+        .set({ dtfPrintImagePath: job.dtfPrintImagePath })
+        .where(eq(orders.id, id))
+        .returning();
+
+      const serialized = serializeOrder(updated!, request);
+      emitOrderEvent("updated", serialized);
+
+      return {
+        order: serialized,
+        printJob: {
+          fileUrl: fileUrl(request, job.dtfPrintImagePath),
+          absolutePath: job.absolutePath,
+          hotfolderAbsolutePath: job.hotfolderAbsolutePath,
+          hotfolderDir: job.hotfolderDir,
+          widthMm: job.widthMm,
+          heightMm: job.heightMm,
+          widthPx: job.widthPx,
+          heightPx: job.heightPx,
+          dpi: job.dpi,
+          mirrored: job.mirrored,
+          mediaSize: job.mediaSize,
+          printerModel: job.printerModel,
+        },
+      };
+    } catch (err) {
+      app.log.error(err, "Failed to prepare DTF print");
+      return reply.status(500).send({ error: "Failed to prepare DTF print" });
+    }
   });
 
   // Status transitions used by Stage 5's operator actions ("Отправить на

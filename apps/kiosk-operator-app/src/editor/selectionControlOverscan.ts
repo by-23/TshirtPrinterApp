@@ -55,6 +55,24 @@ export function applySelectionControlOverscan(canvas: Canvas, insets?: ControlOv
   canvas.setViewportTransform([1, 0, 0, 1, resolved.left, resolved.top]);
 }
 
+/** Cap Fabric export scale so a kiosk tablet doesn't OOM on huge print areas. */
+const DTF_EXPORT_MAX_MULTIPLIER = 20;
+
+/**
+ * Fabric `toDataURL` multiplier so the PNG is ≈ `widthMm` at `dpi`
+ * (server later resizes exactly). Falls back to 2 when size is unknown.
+ */
+export function computeDtfExportMultiplier(
+  canvas: Canvas,
+  widthMm: number,
+  dpi = 300,
+): number {
+  const { width } = getDesignAreaSize(canvas);
+  if (width <= 0 || widthMm <= 0) return 2;
+  const targetPx = (widthMm / 25.4) * dpi;
+  return Math.min(DTF_EXPORT_MAX_MULTIPLIER, Math.max(2, Math.ceil(targetPx / width)));
+}
+
 /** PNG of just the print-area design (no mockup gutter, no selection chrome). */
 export function exportPrintAreaDataURL(
   canvas: Canvas,

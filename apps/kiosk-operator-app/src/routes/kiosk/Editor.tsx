@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
 import {
   designCategorySchema,
+  DEFAULT_DTF_PRINTER_CONFIG,
   GARMENT_COLORS,
   GARMENT_FABRICS,
   GARMENT_SIZES,
+  getPrintSizeMm,
   garmentTypeSchema,
   garmentUsesSizeFabric,
   isGarmentColorEnabled,
@@ -34,7 +36,10 @@ import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
 import { computePrintSize } from "../../editor/printSize.js";
-import { exportPrintAreaDataURL } from "../../editor/selectionControlOverscan.js";
+import {
+  computeDtfExportMultiplier,
+  exportPrintAreaDataURL,
+} from "../../editor/selectionControlOverscan.js";
 import { FabricCanvas } from "../../editor/FabricCanvas.js";
 import { GarmentPicker } from "../../editor/GarmentPicker.js";
 import { GarmentTypeToggle } from "../../editor/GarmentTypeToggle.js";
@@ -210,12 +215,16 @@ export function Editor() {
     try {
       const printSize = computePrintSize(canvas);
       const canvasSnapshot = JSON.stringify(canvas.toJSON());
-      // Transparent-background PNG of just the design (no garment) — point-server
-      // composites it onto the garment mockup via sharp (see Stage 5).
-      // Kept inside this try/catch — a tainted canvas (e.g. a cross-origin
-      // image loaded without `crossOrigin`) makes this throw a SecurityError,
-      // which must not skip the error handling/`finally` below.
-      const designImageBase64 = exportPrintAreaDataURL(canvas, { multiplier: 2 });
+      // High-res transparent PNG of the print area for DTF (Epson L1800 / RIP).
+      // Multiplier targets ~300 DPI at the configured physical width; point-server
+      // later resizes exactly and may mirror for film.
+      const dtfSizeMm = getPrintSizeMm(DEFAULT_DTF_PRINTER_CONFIG, garmentType, side);
+      const exportMultiplier = computeDtfExportMultiplier(
+        canvas,
+        dtfSizeMm.widthMm,
+        DEFAULT_DTF_PRINTER_CONFIG.dpi,
+      );
+      const designImageBase64 = exportPrintAreaDataURL(canvas, { multiplier: exportMultiplier });
       const aiProvider =
         category === "ai_style" ? useAiFlowStore.getState().aiProvider : ("standard" as const);
       const priceBreakdown = getPriceBreakdown(
@@ -379,8 +388,12 @@ export function Editor() {
               </div>
 
               <div
-                className={isPreview ? "editor-preview-dimmed relative z-10 w-full" : "relative z-10 w-full"}
+                className={isPreview ? "editor-preview-dimmed relative z-10" : "relative z-10"}
                 aria-hidden={isPreview}
+                style={{
+                  width: "var(--editor-strip-width, var(--editor-canvas-card-width))",
+                  maxWidth: "100%",
+                }}
               >
                 <CanvasControlStrip canvas={canvas} />
               </div>

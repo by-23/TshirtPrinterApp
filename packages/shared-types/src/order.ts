@@ -15,6 +15,8 @@ export const orderSchema = z.object({
   printCount: z.number().int().nonnegative(),
   mockupImageUrl: z.string().nullable(),
   designImageUrl: z.string().nullable(),
+  /** Ready-to-RIP DTF PNG (300 DPI, physical mm, optional mirror) — null until first prepare. */
+  dtfPrintImageUrl: z.string().nullable().optional(),
   createdAt: z.string(),
 });
 export type Order = z.infer<typeof orderSchema>;

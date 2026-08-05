@@ -489,6 +489,12 @@ const SECTIONS: Section[] = [
     title: "Полоска управления объектом",
     tokens: [
       {
+        key: "--editor-strip-width",
+        label: "Ширина блока (0 = как карточка холста)",
+        defaultValue: 0,
+        ...BLOCK_WIDTH_RANGE,
+      },
+      {
         key: "--editor-strip-radius",
         label: "Скругление",
         defaultValue: 16,
@@ -715,7 +721,7 @@ const SECTIONS: Section[] = [
     tokens: [
       {
         key: "--editor-tips-block-width",
-        label: "Ширина блока (0 = по содержимому)",
+        label: "Ширина блока (0 = на всю ширину)",
         defaultValue: 0,
         ...BLOCK_WIDTH_RANGE,
       },
@@ -789,7 +795,16 @@ function normalizeValue(token: Token, value: string): string {
 function formatCssValue(token: Token, value: string): string {
   const normalized = normalizeValue(token, value);
   if (token.key.endsWith("-height") && normalized === "0") return "auto";
-  if (token.key === "--editor-popular-block-width" && normalized === "0") return "100%";
+  if (token.key === "--editor-strip-width" && normalized === "0") {
+    return "var(--editor-canvas-card-width)";
+  }
+  // Full-bleed bottom strips (popular / tips): 0 means 100% page width.
+  if (
+    (token.key === "--editor-popular-block-width" || token.key === "--editor-tips-block-width") &&
+    normalized === "0"
+  ) {
+    return "100%";
+  }
   if (token.key.endsWith("-block-width") && normalized === "0") return "fit-content";
   if (token.key.endsWith("-content-align")) return normalized === "1" ? "center" : "start";
   return token.type === "range" && token.unit ? `${normalized}${token.unit}` : normalized;
@@ -797,7 +812,13 @@ function formatCssValue(token: Token, value: string): string {
 
 function cssRawToState(token: Token, raw: string): string {
   if (token.key.endsWith("-height") && raw === "auto") return "0";
-  if (token.key === "--editor-popular-block-width" && raw === "100%") return "0";
+  if (token.key === "--editor-strip-width" && raw === "var(--editor-canvas-card-width)") return "0";
+  if (
+    (token.key === "--editor-popular-block-width" || token.key === "--editor-tips-block-width") &&
+    raw === "100%"
+  ) {
+    return "0";
+  }
   if (token.key.endsWith("-block-width") && raw === "fit-content") return "0";
   if (token.key.endsWith("-content-align")) return raw === "center" ? "1" : "0";
   if (token.type === "range" && token.unit && raw.endsWith(token.unit)) {

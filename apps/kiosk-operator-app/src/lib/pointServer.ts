@@ -39,6 +39,8 @@ import {
   type UpdateCatalogScrapeConfigInput,
   type UpdatePrintAreaConfigInput,
   type UpdateGarmentAvailabilityConfigInput,
+  type UpdateDtfPrinterConfigInput,
+  type DtfPrinterConfig,
   type ManagedFont,
   orderEventSchema,
 } from "@tshirt/shared-types";
@@ -334,6 +336,120 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
   });
   if (!res.ok) {
     throw new Error(`Failed to update order ${id}: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface PrepareOrderPrintResult {
+  order: Order;
+  printJob: {
+    fileUrl: string;
+    absolutePath: string;
+    hotfolderAbsolutePath: string;
+    hotfolderDir: string;
+    widthMm: number;
+    heightMm: number;
+    widthPx: number;
+    heightPx: number;
+    dpi: number;
+    mirrored: boolean;
+    mediaSize: "A3" | "A3+";
+    printerModel: string;
+  };
+}
+
+/** Builds RIP-ready DTF PNG (physical mm @ DPI, mirror) and copies to hotfolder. */
+export async function prepareOrderPrint(id: string): Promise<PrepareOrderPrintResult> {
+  const res = await fetch(`${POINT_SERVER_URL}/orders/${id}/prepare-print`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(`Failed to prepare print for order ${id}: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface DtfPrinterConfigResponse {
+  config: DtfPrinterConfig;
+  updatedAt: string;
+  hotfolderAbsolutePath: string;
+  dataDir: string;
+}
+
+export type WindowsPrinterHealth = "ready" | "busy" | "offline" | "error" | "not_found" | "unknown";
+
+export interface PrinterStatusResponse extends DtfPrinterConfigResponse {
+  windows: {
+    name: string;
+    driverName: string;
+    jobCount: number;
+    health: WindowsPrinterHealth;
+    statusCode: number | null;
+    statusText: string;
+  };
+  hotfolder: {
+    dir: string;
+    fileCount: number;
+    files: Array<{
+      name: string;
+      absolutePath: string;
+      sizeBytes: number;
+      modifiedAt: string;
+    }>;
+  };
+  installedPrinters: string[];
+  ready: boolean;
+  summary: string;
+}
+
+export async function fetchDtfPrinterConfig(): Promise<DtfPrinterConfigResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/printer-config`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch printer config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchPrinterStatus(): Promise<PrinterStatusResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/printer-status`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch printer status: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateDtfPrinterConfig(
+  input: UpdateDtfPrinterConfigInput,
+): Promise<DtfPrinterConfigResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/printer-config`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update printer config: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function openPrinterHotfolder(): Promise<{ ok: boolean; path: string }> {
+  const res = await fetch(`${POINT_SERVER_URL}/printer/open-hotfolder`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(`Failed to open print folder: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function openPrinterQueue(): Promise<{ ok: boolean; printerName: string }> {
+  const res = await fetch(`${POINT_SERVER_URL}/printer/open-queue`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(`Failed to open printer queue: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function runPrinterNozzleCheck(): Promise<{ ok: boolean; printerName: string; message: string }> {
+  const res = await fetch(`${POINT_SERVER_URL}/printer/nozzle-check`, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(`Failed to start nozzle check: ${res.status}`);
   }
   return res.json();
 }
