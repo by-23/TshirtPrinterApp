@@ -533,8 +533,8 @@ const SECTIONS: Section[] = [
     title: "Плавающие кнопки объекта",
     tokens: [
       { key: "--editor-objctrl-bar-radius", label: "Скругление панели", defaultValue: 999, ...RADIUS_FULL },
-      { key: "--editor-objctrl-btn-width", label: "Кнопки — ширина", defaultValue: 28, ...SIZE_RANGE },
-      { key: "--editor-objctrl-btn-height", label: "Кнопки — высота", defaultValue: 28, ...SIZE_RANGE },
+      { key: "--editor-objctrl-btn-width", label: "Кнопки — ширина", defaultValue: 72, ...SIZE_RANGE },
+      { key: "--editor-objctrl-btn-height", label: "Кнопки — высота", defaultValue: 72, ...SIZE_RANGE },
       { key: "--editor-objctrl-bg", label: "Кнопки — фон", type: "color", defaultValue: "#131a2e" },
       { key: "--editor-objctrl-delete-bg", label: "Удалить — фон", type: "color", defaultValue: "#dc2626" },
     ],

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { FabricText, type Canvas } from "fabric";
+import { getDesignAreaSize } from "../selectionControlOverscan.js";
 import { ALL_EMOJIS, EMOJI_FONT_FAMILY, EMOJI_FONT_SIZE } from "./emojis.js";
 
 export interface EmojiPickerProps {
@@ -15,9 +16,10 @@ export function EmojiPicker({ canvas }: EmojiPickerProps) {
 
   function handlePick(emoji: string) {
     if (!canvas) return;
+    const { width, height } = getDesignAreaSize(canvas);
     const text = new FabricText(emoji, {
-      left: canvas.getWidth() / 2,
-      top: canvas.getHeight() / 2,
+      left: width / 2,
+      top: height / 2,
       originX: "center",
       originY: "center",
       fontFamily: EMOJI_FONT_FAMILY,

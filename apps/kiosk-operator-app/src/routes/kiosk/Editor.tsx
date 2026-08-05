@@ -33,6 +33,7 @@ import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
 import { computePrintSize } from "../../editor/printSize.js";
+import { exportPrintAreaDataURL } from "../../editor/selectionControlOverscan.js";
 import { FabricCanvas } from "../../editor/FabricCanvas.js";
 import { GarmentPicker } from "../../editor/GarmentPicker.js";
 import { GarmentTypeToggle } from "../../editor/GarmentTypeToggle.js";
@@ -212,7 +213,7 @@ export function Editor() {
       // Kept inside this try/catch — a tainted canvas (e.g. a cross-origin
       // image loaded without `crossOrigin`) makes this throw a SecurityError,
       // which must not skip the error handling/`finally` below.
-      const designImageBase64 = canvas.toDataURL({ format: "png", multiplier: 2 });
+      const designImageBase64 = exportPrintAreaDataURL(canvas, { multiplier: 2 });
       const aiProvider =
         category === "ai_style" ? useAiFlowStore.getState().aiProvider : ("standard" as const);
       const priceBreakdown = getPriceBreakdown(
@@ -355,22 +356,17 @@ export function Editor() {
                     color={color}
                     className="absolute inset-0 h-full w-full"
                   />
-                  <div
-                    ref={printAreaRef}
-                    className="absolute overflow-visible"
-                    style={{
-                      left: printArea.x * MOCKUP_DISPLAY_SCALE,
-                      top: printArea.y * MOCKUP_DISPLAY_SCALE,
-                      width: printArea.width * MOCKUP_DISPLAY_SCALE,
-                      height: printArea.height * MOCKUP_DISPLAY_SCALE,
-                    }}
-                  >
+                  {/*
+                    Selection controls layer spans the whole central mockup block
+                    (not just the print-area rect), so resize handles are never
+                    clipped by the allowed print zone.
+                  */}
+                  <div ref={printAreaRef} className="absolute inset-0 overflow-visible">
                     <FabricCanvas
                       side={side}
                       printArea={printArea}
                       garmentType={garmentType}
                       imageUrl={garmentImageUrl}
-                      className="h-full w-full"
                       onReady={setCanvas}
                     />
                   </div>

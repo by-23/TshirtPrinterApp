@@ -15,7 +15,7 @@ function Assert-Command([string]$name) {
   }
 }
 
-Write-Host "Build Windows app (Tshirt Printer)" -ForegroundColor Green
+Write-Host "Build Windows apps (Operator + Kiosk)" -ForegroundColor Green
 Write-Host "Root: $Root"
 
 Assert-Command node
@@ -217,15 +217,15 @@ try {
   if ($null -ne $prevTok) { $env:POINT_SYNC_TOKEN = $prevTok } else { Remove-Item Env:POINT_SYNC_TOKEN -ErrorAction SilentlyContinue }
 }
 
-Write-Step "Install electron + electron-builder"
+Write-Step "Install electron + electron-builder (operator)"
 Push-Location $desktop
 try {
   pnpm install
   if ($LASTEXITCODE -ne 0) { throw "point-desktop install failed" }
 
-  Write-Step "electron-builder (NSIS installer + portable exe)"
+  Write-Step "electron-builder operator (NSIS + zip)"
   pnpm exec electron-builder --win
-  if ($LASTEXITCODE -ne 0) { throw "electron-builder failed" }
+  if ($LASTEXITCODE -ne 0) { throw "electron-builder (operator) failed" }
 } finally {
   Pop-Location
 }
@@ -236,18 +236,37 @@ if (-not (Test-Path $packedNm)) {
   throw "FATAL: node_modules missing inside win-unpacked - packaging still broken"
 }
 
+$kioskDesktop = Join-Path $Root "apps\kiosk-desktop"
+Write-Step "Install electron + electron-builder (kiosk)"
+Push-Location $kioskDesktop
+try {
+  pnpm install
+  if ($LASTEXITCODE -ne 0) { throw "kiosk-desktop install failed" }
+
+  Write-Step "electron-builder kiosk (NSIS + zip)"
+  pnpm exec electron-builder --win
+  if ($LASTEXITCODE -ne 0) { throw "electron-builder (kiosk) failed" }
+} finally {
+  Pop-Location
+}
+
 $releaseDir = Join-Path $desktop "release"
+$kioskReleaseDir = Join-Path $kioskDesktop "release"
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  BUILD COMPLETE"
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Artifacts:"
-Get-ChildItem $releaseDir -File | ForEach-Object {
+Write-Host "Operator artifacts:"
+Get-ChildItem $releaseDir -File -ErrorAction SilentlyContinue | ForEach-Object {
   $mb = [math]::Round($_.Length / 1MB, 1)
   Write-Host ("  {0}  ({1} MB)" -f $_.Name, $mb)
 }
+Write-Host "Folder: $releaseDir"
 Write-Host ""
-Write-Host "Installer: *win-x64.exe"
-Write-Host "Portable:  *portable.exe"
-Write-Host "Folder:    $releaseDir"
+Write-Host "Kiosk artifacts:"
+Get-ChildItem $kioskReleaseDir -File -ErrorAction SilentlyContinue | ForEach-Object {
+  $mb = [math]::Round($_.Length / 1MB, 1)
+  Write-Host ("  {0}  ({1} MB)" -f $_.Name, $mb)
+}
+Write-Host "Folder: $kioskReleaseDir"

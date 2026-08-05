@@ -2,11 +2,49 @@ const { app, BrowserWindow, ipcMain, screen, dialog } = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
+const os = require("node:os");
 const path = require("node:path");
 
 // Never inherit a random PORT from the parent shell (breaks packaged launches).
 const POINT_PORT = Number(process.env.TSHIRT_POINT_PORT || 4000);
 const POINT_ORIGIN = `http://127.0.0.1:${POINT_PORT}`;
+
+/** Best non-internal IPv4 for LAN kiosk, or override via TSHIRT_PUBLIC_LAN_HOST. */
+function resolvePublicLanHost() {
+  const fromEnv = (process.env.TSHIRT_PUBLIC_LAN_HOST || "").trim();
+  if (fromEnv) return fromEnv.includes(":") ? fromEnv : `${fromEnv}:${POINT_PORT}`;
+
+  const ifaces = os.networkInterfaces();
+  /** @type {{ address: string, name: string, score: number }[]} */
+  const candidates = [];
+  for (const [name, entries] of Object.entries(ifaces)) {
+    if (!entries) continue;
+    const lower = String(name).toLowerCase();
+    const virtual =
+      lower.includes("vethernet") ||
+      lower.includes("hyper-v") ||
+      lower.includes("wsl") ||
+      lower.includes("docker") ||
+      lower.includes("vbox") ||
+      lower.includes("virtualbox") ||
+      lower.includes("vmware") ||
+      lower.includes("bluetooth");
+    for (const entry of entries) {
+      if (entry.family !== "IPv4" && entry.family !== 4) continue;
+      if (entry.internal) continue;
+      let score = 100;
+      if (virtual) score += 500;
+      if (entry.address.startsWith("192.168.")) score -= 40;
+      else if (entry.address.startsWith("10.")) score -= 30;
+      else if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(entry.address)) score -= 10;
+      if (/ethernet|wi-?fi|wlan|wifi/i.test(name)) score -= 5;
+      candidates.push({ address: entry.address, name, score });
+    }
+  }
+  candidates.sort((a, b) => a.score - b.score);
+  const best = candidates[0];
+  return best ? `${best.address}:${POINT_PORT}` : "";
+}
 
 /** @type {import('node:child_process').ChildProcess | null} */
 let pointProcess = null;
@@ -71,8 +109,16 @@ function copyMissingTree(src, dest) {
   return copied;
 }
 
+/**
+ * Always use one durable data root on Windows (packaged + unpackaged Electron),
+ * so rebuilds of `resources/` don't wipe orders/history/admin catalog.
+ * Override: TSHIRT_DATA_DIR.
+ */
 function ensurePointDataDir(pointRoot) {
-  const dataDir = app.isPackaged ? resolveWindowsDataDir() : path.join(pointRoot, "data");
+  const dataDir =
+    process.platform === "win32"
+      ? resolveWindowsDataDir()
+      : path.join(pointRoot, "data");
   fs.mkdirSync(dataDir, { recursive: true });
   for (const sub of [
     "catalog",
@@ -87,10 +133,6 @@ function ensurePointDataDir(pointRoot) {
     fs.mkdirSync(path.join(dataDir, sub), { recursive: true });
   }
 
-  if (!app.isPackaged) {
-    return dataDir;
-  }
-
   const seedRoot = path.join(pointRoot, "data");
   const targetDb = path.join(dataDir, "point.db");
   const legacyDir = path.join(app.getPath("userData"), "point-data");
@@ -100,6 +142,16 @@ function ensurePointDataDir(pointRoot) {
   if (!fs.existsSync(targetDb) && fs.existsSync(legacyDb)) {
     log(`Migrating legacy point-data from ${legacyDir}`);
     copyMissingTree(legacyDir, dataDir);
+  }
+
+  // Unpackaged: prefer monorepo apps/point-server/data if LOCALAPPDATA is still empty.
+  if (!app.isPackaged && !fs.existsSync(targetDb)) {
+    const monorepoData = path.resolve(__dirname, "..", "point-server", "data");
+    const monorepoDb = path.join(monorepoData, "point.db");
+    if (fs.existsSync(monorepoDb)) {
+      log(`Seeding from monorepo point-server data: ${monorepoData}`);
+      copyMissingTree(monorepoData, dataDir);
+    }
   }
 
   const seedDb = path.join(seedRoot, "point.db.seed");
@@ -128,6 +180,61 @@ function ensurePointDataDir(pointRoot) {
 
   log(`Point DATA_DIR=${dataDir}`);
   return dataDir;
+}
+
+/** Parse KEY=VALUE lines from a .env file (no expansion). */
+function readDotEnvFile(filePath) {
+  /** @type {Record<string, string>} */
+  const out = {};
+  try {
+    if (!fs.existsSync(filePath)) return out;
+    for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq <= 0) continue;
+      const key = trimmed.slice(0, eq).trim();
+      let value = trimmed.slice(eq + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      out[key] = value;
+    }
+  } catch {
+    // ignore
+  }
+  return out;
+}
+
+/** Sync credentials: process env > monorepo/point .env > empty (offline). */
+function resolveSyncEnv(pointRoot) {
+  const fromProcess = {
+    CENTRAL_RELAY_URL: (process.env.CENTRAL_RELAY_URL || "").trim(),
+    POINT_SYNC_ID: (process.env.POINT_SYNC_ID || "").trim(),
+    POINT_SYNC_TOKEN: (process.env.POINT_SYNC_TOKEN || "").trim(),
+  };
+  const candidates = [
+    path.join(pointRoot, ".env"),
+    path.resolve(__dirname, "..", "point-server", ".env"),
+  ];
+  /** @type {Record<string, string>} */
+  let fileEnv = {};
+  for (const candidate of candidates) {
+    const parsed = readDotEnvFile(candidate);
+    if (parsed.CENTRAL_RELAY_URL || parsed.POINT_SYNC_ID || parsed.POINT_SYNC_TOKEN) {
+      fileEnv = parsed;
+      log(`Loaded sync env from ${candidate}`);
+      break;
+    }
+  }
+  return {
+    CENTRAL_RELAY_URL: fromProcess.CENTRAL_RELAY_URL || fileEnv.CENTRAL_RELAY_URL || "",
+    POINT_SYNC_ID: fromProcess.POINT_SYNC_ID || fileEnv.POINT_SYNC_ID || "",
+    POINT_SYNC_TOKEN: fromProcess.POINT_SYNC_TOKEN || fileEnv.POINT_SYNC_TOKEN || "",
+  };
 }
 
 function displaysConfigPath() {
@@ -256,7 +363,11 @@ function createFramelessWindow(display, url) {
     }
   }, 4000);
 
-  win.loadURL(url);
+  // Bust Chromium HTTP cache so UI updates after rebuilds are visible immediately.
+  const bust = url.includes("?") ? `${url}&_=${Date.now()}` : `${url}?_=${Date.now()}`;
+  win.webContents.session.clearCache().finally(() => {
+    if (!win.isDestroyed()) win.loadURL(bust);
+  });
   win.on("closed", () => {
     if (win === kioskWindow) kioskWindow = null;
     if (win === operatorWindow) operatorWindow = null;
@@ -298,7 +409,7 @@ function showSplash(statusText) {
   splashWindow.setMenuBarVisibility(false);
   const html = `<!doctype html><html><body style="margin:0;font-family:Segoe UI,sans-serif;background:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;height:100vh;">
     <div style="text-align:center;padding:24px">
-      <div style="font-size:22px;font-weight:700;margin-bottom:12px">Tshirt Printer</div>
+      <div style="font-size:22px;font-weight:700;margin-bottom:12px">Tshirt Printer Operator</div>
       <div id="status" style="font-size:14px;opacity:.85">${statusText}</div>
     </div></body></html>`;
   splashWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
@@ -398,7 +509,11 @@ async function ensurePointServer() {
   const serverLog = path.join(app.getPath("userData"), "point-server.log");
   const outFd = fs.openSync(serverLog, "a");
 
-  log(`Starting point-server: node=${nodeBin} cwd=${pointRoot} DATA_DIR=${dataDir}`);
+  const publicLanHost = resolvePublicLanHost();
+  const syncEnv = resolveSyncEnv(pointRoot);
+  log(
+    `Starting point-server: node=${nodeBin} cwd=${pointRoot} DATA_DIR=${dataDir} PUBLIC_LAN_HOST=${publicLanHost || "(none)"} sync=${syncEnv.CENTRAL_RELAY_URL ? "on" : "off"}`,
+  );
   pointProcess = spawn(nodeBin, [entry], {
     cwd: pointRoot,
     env: {
@@ -407,9 +522,10 @@ async function ensurePointServer() {
       DATA_DIR: dataDir,
       DATABASE_PATH: dbPath,
       UI_DIST_PATH: uiDist,
-      CENTRAL_RELAY_URL: "",
-      POINT_SYNC_ID: "",
-      POINT_SYNC_TOKEN: "",
+      PUBLIC_LAN_HOST: publicLanHost,
+      CENTRAL_RELAY_URL: syncEnv.CENTRAL_RELAY_URL,
+      POINT_SYNC_ID: syncEnv.POINT_SYNC_ID,
+      POINT_SYNC_TOKEN: syncEnv.POINT_SYNC_TOKEN,
     },
     stdio: ["ignore", outFd, outFd],
     windowsHide: true,
@@ -461,10 +577,10 @@ if (!gotLock) {
   app.whenReady().then(() => {
     dialog.showMessageBoxSync({
       type: "warning",
-      title: "Tshirt Printer",
+      title: "Tshirt Printer Operator",
       message: "Приложение уже запущено.",
       detail:
-        "Если окон не видно — завершите все процессы «Tshirt Printer» в Диспетчере задач и запустите снова через Start-TshirtPrinter.bat.",
+        "Если окон не видно — завершите все процессы «Tshirt Printer Operator» в Диспетчере задач и запустите снова.",
     });
     app.quit();
   });
@@ -502,8 +618,8 @@ if (!gotLock) {
       log(`FATAL: ${message}`);
       closeSplash();
       dialog.showErrorBox(
-        "Tshirt Printer",
-        `Не удалось запустить точку.\n\n${message}\n\nЛог: ${logFile}\nЛог сервера: ${path.join(app.getPath("userData"), "point-server.log")}`,
+        "Tshirt Printer Operator",
+        `Не удалось запустить точку.\n\n${message}\n\nЛог: ${logFile}\nЛог сервера: ${path.join(app.getPath("userData"), "point-server.log")}\n\nЕсли киоск на другом ПК не подключается — откройте порт ${POINT_PORT} в брандмауэре Windows.`,
       );
       stopPointServer();
       app.quit();

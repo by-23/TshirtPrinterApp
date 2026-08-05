@@ -5,6 +5,7 @@ import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import multipart from "@fastify/multipart";
 import { healthRoutes } from "./routes/health.js";
+import { lanInfoRoutes } from "./routes/lanInfo.js";
 import { catalogRoutes } from "./modules/catalog/routes.js";
 import { catalogScrapeRoutes } from "./modules/catalog-scraper/routes.js";
 import { ordersRoutes } from "./modules/orders/routes.js";
@@ -64,6 +65,7 @@ export async function buildServer() {
   // avoids silently inheriting a future unrelated change to `bodyLimit`.
   await app.register(multipart, { limits: { fileSize: MAX_REQUEST_BODY_BYTES } });
   await app.register(healthRoutes);
+  await app.register(lanInfoRoutes);
   await app.register(catalogRoutes);
   await app.register(catalogScrapeRoutes);
   await app.register(ordersRoutes);

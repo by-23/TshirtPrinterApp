@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title Build Tshirt Printer Windows app
+title Build Tshirt Printer Windows apps (Operator + Kiosk)
 
 echo.
-echo  Building Windows installer / portable exe...
+echo  Building Operator + Kiosk Windows installers...
 echo  This downloads Node.js runtime and may take several minutes.
 echo.
 
@@ -18,6 +18,9 @@ if not "%ERR%"=="0" (
   exit /b %ERR%
 )
 
-echo  Done. Open apps\point-desktop\release\
+echo  Done.
+echo  Operator: apps\point-desktop\release\
+echo  Kiosk:    apps\kiosk-desktop\release\
 explorer "%~dp0apps\point-desktop\release"
+explorer "%~dp0apps\kiosk-desktop\release"
 pause

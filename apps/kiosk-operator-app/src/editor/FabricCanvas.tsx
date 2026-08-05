@@ -13,7 +13,12 @@ import {
   configureCanvasSelectionStyle,
 } from "./canvasSelectionStyle.js";
 import { getGarmentClipMaskStyle } from "./mockup/garmentClipMask.js";
-import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "./mockup/garmentShape.js";
+import type { PrintAreaRect } from "./mockup/garmentShape.js";
+import {
+  applySelectionControlOverscan,
+  computeMockupControlOverscan,
+  getMockupPixelSize,
+} from "./selectionControlOverscan.js";
 import { useEditorStore } from "./store.js";
 import { computePrintSize } from "./printSize.js";
 import { initHistoryForSide, recordHistoryEntry, setHistorySuspended } from "./history.js";
@@ -37,18 +42,24 @@ export function FabricCanvas({
 }: FabricCanvasProps) {
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<Canvas | null>(null);
+  const printAreaRef = useRef(printArea);
+  printAreaRef.current = printArea;
   const setHasSelection = useEditorStore((state) => state.setHasSelection);
   /** Tracks which side is currently loaded into the live canvas instance. */
   const loadedSideRef = useRef<GarmentSide>(side);
 
-  function syncGarmentClip(canvas: Canvas) {
+  function syncViewportAndClip(canvas: Canvas, area: PrintAreaRect = printAreaRef.current) {
+    const overscan = computeMockupControlOverscan(area);
+    applySelectionControlOverscan(canvas, overscan);
     const maskStyle = getGarmentClipMaskStyle({
       garmentType,
       side: loadedSideRef.current,
-      printArea,
+      printArea: area,
       imageUrl,
+      canvasOverscanLeftPx: overscan.left,
+      canvasOverscanTopPx: overscan.top,
     });
-    applyGarmentClipMaskToLowerCanvas(canvas, maskStyle);
+    applyGarmentClipMaskToLowerCanvas(canvas, maskStyle, { controlOverscan: overscan });
     canvas.requestRenderAll();
   }
 
@@ -57,14 +68,16 @@ export function FabricCanvas({
 
     configureCanvasSelectionStyle();
 
+    const size = getMockupPixelSize();
     const canvas = new Canvas(canvasElRef.current, {
-      width: printArea.width * MOCKUP_DISPLAY_SCALE,
-      height: printArea.height * MOCKUP_DISPLAY_SCALE,
+      width: size.width,
+      height: size.height,
       backgroundColor: "transparent",
       preserveObjectStacking: true,
       // Touch-first hit testing — same path for mouse and finger on the kiosk.
       targetFindTolerance: 12,
     });
+    syncViewportAndClip(canvas, printArea);
     configureCanvasSelectionStyle(canvas);
     const uninstallControlsRenderer = installUnmaskedControlsRenderer(canvas);
     canvasRef.current = canvas;
@@ -108,14 +121,13 @@ export function FabricCanvas({
     setHistorySuspended(true);
     if (initialSnapshot) {
       void canvas.loadFromJSON(initialSnapshot).then(() => {
+        syncViewportAndClip(canvas);
         applySelectionStyleToAllObjects(canvas);
-        syncGarmentClip(canvas);
         recomputePrintSize();
         setHistorySuspended(false);
         initHistoryForSide(side, snapshotCanvasJson(canvas));
       });
     } else {
-      syncGarmentClip(canvas);
       setHistorySuspended(false);
       initHistoryForSide(side, snapshotCanvasJson(canvas));
     }
@@ -134,11 +146,12 @@ export function FabricCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const size = getMockupPixelSize();
     canvas.setDimensions({
-      width: printArea.width * MOCKUP_DISPLAY_SCALE,
-      height: printArea.height * MOCKUP_DISPLAY_SCALE,
+      width: size.width,
+      height: size.height,
     });
-    syncGarmentClip(canvas);
+    syncViewportAndClip(canvas, printArea);
   }, [printArea.width, printArea.height, printArea.x, printArea.y, garmentType, imageUrl, side]);
 
   useEffect(() => {
@@ -154,19 +167,28 @@ export function FabricCanvas({
     const snapshot = useEditorStore.getState().canvasSnapshots[side];
     if (snapshot) {
       void canvas.loadFromJSON(snapshot).then(() => {
+        syncViewportAndClip(canvas);
         applySelectionStyleToAllObjects(canvas);
-        syncGarmentClip(canvas);
         useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
         setHistorySuspended(false);
         initHistoryForSide(side, snapshotCanvasJson(canvas));
       });
     } else {
-      syncGarmentClip(canvas);
+      syncViewportAndClip(canvas);
       useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
       setHistorySuspended(false);
       initHistoryForSide(side, snapshotCanvasJson(canvas));
     }
   }, [side]);
 
-  return <canvas ref={canvasElRef} className={className} />;
+  return (
+    <div className={className} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+      {/*
+        Bitmap matches the full mockup. Scene coords stay print-area-relative
+        via viewportTransform; design pixels are clipped to the print rect on
+        the lower canvas while selection controls use the unclipped upper layer.
+      */}
+      <canvas ref={canvasElRef} className="h-full w-full" />
+    </div>
+  );
 }

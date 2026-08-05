@@ -496,8 +496,8 @@ textarea {
     --editor-strip-value-font-size: 16px;
 
   --editor-objctrl-bar-radius: 999px;
-  --editor-objctrl-btn-width: 36px;
-  --editor-objctrl-btn-height: 36px;
+  --editor-objctrl-btn-width: 72px;
+  --editor-objctrl-btn-height: 72px;
   --editor-objctrl-bg: #1c1e26;
   --editor-objctrl-delete-bg: #dc2626;
 

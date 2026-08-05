@@ -110,6 +110,30 @@ export async function fetchHealth(): Promise<HealthResponse> {
   return res.json();
 }
 
+export interface LanInfoKioskUrl {
+  host: string;
+  interfaceName: string;
+  origin: string;
+  kioskUrl: string;
+  operatorUrl: string;
+}
+
+export interface LanInfoResponse {
+  port: number;
+  publicLanHost: string | null;
+  preferredHost: string | null;
+  addresses: Array<{ address: string; interfaceName: string }>;
+  kioskUrls: LanInfoKioskUrl[];
+}
+
+export async function fetchLanInfo(): Promise<LanInfoResponse> {
+  const res = await fetch(`${POINT_SERVER_URL}/point/lan-info`);
+  if (!res.ok) {
+    throw new Error(`point-server lan-info failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function fetchDesigns(category?: DesignCategory): Promise<Design[]> {
   const url = new URL(`${POINT_SERVER_URL}/catalog/designs`);
   if (category) {

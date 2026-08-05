@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FlipHorizontal, FlipVertical, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Canvas } from "fabric";
+import type { Canvas, FabricObject, TPointerEvent } from "fabric";
 import { MOCKUP_DISPLAY_SCALE, type PrintAreaRect } from "../mockup/garmentShape.js";
+import { SELECTION_BORDER_COLOR, SELECTION_CORNER_COLOR } from "../canvasSelectionStyle.js";
 import { useEditorStore } from "../store.js";
 import { recordHistoryEntry } from "../history.js";
 
@@ -11,46 +12,117 @@ export interface ObjectControlsProps {
   printArea: PrintAreaRect;
 }
 
-interface PanelPosition {
-  left: number;
-  top: number;
+interface SelectionGeometry {
+  /** Mockup-space corners: tl, tr, br, bl */
+  corners: { x: number; y: number }[];
+  /** Toolbar anchor above the selection (mockup space). */
+  panelLeft: number;
+  panelTop: number;
 }
 
-const PANEL_GAP_PX = 8;
+type HandleKey = "tl" | "tr" | "br" | "bl" | "mt" | "mb" | "ml" | "mr";
 
-function readPanelPosition(canvas: Canvas, printArea: PrintAreaRect): PanelPosition | null {
+const PANEL_GAP_PX = 8;
+const HANDLE_SIZE_PX = 28;
+const BORDER_WIDTH_PX = 3;
+const MIN_SCALE = 0.05;
+
+const HANDLE_KEYS: HandleKey[] = ["tl", "tr", "br", "bl", "mt", "mb", "ml", "mr"];
+
+function sceneToMockup(printArea: PrintAreaRect, x: number, y: number) {
+  return {
+    x: printArea.x * MOCKUP_DISPLAY_SCALE + x,
+    y: printArea.y * MOCKUP_DISPLAY_SCALE + y,
+  };
+}
+
+function readSelectionGeometry(canvas: Canvas, printArea: PrintAreaRect): SelectionGeometry | null {
   const active = canvas.getActiveObject();
   if (!active) return null;
 
   active.setCoords();
-  const rect = active.getBoundingRect();
-  const offsetX = printArea.x * MOCKUP_DISPLAY_SCALE;
-  const offsetY = printArea.y * MOCKUP_DISPLAY_SCALE;
+  const [tl, tr, br, bl] = active.getCoords();
+  const corners = [tl, tr, br, bl].map((point) => sceneToMockup(printArea, point.x, point.y));
+
+  const minX = Math.min(...corners.map((c) => c.x));
+  const maxX = Math.max(...corners.map((c) => c.x));
+  const minY = Math.min(...corners.map((c) => c.y));
 
   return {
-    left: offsetX + rect.left + rect.width / 2,
-    top: offsetY + rect.top,
+    corners,
+    panelLeft: (minX + maxX) / 2,
+    panelTop: minY,
   };
 }
 
+function midpoint(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): { x: number; y: number } {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function handlePosition(corners: { x: number; y: number }[], key: HandleKey) {
+  const [tl, tr, br, bl] = corners;
+  switch (key) {
+    case "tl":
+      return tl;
+    case "tr":
+      return tr;
+    case "br":
+      return br;
+    case "bl":
+      return bl;
+    case "mt":
+      return midpoint(tl, tr);
+    case "mb":
+      return midpoint(bl, br);
+    case "ml":
+      return midpoint(tl, bl);
+    case "mr":
+      return midpoint(tr, br);
+  }
+}
+
+function handleCursor(key: HandleKey): string {
+  switch (key) {
+    case "tl":
+    case "br":
+      return "nwse-resize";
+    case "tr":
+    case "bl":
+      return "nesw-resize";
+    case "mt":
+    case "mb":
+      return "ns-resize";
+    case "ml":
+    case "mr":
+      return "ew-resize";
+  }
+}
+
 /**
- * Small floating buttons shown above the selected object
- * (`docs/ui-mockups/editor.png`: delete / flip-h / flip-v). Scale, rotation,
- * opacity and layer order live in `CanvasControlStrip` below the canvas.
+ * Selection chrome (frame + resize handles) and floating delete/flip buttons —
+ * all on one DOM overlay above the mockup so nothing is clipped by the print area.
  */
 export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
   const { t } = useTranslation();
   const hasSelection = useEditorStore((state) => state.hasSelection);
-  const [position, setPosition] = useState<PanelPosition | null>(null);
+  const [geometry, setGeometry] = useState<SelectionGeometry | null>(null);
+  const resizingRef = useRef(false);
 
   useEffect(() => {
     if (!canvas) {
-      setPosition(null);
+      setGeometry(null);
       return;
     }
 
     const refresh = () => {
-      setPosition(readPanelPosition(canvas, printArea));
+      if (resizingRef.current) {
+        setGeometry(readSelectionGeometry(canvas, printArea));
+        return;
+      }
+      setGeometry(readSelectionGeometry(canvas, printArea));
     };
 
     refresh();
@@ -72,33 +144,96 @@ export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
     };
   }, [canvas, printArea]);
 
-  function withActiveObject(action: (active: NonNullable<ReturnType<Canvas["getActiveObject"]>>) => void) {
+  function withActiveObject(action: (active: FabricObject) => void) {
     if (!canvas) return;
     const active = canvas.getActiveObject();
     if (!active) return;
     action(active);
     active.setCoords();
     canvas.requestRenderAll();
-    setPosition(readPanelPosition(canvas, printArea));
+    setGeometry(readSelectionGeometry(canvas, printArea));
     recordHistoryEntry(canvas);
   }
 
   function handleDelete() {
     if (!canvas) return;
-    // `getActiveObject()` returns the temporary `ActiveSelection` wrapper when
-    // multiple objects are selected, and that wrapper never lives in the
-    // canvas's own object list — `canvas.remove(wrapper)` silently no-ops on
-    // it. `getActiveObjects()` unwraps it back to the real objects so a
-    // multi-selection actually gets deleted.
     const activeObjects = canvas.getActiveObjects();
     if (activeObjects.length === 0) return;
     canvas.discardActiveObject();
     canvas.remove(...activeObjects);
     canvas.requestRenderAll();
-    setPosition(null);
+    setGeometry(null);
   }
 
-  if (!hasSelection || !position) return null;
+  function beginResize(key: HandleKey, event: React.PointerEvent<HTMLElement>) {
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (!active) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    resizingRef.current = true;
+    const startScene = canvas.getScenePoint(event.nativeEvent as TPointerEvent);
+    const startScaleX = active.scaleX ?? 1;
+    const startScaleY = active.scaleY ?? 1;
+    const baseWidth = Math.max(active.width ?? 1, 1);
+    const baseHeight = Math.max(active.height ?? 1, 1);
+    const isCorner = key === "tl" || key === "tr" || key === "bl" || key === "br";
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const point = canvas.getScenePoint(moveEvent as TPointerEvent);
+      if (isCorner) {
+        const center = active.getCenterPoint();
+        const startDist = startScene.distanceFrom(center);
+        if (startDist < 1) return;
+        const ratio = point.distanceFrom(center) / startDist;
+        const next = Math.max(MIN_SCALE, startScaleX * ratio);
+        // Keep aspect ratio from the starting scales.
+        const aspect = startScaleY / startScaleX;
+        active.set({
+          scaleX: next,
+          scaleY: Math.max(MIN_SCALE, next * aspect),
+        });
+      } else {
+        const center = active.getCenterPoint();
+        const radians = ((active.angle ?? 0) * Math.PI) / 180;
+        const axisX = { x: Math.cos(radians), y: Math.sin(radians) };
+        const axisY = { x: -Math.sin(radians), y: Math.cos(radians) };
+        const dx = point.x - center.x;
+        const dy = point.y - center.y;
+        const localX = dx * axisX.x + dy * axisX.y;
+        const localY = dx * axisY.x + dy * axisY.y;
+        if (key === "ml" || key === "mr") {
+          active.set({ scaleX: Math.max(MIN_SCALE, (Math.abs(localX) * 2) / baseWidth) });
+        } else {
+          active.set({ scaleY: Math.max(MIN_SCALE, (Math.abs(localY) * 2) / baseHeight) });
+        }
+      }
+      active.setCoords();
+      canvas.requestRenderAll();
+      setGeometry(readSelectionGeometry(canvas, printArea));
+    };
+
+    const onUp = () => {
+      resizingRef.current = false;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      active.setCoords();
+      canvas.requestRenderAll();
+      setGeometry(readSelectionGeometry(canvas, printArea));
+      // Lets FabricCanvas recompute print size + history (same path as native transforms).
+      canvas.fire("object:modified", { target: active });
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+
+  if (!hasSelection || !geometry) return null;
 
   const controlBtnStyle = {
     width: "var(--editor-objctrl-btn-width)",
@@ -107,60 +242,101 @@ export function ObjectControls({ canvas, printArea }: ObjectControlsProps) {
   };
 
   const iconSize = "calc(var(--editor-objctrl-btn-width) * 0.45)";
+  const [tl, tr, br, bl] = geometry.corners;
+  const polygonPoints = `${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`;
 
   return (
-    <div
-      className="pointer-events-none absolute z-10"
-      data-editor-selection-ui
-      style={{
-        left: position.left,
-        top: position.top,
-        transform: `translate(-50%, calc(-100% - ${PANEL_GAP_PX}px))`,
-      }}
-    >
-      <div
-        className="pointer-events-auto flex items-center gap-1.5 bg-ink-950/90 px-1.5 py-1 shadow-lg backdrop-blur"
-        style={{ borderRadius: "var(--editor-objctrl-bar-radius)" }}
+    <div className="pointer-events-none absolute inset-0 z-10" data-editor-selection-ui>
+      <svg
+        aria-hidden
+        className="absolute inset-0 h-full w-full overflow-visible"
+        style={{ pointerEvents: "none" }}
       >
-        <button
-          type="button"
-          onClick={handleDelete}
-          title={t("editor.toolbar.delete")}
-          style={{
-            ...controlBtnStyle,
-            backgroundColor: "var(--editor-objctrl-delete-bg)",
-            borderRadius: "var(--editor-objctrl-bar-radius)",
-          }}
-          className="flex shrink-0 items-center justify-center text-white transition-transform hover:scale-110"
+        <polygon
+          points={polygonPoints}
+          fill="none"
+          stroke={SELECTION_BORDER_COLOR}
+          strokeWidth={BORDER_WIDTH_PX}
+          strokeLinejoin="round"
+        />
+      </svg>
+
+      {HANDLE_KEYS.map((key) => {
+        const pos = handlePosition(geometry.corners, key);
+        return (
+          <div
+            key={key}
+            role="slider"
+            aria-label={key}
+            className="pointer-events-auto absolute touch-none"
+            style={{
+              left: pos.x,
+              top: pos.y,
+              width: HANDLE_SIZE_PX,
+              height: HANDLE_SIZE_PX,
+              transform: "translate(-50%, -50%)",
+              backgroundColor: SELECTION_CORNER_COLOR,
+              border: "2px solid #ffffff",
+              boxSizing: "border-box",
+              cursor: handleCursor(key),
+            }}
+            onPointerDown={(event) => beginResize(key, event)}
+          />
+        );
+      })}
+
+      <div
+        className="pointer-events-none absolute"
+        style={{
+          left: geometry.panelLeft,
+          top: geometry.panelTop,
+          transform: `translate(-50%, calc(-100% - ${PANEL_GAP_PX}px))`,
+        }}
+      >
+        <div
+          className="pointer-events-auto flex items-center gap-2 bg-ink-950/90 px-2 py-1.5 shadow-lg backdrop-blur"
+          style={{ borderRadius: "var(--editor-objctrl-bar-radius)" }}
         >
-          <Trash2 aria-hidden style={{ width: iconSize, height: iconSize }} strokeWidth={2.2} />
-        </button>
-        <button
-          type="button"
-          onClick={() => withActiveObject((active) => active.set("flipX", !active.flipX))}
-          title={t("editor.toolbar.flipHorizontal")}
-          style={{
-            ...controlBtnStyle,
-            backgroundColor: "var(--editor-objctrl-bg)",
-            borderRadius: "var(--editor-objctrl-bar-radius)",
-          }}
-          className="flex shrink-0 items-center justify-center text-white transition-transform hover:scale-110 hover:brightness-125"
-        >
-          <FlipHorizontal aria-hidden style={{ width: iconSize, height: iconSize }} strokeWidth={2.2} />
-        </button>
-        <button
-          type="button"
-          onClick={() => withActiveObject((active) => active.set("flipY", !active.flipY))}
-          title={t("editor.toolbar.flipVertical")}
-          style={{
-            ...controlBtnStyle,
-            backgroundColor: "var(--editor-objctrl-bg)",
-            borderRadius: "var(--editor-objctrl-bar-radius)",
-          }}
-          className="flex shrink-0 items-center justify-center text-white transition-transform hover:scale-110 hover:brightness-125"
-        >
-          <FlipVertical aria-hidden style={{ width: iconSize, height: iconSize }} strokeWidth={2.2} />
-        </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            title={t("editor.toolbar.delete")}
+            style={{
+              ...controlBtnStyle,
+              backgroundColor: "var(--editor-objctrl-delete-bg)",
+              borderRadius: "var(--editor-objctrl-bar-radius)",
+            }}
+            className="flex shrink-0 items-center justify-center text-white transition-transform hover:scale-110"
+          >
+            <Trash2 aria-hidden style={{ width: iconSize, height: iconSize }} strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => withActiveObject((active) => active.set("flipX", !active.flipX))}
+            title={t("editor.toolbar.flipHorizontal")}
+            style={{
+              ...controlBtnStyle,
+              backgroundColor: "var(--editor-objctrl-bg)",
+              borderRadius: "var(--editor-objctrl-bar-radius)",
+            }}
+            className="flex shrink-0 items-center justify-center text-white transition-transform hover:scale-110 hover:brightness-125"
+          >
+            <FlipHorizontal aria-hidden style={{ width: iconSize, height: iconSize }} strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => withActiveObject((active) => active.set("flipY", !active.flipY))}
+            title={t("editor.toolbar.flipVertical")}
+            style={{
+              ...controlBtnStyle,
+              backgroundColor: "var(--editor-objctrl-bg)",
+              borderRadius: "var(--editor-objctrl-bar-radius)",
+            }}
+            className="flex shrink-0 items-center justify-center text-white transition-transform hover:scale-110 hover:brightness-125"
+          >
+            <FlipVertical aria-hidden style={{ width: iconSize, height: iconSize }} strokeWidth={2.2} />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -17,8 +17,10 @@
 
 | Приложение | Путь | Порт (dev) | Описание |
 |---|---|---|---|
-| Киоск + оператор | `apps/kiosk-operator-app` | 5173 | React-app, роуты `/kiosk` и `/operator` |
-| Point-server | `apps/point-server` | 4000 | Fastify + SQLite, работает на мини-ПК точки |
+| Киоск + оператор (UI) | `apps/kiosk-operator-app` | 5173 | React-app, роуты `/kiosk` и `/operator` |
+| Point-server | `apps/point-server` | 4000 | Fastify + SQLite на ПК оператора |
+| Operator desktop | `apps/point-desktop` | — | Electron EXE: point-server + панель оператора |
+| Kiosk desktop | `apps/kiosk-desktop` | — | Тонкий Electron EXE: киоск по LAN |
 | Central-relay | `apps/central-relay` | 4100 | Fastify + PostgreSQL, облачный сервис |
 | Admin-panel | `apps/admin-panel` | 5174 | React + Ant Design, управление точками/ценами/статистикой |
 
@@ -28,35 +30,51 @@
 pnpm install
 ```
 
-### Windows-приложение (точка)
+### Два ПК (рекомендуется)
 
-Сборка установщика и portable `.exe`:
+```
+ПК оператора  →  Tshirt Printer Operator  (сервер + панель)
+ПК киоска     →  Tshirt Printer Kiosk     (тонкий клиент по LAN)
+```
+
+1. На ПК оператора установите Operator EXE и запустите.
+2. В панели оператора откройте **Киоск** — скопируйте URL (или IP).
+3. В брандмауэре Windows на ПК оператора разрешите входящий TCP-порт **4000**.
+4. На ПК киоска установите Kiosk EXE, введите IP оператора и подключитесь.
+
+Оба ПК должны быть в одной локальной сети. Сервер и база данных только на ПК оператора — на киоске второй сервер не запускайте.
+
+Переопределить LAN-адрес для QR/киоска: переменная `TSHIRT_PUBLIC_LAN_HOST` (например `192.168.1.10` или `192.168.1.10:4000`) перед запуском Operator.
+
+### Windows-приложения (сборка)
+
+Сборка установщиков Operator и Kiosk:
 
 ```bat
 build-windows-app.bat
 ```
 
-Готовые файлы: `apps/point-desktop/release/`
+Готовые файлы:
 
-- `Tshirt Printer-*-win-x64.exe` — установщик (ярлык на рабочем столе)
-- `Tshirt Printer-*-portable.exe` — портативная версия (можно на флешку)
+- `apps/point-desktop/release/` — **Tshirt Printer Operator** (установщик + zip)
+- `apps/kiosk-desktop/release/` — **Tshirt Printer Kiosk** (установщик + zip)
 
-Двойной клик открывает безрамочные окна киоска и оператора и поднимает локальный point-server. Docker и Chrome не нужны. Мониторы: панель оператора → **Экраны**. Первый запуск portable может занять 20–40 секунд (распаковка).
+Docker и Chrome не нужны. Первый запуск portable может занять 20–40 секунд (распаковка).
 
-### Релиз через Chrome (без установщика)
+### Релиз через Chrome на одном ПК (legacy)
 
 ```bat
 start-release.bat
 ```
 
-Поднимает сервисы и открывает два безрамочных окна Chrome (`--kiosk`):
+Поднимает сервисы и открывает два безрамочных окна Chrome (`--kiosk`) на одной машине:
 
-- киоск — `/kiosk?native=1` (вертикальный канвас 1080×1920)
+- киоск — `/kiosk?native=1`
 - оператор — `/operator?native=1`
 
-Мониторы задаются в `displays.json` (см. `displays.json.example`) или в панели оператора **Экраны**. Остановка: `stop-release.bat`.
+Для двух отдельных ПК используйте Operator + Kiosk EXE выше. Остановка: `stop-release.bat`.
 
-### Киоск + оператор (точка)
+### Киоск + оператор (точка, dev)
 
 ```bash
 pnpm --filter @tshirt/kiosk-operator-app dev   # http://localhost:5173

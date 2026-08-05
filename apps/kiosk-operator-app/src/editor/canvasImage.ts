@@ -1,5 +1,6 @@
 import { FabricImage, type Canvas } from "fabric";
 import { applySelectionStyleToObject } from "./canvasSelectionStyle.js";
+import { getDesignAreaSize } from "./selectionControlOverscan.js";
 
 /** Fraction of the print-area canvas an inserted image may occupy on its longest side. */
 export const MAX_IMAGE_FRACTION = 1;
@@ -18,15 +19,11 @@ export function computeCenteredImageScale(
 
 /** Centers `image` on `canvas`, scaled to fit within `MAX_IMAGE_FRACTION` (may upscale small assets). */
 export function placeImageCentered(canvas: Canvas, image: FabricImage) {
-  const scale = computeCenteredImageScale(
-    image.width,
-    image.height,
-    canvas.getWidth(),
-    canvas.getHeight(),
-  );
+  const { width, height } = getDesignAreaSize(canvas);
+  const scale = computeCenteredImageScale(image.width, image.height, width, height);
   image.set({
-    left: canvas.getWidth() / 2,
-    top: canvas.getHeight() / 2,
+    left: width / 2,
+    top: height / 2,
     originX: "center",
     originY: "center",
     scaleX: scale,

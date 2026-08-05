@@ -15,6 +15,12 @@ export interface GarmentClipMaskInput {
   /** Native photo size for letterbox math (defaults to the shared square garment photo size). */
   photoWidth?: number;
   photoHeight?: number;
+  /**
+   * When the Fabric canvas covers the full mockup, shift the mask from the
+   * print-area-relative layout back to mockup coordinates.
+   */
+  canvasOverscanLeftPx?: number;
+  canvasOverscanTopPx?: number;
 }
 
 function getGarmentLetterboxMetrics(photoWidth = GARMENT_PHOTO_WIDTH, photoHeight = GARMENT_PHOTO_HEIGHT) {
@@ -65,13 +71,16 @@ export function getGarmentClipMaskStyle(input: GarmentClipMaskInput): CSSPropert
   const layout = resolveGarmentClipLayout(input);
   if (!layout) return {};
 
+  const left = layout.left + (input.canvasOverscanLeftPx ?? 0);
+  const top = layout.top + (input.canvasOverscanTopPx ?? 0);
+
   return {
     WebkitMaskImage: `url("${layout.maskUrl}")`,
     maskImage: `url("${layout.maskUrl}")`,
     WebkitMaskSize: `${layout.width}px ${layout.height}px`,
     maskSize: `${layout.width}px ${layout.height}px`,
-    WebkitMaskPosition: `${layout.left}px ${layout.top}px`,
-    maskPosition: `${layout.left}px ${layout.top}px`,
+    WebkitMaskPosition: `${left}px ${top}px`,
+    maskPosition: `${left}px ${top}px`,
     WebkitMaskRepeat: "no-repeat",
     maskRepeat: "no-repeat",
   };

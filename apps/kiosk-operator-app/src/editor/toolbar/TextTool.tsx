@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { IText, type Canvas } from "fabric";
 import { TouchButton } from "@tshirt/ui-kit";
 import { TEXT_COLORS } from "../types.js";
+import { getDesignAreaSize } from "../selectionControlOverscan.js";
 import { ColorPickerPopover } from "./ColorPickerPopover.js";
 import { recordHistoryEntry } from "../history.js";
 import {
@@ -71,9 +72,10 @@ export function TextTool({ canvas }: TextToolProps) {
 
   function addText() {
     if (!canvas) return;
+    const { width, height } = getDesignAreaSize(canvas);
     const text = new IText(t("editor.toolbar.textPlaceholder"), {
-      left: canvas.getWidth() / 2,
-      top: canvas.getHeight() / 2,
+      left: width / 2,
+      top: height / 2,
       originX: "center",
       originY: "center",
       fontFamily,

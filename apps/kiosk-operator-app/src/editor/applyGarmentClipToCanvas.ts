@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Canvas } from "fabric";
+import type { ControlOverscanInsets } from "./selectionControlOverscan.js";
 
 function applyMaskStyle(el: HTMLElement, maskStyle: CSSProperties) {
   el.style.webkitMaskImage = String(maskStyle.WebkitMaskImage ?? maskStyle.maskImage ?? "");
@@ -23,11 +24,24 @@ function clearMaskStyle(el: HTMLElement) {
   el.style.maskRepeat = "";
 }
 
+function applyDesignAreaClip(el: HTMLElement, overscan?: ControlOverscanInsets) {
+  if (!overscan) {
+    el.style.clipPath = "";
+    return;
+  }
+  el.style.clipPath = `inset(${overscan.top}px ${overscan.right}px ${overscan.bottom}px ${overscan.left}px)`;
+}
+
 /**
  * CSS mask on the lower canvas — matches the garment mockup pixel-for-pixel.
- * Controls are drawn separately on the upper canvas (see `installUnmaskedControlsRenderer`).
+ * Controls are drawn separately on the upper canvas (see `installUnmaskedControlsRenderer`)
+ * and must not inherit the mask or the design-area inset clip.
  */
-export function applyGarmentClipMaskToLowerCanvas(canvas: Canvas, maskStyle: CSSProperties) {
+export function applyGarmentClipMaskToLowerCanvas(
+  canvas: Canvas,
+  maskStyle: CSSProperties,
+  options?: { controlOverscan?: ControlOverscanInsets },
+) {
   canvas.clipPath = undefined;
 
   for (const object of canvas.getObjects()) {
@@ -45,8 +59,13 @@ export function applyGarmentClipMaskToLowerCanvas(canvas: Canvas, maskStyle: CSS
     clearMaskStyle(lower);
   }
 
+  // Keep design pixels inside the print-area rect while the canvas bitmap
+  // covers the full mockup so selection controls can paint anywhere on it.
+  applyDesignAreaClip(lower, options?.controlOverscan);
+
   if (canvas.upperCanvasEl) {
     clearMaskStyle(canvas.upperCanvasEl);
+    canvas.upperCanvasEl.style.clipPath = "";
   }
 }
 
@@ -54,9 +73,11 @@ export function clearGarmentClipFromCanvas(canvas: Canvas) {
   canvas.clipPath = undefined;
   if (canvas.lowerCanvasEl) {
     clearMaskStyle(canvas.lowerCanvasEl);
+    canvas.lowerCanvasEl.style.clipPath = "";
   }
   if (canvas.upperCanvasEl) {
     clearMaskStyle(canvas.upperCanvasEl);
+    canvas.upperCanvasEl.style.clipPath = "";
   }
   for (const object of canvas.getObjects()) {
     object.clipPath = undefined;
@@ -72,8 +93,9 @@ type CanvasWithInternals = Canvas & {
 
 /**
  * Fabric draws selection controls on the lower canvas by default, which would
- * also be clipped by the garment CSS mask. Instead, skip the built-in pass and
- * paint controls onto the upper canvas after each lower-canvas render.
+ * also be clipped by the garment CSS mask / design-area inset. Instead, skip
+ * the built-in pass and paint controls onto the upper canvas (unmasked, sized
+ * to the full mockup — see `selectionControlOverscan.ts`).
  */
 export function installUnmaskedControlsRenderer(canvas: Canvas) {
   const internal = canvas as CanvasWithInternals;

@@ -4,6 +4,7 @@ import type { GarmentSide } from "@tshirt/shared-types";
 import { applySelectionStyleToAllObjects } from "./canvasSelectionStyle.js";
 import { snapshotCanvasJson } from "./applyGarmentClipToCanvas.js";
 import { computePrintSize } from "./printSize.js";
+import { applySelectionControlOverscan } from "./selectionControlOverscan.js";
 import { useEditorStore } from "./store.js";
 
 /**
@@ -122,6 +123,7 @@ async function restoreSnapshot(canvas: Canvas, side: GarmentSide, json: string):
   try {
     canvas.clear();
     await canvas.loadFromJSON(json);
+    applySelectionControlOverscan(canvas);
     applySelectionStyleToAllObjects(canvas);
     canvas.requestRenderAll();
     useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));

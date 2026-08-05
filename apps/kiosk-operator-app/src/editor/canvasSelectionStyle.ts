@@ -10,6 +10,10 @@ const OBJECT_SELECTION_STYLE = {
   transparentCorners: false,
   borderScaleFactor: 2.5,
   borderOpacityWhenMoving: 1,
+  // Visual selection chrome lives in the DOM overlay (`ObjectControls`) so it
+  // is never clipped by the print-area / garment mask. Fabric keeps move/select.
+  hasBorders: false,
+  hasControls: false,
   // Kiosk is touch-first: always use the large touch hit targets, even when
   // a mouse drives the CSS-scaled KioskFrame in development.
   cornerSize: 28,
