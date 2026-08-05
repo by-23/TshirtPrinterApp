@@ -238,6 +238,7 @@ LAN ($lanIp):
   Kiosk (dev):     http://${lanIp}:5173/kiosk
   Kiosk (release): http://${lanIp}:5173/kiosk?native=1
   Operator:        http://${lanIp}:5173/operator
+  (design gear is on in Vite; hide with ?dev=0 or ?native=1)
   Admin:           http://${lanIp}:5174
   Point API:       http://${lanIp}:4000
   Relay:           http://${lanIp}:4100

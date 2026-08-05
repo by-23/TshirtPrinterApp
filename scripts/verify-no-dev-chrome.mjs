@@ -42,7 +42,7 @@ async function check(url, expectGear, label) {
 }
 
 const results = [];
-results.push(await check("http://127.0.0.1:5173/kiosk", false, "kiosk-plain"));
+results.push(await check("http://127.0.0.1:5173/kiosk", true, "kiosk-plain"));
 results.push(await check("http://127.0.0.1:5173/kiosk?native=1", false, "kiosk-native"));
 results.push(await check("http://127.0.0.1:5173/operator?native=1", false, "operator-native"));
 results.push(await check("http://127.0.0.1:5173/kiosk?dev=1", true, "kiosk-dev"));

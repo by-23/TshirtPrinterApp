@@ -89,6 +89,102 @@ textarea {
   width: var(--editor-tool-emoji-popover-width);
 }
 
+/* Compact text panel — full page width, under the main editor columns. */
+.editor-theme-root .editor-tool-popover--bottom {
+  position: relative;
+  left: auto;
+  top: auto;
+  z-index: 50;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--editor-tool-bottom-padding, 18px 21px);
+  border-radius: var(--editor-tool-popover-radius);
+  box-sizing: border-box;
+}
+
+.editor-theme-root .editor-tool-panel--text-compact {
+  gap: 14px;
+}
+
+.editor-theme-root .editor-tool-text-add-btn {
+  padding: 11px 18px;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.editor-theme-root .editor-tool-color-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.editor-theme-root .editor-tool-color-bar .editor-tool-color-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.editor-theme-root .editor-tool-font-row,
+.editor-theme-root .editor-tool-color-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 78, 205, 0.85) rgba(255, 255, 255, 0.08);
+}
+
+.editor-theme-root .editor-tool-font-row::-webkit-scrollbar,
+.editor-theme-root .editor-tool-color-row::-webkit-scrollbar {
+  height: 9px;
+}
+
+.editor-theme-root .editor-tool-font-row::-webkit-scrollbar-button,
+.editor-theme-root .editor-tool-color-row::-webkit-scrollbar-button,
+.editor-theme-root .editor-tool-font-row::-webkit-scrollbar-corner,
+.editor-theme-root .editor-tool-color-row::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.editor-theme-root .editor-tool-font-row::-webkit-scrollbar-track,
+.editor-theme-root .editor-tool-color-row::-webkit-scrollbar-track {
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+}
+
+.editor-theme-root .editor-tool-font-row::-webkit-scrollbar-thumb,
+.editor-theme-root .editor-tool-color-row::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #ff6ad5 0%, #ff2eb6 100%);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.editor-theme-root .editor-tool-font-row::-webkit-scrollbar-thumb:hover,
+.editor-theme-root .editor-tool-color-row::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #ff8ae0 0%, #ff4ec4 100%);
+  background-clip: padding-box;
+}
+
+.editor-theme-root .editor-tool-font-row .editor-tool-font-chip {
+  padding: 12px 17px;
+  font-size: 21px;
+  white-space: nowrap;
+}
+
+.editor-theme-root .editor-tool-color-row .editor-tool-swatch {
+  width: 50px;
+  height: 50px;
+}
+
 .editor-theme-root .editor-tool-popover-drag {
   display: flex;
   align-items: center;
@@ -469,6 +565,7 @@ textarea {
   --editor-rail-block-radius: 20px;
   --editor-rail-block-padding: 12px;
   --editor-rail-block-height: auto;
+  --editor-rail-block-content-align: start;
   --editor-rail-divider-width: 1.5px;
   --editor-rail-divider-color: #242938;
   --editor-rail-divider-opacity: 0.6;
@@ -487,7 +584,7 @@ textarea {
   --editor-strip-border-opacity: 1;
   --editor-strip-padding: 16px;
   --editor-strip-height: auto;
-  --editor-strip-offset-y: 0px;
+  --editor-strip-offset-y: -100px;
   --editor-strip-btn-bg: #02060d;
   --editor-strip-btn-width: 24px;
   --editor-strip-btn-height: 32px;
@@ -496,8 +593,8 @@ textarea {
     --editor-strip-value-font-size: 16px;
 
   --editor-objctrl-bar-radius: 999px;
-  --editor-objctrl-btn-width: 72px;
-  --editor-objctrl-btn-height: 72px;
+  --editor-objctrl-btn-width: 36px;
+  --editor-objctrl-btn-height: 36px;
   --editor-objctrl-bg: #1c1e26;
   --editor-objctrl-delete-bg: #dc2626;
 
@@ -554,6 +651,7 @@ textarea {
   --editor-secondary-block-radius: 16px;
   --editor-secondary-block-padding: 10px;
   --editor-secondary-block-height: auto;
+  --editor-secondary-block-content-align: start;
 
   --editor-price-label-size: 18px;
   --editor-price-amount-size: 40px;
@@ -580,7 +678,7 @@ textarea {
   --editor-ordernote-block-height: auto;
   --editor-ordernote-block-content-align: center;
 
-  --editor-popular-title-size: 14px;
+  --editor-popular-title-size: 18px;
   --editor-popular-title-color: #9ca3af;
   --editor-popular-title-gap: 12px;
   --editor-popular-tile-radius: 12px;
@@ -592,7 +690,7 @@ textarea {
   --editor-popular-image-padding: 4px;
   --editor-popular-image-gap: 16px;
   --editor-popular-image-width: 120px;
-  --editor-popular-image-height: 88px;
+  --editor-popular-image-height: 160px;
   --editor-popular-tile-flex-grow: 1;
   --editor-popular-block-border-width: 1.5px;
   --editor-popular-block-border-color: #242938;
@@ -628,7 +726,8 @@ textarea {
   --editor-tips-block-radius: 16px;
   --editor-tips-block-padding: 16px;
   --editor-tips-block-height: auto;
-  --editor-tips-block-width: 100%;
+  --editor-tips-block-width: 100px;
+  --editor-tips-block-content-align: start;
 
   --editor-tool-popover-width: 500px;
   --editor-tool-emoji-popover-width: 720px;

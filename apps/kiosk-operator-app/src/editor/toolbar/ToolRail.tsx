@@ -1,6 +1,15 @@
-import { Fragment, useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useState,
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import type { Canvas } from "fabric";
+import { IText, type Canvas } from "fabric";
 import {
   ArrowUpLeft,
   Crop,
@@ -21,15 +30,20 @@ import { FiltersTool } from "./FiltersTool.js";
 import { EffectsTool } from "./EffectsTool.js";
 import { ImagePickerModal } from "./ImagePickerModal.js";
 import { DraggableToolPopover } from "./DraggableToolPopover.js";
-import { EDITOR_TOOL_UI_SELECTOR } from "../canvasSelectionStyle.js";
+import { EDITOR_SELECTION_UI_SELECTOR, EDITOR_TOOL_UI_SELECTOR } from "../canvasSelectionStyle.js";
 import { blockBorderStyle, dividerStyle } from "../borderStyle.js";
 import { useHistoryStore, undoLastEntry, redoLastEntry } from "../history.js";
 
 export interface ToolRailProps {
   canvas: Canvas | null;
+  /** Host under the canvas for compact tools (e.g. text) so they don't cover the mockup. */
+  bottomToolDockRef?: RefObject<HTMLElement | null>;
 }
 
 type PopoverTool = "text" | "upload" | "emoji" | "filters" | "effects";
+
+/** Tools that dock under the canvas instead of floating next to the rail. */
+const BOTTOM_DOCK_TOOLS = new Set<PopoverTool>(["text"]);
 
 const POPOVER_CONTENT: Record<PopoverTool, (canvas: Canvas | null) => ReactNode> = {
   text: (canvas) => <TextTool canvas={canvas} />,
@@ -85,29 +99,84 @@ function RailButton({ icon, label, active = false, className = "", disabled, sty
 }
 
 /** Left vertical icon rail from `docs/ui-mockups/editor.png` — all tools are fully wired up (see docs/PLAN.md). */
-export function ToolRail({ canvas }: ToolRailProps) {
+export function ToolRail({ canvas, bottomToolDockRef }: ToolRailProps) {
   const { t } = useTranslation();
   const [openTool, setOpenTool] = useState<PopoverTool | null>(null);
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [bottomDockEl, setBottomDockEl] = useState<HTMLElement | null>(null);
   const canUndo = useHistoryStore((state) => state.canUndo);
   const canRedo = useHistoryStore((state) => state.canRedo);
+  const bottomDockedTool = openTool && BOTTOM_DOCK_TOOLS.has(openTool) ? openTool : null;
+
+  useEffect(() => {
+    if (!bottomDockedTool) return;
+    setBottomDockEl(bottomToolDockRef?.current ?? null);
+  }, [bottomToolDockRef, bottomDockedTool]);
 
   function toggle(tool: PopoverTool) {
     setOpenTool((current) => (current === tool ? null : tool));
   }
+
+  // Tap editable text → open text styles anytime (including re-tap on already-selected text).
+  useEffect(() => {
+    if (!canvas) return;
+
+    function syncTextPanelOnSelection() {
+      const active = canvas!.getActiveObject();
+      if (active instanceof IText) {
+        setOpenTool("text");
+        return;
+      }
+      setOpenTool((current) => (current === "text" ? null : current));
+    }
+
+    // Re-tap on already-selected text does not fire selection:* — reopen styles
+    // only when no other tool popover is active (so Effects/Filters stay usable while dragging).
+    function handleMouseDown(event: { target?: unknown }) {
+      if (!(event.target instanceof IText)) return;
+      setOpenTool((current) => (current === null || current === "text" ? "text" : current));
+    }
+
+    canvas.on("mouse:down", handleMouseDown);
+    canvas.on("selection:created", syncTextPanelOnSelection);
+    canvas.on("selection:updated", syncTextPanelOnSelection);
+    canvas.on("selection:cleared", syncTextPanelOnSelection);
+    return () => {
+      canvas.off("mouse:down", handleMouseDown);
+      canvas.off("selection:created", syncTextPanelOnSelection);
+      canvas.off("selection:updated", syncTextPanelOnSelection);
+      canvas.off("selection:cleared", syncTextPanelOnSelection);
+    };
+  }, [canvas]);
 
   useEffect(() => {
     if (!openTool) return;
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target;
-      if (target instanceof Element && target.closest(EDITOR_TOOL_UI_SELECTOR)) return;
+      if (!(target instanceof Element)) {
+        setOpenTool(null);
+        return;
+      }
+      if (target.closest(EDITOR_TOOL_UI_SELECTOR)) return;
+      if (target.closest(EDITOR_SELECTION_UI_SELECTOR)) return;
+
+      // Canvas clicks for the text tool are handled by selection sync above:
+      // keep the panel when an IText stays/becomes selected, close otherwise.
+      if (openTool === "text" && target.closest(".canvas-container")) {
+        queueMicrotask(() => {
+          const active = canvas?.getActiveObject();
+          if (!(active instanceof IText)) setOpenTool(null);
+        });
+        return;
+      }
+
       setOpenTool(null);
     }
 
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [openTool]);
+  }, [openTool, canvas]);
 
   const buttons: { key: string; node: ReactNode }[] = [
     {
@@ -226,7 +295,7 @@ export function ToolRail({ canvas }: ToolRailProps) {
           {isPopoverTool(button.key) ? (
             <div className="relative">
               {button.node}
-              {openTool === button.key && (
+              {openTool === button.key && !BOTTOM_DOCK_TOOLS.has(button.key) && (
                 <DraggableToolPopover
                   key={button.key}
                   className={button.key === "emoji" ? "editor-tool-popover--emoji" : undefined}
@@ -240,6 +309,18 @@ export function ToolRail({ canvas }: ToolRailProps) {
           )}
         </Fragment>
       ))}
+
+      {bottomDockedTool &&
+        bottomDockEl &&
+        createPortal(
+          <div
+            data-editor-tool-ui
+            className="editor-tool-popover editor-tool-popover--bottom border border-ink-600 bg-ink-900 shadow-xl"
+          >
+            {POPOVER_CONTENT[bottomDockedTool](canvas)}
+          </div>,
+          bottomDockEl,
+        )}
 
       {imagePickerOpen && <ImagePickerModal canvas={canvas} onClose={() => setImagePickerOpen(false)} />}
     </div>

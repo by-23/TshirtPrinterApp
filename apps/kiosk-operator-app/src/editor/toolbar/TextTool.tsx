@@ -17,6 +17,12 @@ export interface TextToolProps {
   canvas: Canvas | null;
 }
 
+const DEFAULT_FONT_SIZE = 120;
+
+function readFillColor(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.length > 0 ? value : fallback;
+}
+
 export function TextTool({ canvas }: TextToolProps) {
   const { t } = useTranslation();
   const [fonts, setFonts] = useState<FontOption[]>(EDITOR_FONTS);
@@ -50,6 +56,27 @@ export function TextTool({ canvas }: TextToolProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!canvas) return;
+
+    function syncFromSelection() {
+      const active = canvas!.getActiveObject();
+      if (!(active instanceof IText)) return;
+      if (active.fontFamily) setFontFamily(active.fontFamily);
+      setColor(readFillColor(active.fill, TEXT_COLORS[0]!));
+    }
+
+    syncFromSelection();
+    canvas.on("selection:created", syncFromSelection);
+    canvas.on("selection:updated", syncFromSelection);
+    canvas.on("selection:cleared", syncFromSelection);
+    return () => {
+      canvas.off("selection:created", syncFromSelection);
+      canvas.off("selection:updated", syncFromSelection);
+      canvas.off("selection:cleared", syncFromSelection);
+    };
+  }, [canvas]);
+
   function applyToSelection(props: Partial<{ fontFamily: string; fill: string }>) {
     if (!canvas) return;
     const active = canvas.getActiveObject();
@@ -80,23 +107,18 @@ export function TextTool({ canvas }: TextToolProps) {
       originY: "center",
       fontFamily,
       fill: color,
-      fontSize: 32,
+      fontSize: DEFAULT_FONT_SIZE,
     });
     canvas.add(text);
     canvas.setActiveObject(text);
+    text.enterEditing();
+    text.selectAll();
     canvas.requestRenderAll();
   }
 
   return (
-    <div className="editor-tool-panel">
-      <h4 className="editor-tool-title">{t("editor.toolbar.text")}</h4>
-      <TouchButton
-        onClick={addText}
-        className="editor-tool-btn bg-neon-pink text-white shadow-neon-pink transition-transform hover:scale-105"
-      >
-        {t("editor.toolbar.addText")}
-      </TouchButton>
-      <div className="flex flex-wrap gap-2">
+    <div className="editor-tool-panel editor-tool-panel--text-compact">
+      <div className="editor-tool-font-row">
         {fonts.map((font) => (
           <button
             key={font.id}
@@ -104,7 +126,7 @@ export function TextTool({ canvas }: TextToolProps) {
             onClick={() => handleFontChange(font.family)}
             aria-pressed={fontFamily === font.family}
             style={{ fontFamily: font.family }}
-            className={`editor-tool-font-chip transition-colors ${
+            className={`editor-tool-font-chip shrink-0 transition-colors ${
               fontFamily === font.family
                 ? "bg-neon-pink text-white"
                 : "bg-ink-800 text-ink-200 hover:bg-ink-700 hover:text-white"
@@ -114,18 +136,26 @@ export function TextTool({ canvas }: TextToolProps) {
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {TEXT_COLORS.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => handleColorChange(option)}
-            aria-pressed={color === option}
-            className={`editor-tool-swatch rounded-full border-2 ${color === option ? "border-neon-pink" : "border-ink-600"}`}
-            style={{ backgroundColor: option }}
-          />
-        ))}
-        <ColorPickerPopover color={color} onChange={handleColorChange} />
+      <div className="editor-tool-color-bar">
+        <TouchButton
+          onClick={addText}
+          className="editor-tool-btn editor-tool-text-add-btn shrink-0 bg-neon-pink text-white shadow-neon-pink transition-transform hover:scale-105"
+        >
+          {t("editor.toolbar.addText")}
+        </TouchButton>
+        <div className="editor-tool-color-row">
+          {TEXT_COLORS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => handleColorChange(option)}
+              aria-pressed={color === option}
+              className={`editor-tool-swatch shrink-0 rounded-full border-2 ${color === option ? "border-neon-pink" : "border-ink-600"}`}
+              style={{ backgroundColor: option }}
+            />
+          ))}
+          <ColorPickerPopover color={color} onChange={handleColorChange} />
+        </div>
       </div>
     </div>
   );

@@ -78,6 +78,7 @@ export function Editor() {
   const [isPreview, setIsPreview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const bottomToolDockRef = useRef<HTMLDivElement>(null);
   const appliedDesignIdRef = useRef<string | null>(null);
   const appliedAiImageRef = useRef<string | null>(null);
 
@@ -327,7 +328,7 @@ export function Editor() {
               data-editor-selection-ui
               style={{ width: "var(--editor-rail-width)", flexShrink: 0 }}
             >
-              <ToolRail canvas={canvas} />
+              <ToolRail canvas={canvas} bottomToolDockRef={bottomToolDockRef} />
             </aside>
 
             <div className="flex min-w-0 flex-1 flex-col items-center" style={{ gap: "var(--editor-center-column-gap)" }}>
@@ -414,6 +415,13 @@ export function Editor() {
           <PriceAndPrint onPrint={() => void handlePrint()} isSubmitting={isCreatingOrder} />
         </aside>
       </div>
+
+      <div
+        ref={bottomToolDockRef}
+        data-editor-bottom-tool-dock
+        className={isPreview ? "editor-preview-dimmed relative z-50 w-full" : "relative z-50 w-full"}
+        aria-hidden={isPreview}
+      />
 
       <div className={isPreview ? "editor-preview-dimmed" : undefined} aria-hidden={isPreview}>
         <PopularElementsStrip canvas={canvas} />

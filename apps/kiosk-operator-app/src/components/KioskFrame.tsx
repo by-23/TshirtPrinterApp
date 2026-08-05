@@ -113,7 +113,7 @@ export function KioskFrame({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      {/* Design panels: only with explicit ?dev=1 — never on release/Android kiosk. */}
+      {/* Design panels: Vite DEV by default; never on ?native=1 / release kiosk. */}
       {devPanels ? (
         <Suspense fallback={null}>
           <DevPanels />

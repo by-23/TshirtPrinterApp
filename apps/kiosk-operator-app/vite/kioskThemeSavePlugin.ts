@@ -16,6 +16,15 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
+function insertIntoRoot(css: string, declarations: string): string {
+  const match = css.match(/:root\s*\{/);
+  if (!match || match.index === undefined) {
+    throw new Error(":root block not found in index.css");
+  }
+  const insertAt = match.index + match[0].length;
+  return `${css.slice(0, insertAt)}\n${declarations}${css.slice(insertAt)}`;
+}
+
 function patchIndexCss(cssPath: string, tokens: Record<string, string>) {
   let css = fs.readFileSync(cssPath, "utf-8");
   const missing: string[] = [];
@@ -31,8 +40,11 @@ function patchIndexCss(cssPath: string, tokens: Record<string, string>) {
     }
   }
 
+  // New panel tokens may land before :root defaults exist — append them
+  // instead of failing the whole save with a misleading "dev-server only" UI.
   if (missing.length > 0) {
-    throw new Error(`Variables not found in index.css: ${missing.join(", ")}`);
+    const declarations = missing.map((key) => `  ${key}: ${tokens[key]};`).join("\n") + "\n";
+    css = insertIntoRoot(css, declarations);
   }
 
   fs.writeFileSync(cssPath, css, "utf-8");

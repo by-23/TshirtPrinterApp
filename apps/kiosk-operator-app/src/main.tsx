@@ -13,12 +13,17 @@ try {
   const params = new URLSearchParams(window.location.search);
   if (params.get("native") === "1" || params.get("release") === "1") {
     setReleaseMode(true);
-  }
-  // Design gear is opt-in only. Never keep a stale "on" flag from an old session.
-  if (params.get("dev") === "1") {
-    window.localStorage.setItem("tshirt.devPanels", "1");
-  } else {
     window.localStorage.removeItem("tshirt.devPanels");
+  } else if (params.get("dev") === "1") {
+    // Explicit design-tuning session: leave release chrome and keep the gear
+    // across SPA navigations / refreshes that drop the query string.
+    setReleaseMode(false);
+    window.localStorage.setItem("tshirt.devPanels", "1");
+  } else if (params.get("dev") === "0") {
+    window.localStorage.removeItem("tshirt.devPanels");
+  } else if (import.meta.env.DEV) {
+    // Vite: don't stay stuck in sticky releaseMode from a past ?native=1 test.
+    setReleaseMode(false);
   }
 } catch {
   // ignore
