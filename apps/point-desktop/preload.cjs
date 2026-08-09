@@ -16,4 +16,13 @@ contextBridge.exposeInMainWorld("pointDesktop", {
     ipcRenderer.on("desktop-update:status", handler);
     return () => ipcRenderer.removeListener("desktop-update:status", handler);
   },
+  getModulesStatus: () => ipcRenderer.invoke("modules-update:getStatus"),
+  checkModuleUpdates: () => ipcRenderer.invoke("modules-update:check"),
+  applyModuleUpdate: (zone) => ipcRenderer.invoke("modules-update:apply", zone),
+  onModulesStatus: (callback) => {
+    if (typeof callback !== "function") return () => undefined;
+    const handler = (_event, status) => callback(status);
+    ipcRenderer.on("modules-update:status", handler);
+    return () => ipcRenderer.removeListener("modules-update:status", handler);
+  },
 });

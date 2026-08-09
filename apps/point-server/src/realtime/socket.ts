@@ -81,3 +81,11 @@ export function emitAiPhotoReceivedEvent(payload: AiPhotoReceivedPayload): void 
   if (!io) return;
   io.emit(AI_PHOTO_RECEIVED_EVENT, payload);
 }
+
+/** Tell every connected kiosk/operator SPA to reload after a UI module update. */
+export const UI_RELOAD_EVENT = "ui:reload";
+
+export function emitUiReloadEvent(payload: { version?: string } = {}): void {
+  if (!io) return;
+  io.emit(UI_RELOAD_EVENT, payload);
+}

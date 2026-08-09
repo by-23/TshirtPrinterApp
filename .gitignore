@@ -25,6 +25,11 @@ apps/point-desktop/node_modules/
 apps/kiosk-desktop/release/
 apps/kiosk-desktop/node_modules/
 dist-combined/
+dist-modules/
+dist-operator-install/
+dist-kiosk-install/
+dist-*-install*.zip
+.tmp-editor-check.png
 
 # Generated per-order design/mockup PNGs (point-server, Stage 5)
 apps/point-server/data/orders/

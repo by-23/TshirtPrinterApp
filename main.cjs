@@ -359,12 +359,7 @@ function openKiosk(config) {
     }
   }, 4000);
 
-  // Drop Chromium HTTP cache so hashed assets from a new UI module aren't sticky.
-  const load = () => {
-    if (!kioskWindow || kioskWindow.isDestroyed()) return;
-    kioskWindow.loadURL(url);
-  };
-  kioskWindow.webContents.session.clearCache().finally(load);
+  kioskWindow.loadURL(url);
   kioskWindow.on("closed", () => {
     kioskWindow = null;
   });
@@ -452,20 +447,8 @@ if (!gotLock) {
     }
     log(`App ready packaged=${app.isPackaged}`);
     registerIpc();
-
-    // Shell self-update (electron-updater). UI still comes from Operator.
-    try {
-      const { setupAutoUpdater } = require("./updater.cjs");
-      const updater = setupAutoUpdater({
-        log,
-        BrowserWindow,
-        ipcMain,
-        channel: "kiosk",
-      });
-      updater.start();
-    } catch (err) {
-      log(`updater init failed: ${err && err.message ? err.message : err}`);
-    }
+    // Kiosk does not self-update. UI is served by Operator point-server;
+    // applying updates on Operator reloads every connected kiosk SPA.
 
     const config = readConfig();
     if (!config.host) {

@@ -151,6 +151,8 @@ export function CanvasControlStrip({ canvas }: CanvasControlStripProps) {
         backgroundColor: "var(--editor-strip-bg)",
         padding: "var(--editor-strip-padding)",
         height: "var(--editor-strip-height, auto)",
+        width: "100%",
+        maxWidth: "100%",
         marginTop: "var(--editor-strip-offset-y, 0px)",
         boxSizing: "border-box",
         overflow: "hidden",

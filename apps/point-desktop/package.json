@@ -1,6 +1,6 @@
 {
   "name": "@tshirt/point-desktop",
-  "version": "1.0.6",
+  "version": "1.0.24",
   "private": true,
   "description": "Windows desktop shell for the operator PC (point-server + operator UI)",
   "main": "main.cjs",
@@ -22,6 +22,8 @@
       "main.cjs",
       "preload.cjs",
       "updater.cjs",
+      "modules.cjs",
+      "moduleUpdater.cjs",
       "package.json"
     ],
     "publish": [
@@ -36,31 +38,42 @@
       {
         "from": "resources/point-server",
         "to": "point-server",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "resources/point-server/node_modules",
         "to": "point-server/node_modules",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "resources/node",
         "to": "node",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
+      "executableName": "TshirtPrinterOperator",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+      "artifactName": "TshirtPrinterOperator-Setup-${version}-${os}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": true,
@@ -69,7 +82,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Tshirt Printer Operator",
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "include": "installer.nsh"
     },
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"

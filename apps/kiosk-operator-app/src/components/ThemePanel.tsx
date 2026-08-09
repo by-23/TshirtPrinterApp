@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { GripVertical, Settings } from "./icons.js";
 import {
@@ -27,13 +27,17 @@ import {
   useKioskImageOverrides,
   type KioskImageDefinition,
 } from "../lib/kioskImages.js";
+import {
+  clearThemeOverrideStorage,
+  createThemeCssSaver,
+  themeSaveStatusLabel,
+  type ThemeSaveState,
+} from "../lib/themeCssSave.js";
 
 const THEME_FONT_SELECT_OPTIONS = THEME_FONT_OPTIONS.map(({ label, family }) => ({
   label,
   value: family,
 }));
-
-const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
 interface ColorToken {
   key: string;
@@ -886,7 +890,6 @@ const ALL_TOKENS: Token[] = [
   ...CATEGORY_IMAGE_LAYOUT_TOKENS,
 ];
 const TOKEN_BY_KEY = new Map(ALL_TOKENS.map((token) => [token.key, token]));
-const STORAGE_KEY = "kiosk-theme-overrides";
 
 function normalizeValue(token: Token, value: string): string {
   if (token.type === "color") return value;
@@ -934,22 +937,23 @@ function defaultValues(): Record<string, string> {
   return getBaselineValues();
 }
 
-function loadStoredValues(): Record<string, string> {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    const normalized: Record<string, string> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      const token = TOKEN_BY_KEY.get(key);
-      if (!token) continue;
-      normalized[key] = normalizeValue(token, value);
-    }
-    return normalized;
-  } catch {
-    return {};
+
+function hardcodedDefaults(): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const token of ALL_TOKENS) {
+    values[token.key] = String(token.defaultValue);
   }
+  return values;
 }
+
+function tokensForCss(values: Record<string, string>): Record<string, string> {
+  const tokens: Record<string, string> = {};
+  for (const token of ALL_TOKENS) {
+    tokens[token.key] = formatCssValue(token, values[token.key] ?? String(token.defaultValue));
+  }
+  return tokens;
+}
+
 
 function applyValue(key: string, value: string) {
   const token = TOKEN_BY_KEY.get(key);
@@ -996,23 +1000,21 @@ function sectionsByTitles(titles: readonly string[]): Section[] {
 }
 
 /**
- * Floating "design panel" for retuning the kiosk's brand colors, corner radii,
- * glow intensity and per-category accent colors live — no rebuild needed.
- * Everything here is just reading/writing the CSS custom properties declared
- * in `index.css`, which every themed component (Banner, CategoryGrid,
- * LanguageSwitcher) reads from. Changes persist to localStorage so they
- * survive a reload; «Сохранить по умолчанию» writes the current values into
- * `index.css` (dev server only) so they become the shipped baseline.
+ * Floating design panel — every change writes CSS tokens into index.css (dev only).
  */
 export function ThemePanel() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const { containerRef, style: dragStyle, dragHandleProps } = useDraggablePanel("kiosk-theme-panel-position");
-  const [values, setValues] = useState<Record<string, string>>(() => ({
-    ...getBaselineValues(),
-    ...loadStoredValues(),
-  }));
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [values, setValues] = useState<Record<string, string>>(() => getBaselineValues());
+  const [saveState, setSaveState] = useState<ThemeSaveState>("idle");
+  const saverRef = useRef(createThemeCssSaver({ onState: setSaveState }));
+
+  useEffect(() => {
+    clearThemeOverrideStorage();
+    const saver = saverRef.current;
+    return () => saver.dispose();
+  }, []);
   const imageOverrides = useKioskImageOverrides();
   const pageTransition = usePageTransitionStore((state) => state.type);
   const pageTransitionDuration = usePageTransitionStore((state) => state.durationMs);
@@ -1059,69 +1061,35 @@ export function ThemePanel() {
   // Home gear only — other routes have their own design panels.
   if (!isHomeRoute) return null;
 
-  function persist(next: Record<string, string>) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  }
 
   function handleChange(key: string, value: string) {
-    setValues((prev) => {
-      const next = { ...prev, [key]: value };
-      persist(next);
-      return next;
-    });
+    const token = TOKEN_BY_KEY.get(key);
+    setValues((prev) => ({ ...prev, [key]: value }));
     applyValue(key, value);
+    if (token) {
+      saverRef.current.scheduleOne(key, formatCssValue(token, value));
+    }
   }
 
   function handleReset() {
-    // Clear inline overrides BEFORE reading baseline — getComputedStyle would
-    // otherwise return the still-active slider values as "defaults".
-    window.localStorage.removeItem(STORAGE_KEY);
+    const defaults = hardcodedDefaults();
     for (const token of ALL_TOKENS) {
       clearToken(token.key);
+      applyValue(token.key, defaults[token.key]!);
     }
     resetHomeKioskImages();
-    const defaults = defaultValues();
     setValues(defaults);
+    void saverRef.current.saveNow(tokensForCss(defaults));
   }
 
   function handleResetToken(token: Token) {
+    const defaultValue = String(token.defaultValue);
     clearToken(token.key);
-    const defaultValue = getBaselineValues()[token.key] ?? String(token.defaultValue);
-    setValues((prev) => {
-      const next = { ...prev, [token.key]: defaultValue };
-      persist(next);
-      return next;
-    });
     applyValue(token.key, defaultValue);
+    setValues((prev) => ({ ...prev, [token.key]: defaultValue }));
+    saverRef.current.scheduleOne(token.key, formatCssValue(token, defaultValue));
   }
 
-  async function handleSaveDefaults() {
-    setSaveState("saving");
-    try {
-      const tokens: Record<string, string> = {};
-      for (const token of ALL_TOKENS) {
-        tokens[token.key] = formatCssValue(token, values[token.key] ?? String(token.defaultValue));
-      }
-
-      const response = await fetch(THEME_SAVE_PATH, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokens }),
-      });
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? `HTTP ${response.status}`);
-      }
-
-      window.localStorage.removeItem(STORAGE_KEY);
-      setSaveState("saved");
-      window.setTimeout(() => window.location.reload(), 500);
-    } catch {
-      setSaveState("error");
-      window.setTimeout(() => setSaveState("idle"), 2800);
-    }
-  }
 
   async function handleImagePick(key: string, file: File | undefined) {
     if (!file) return;
@@ -1410,21 +1378,9 @@ export function ThemePanel() {
               );
             })}
           </SettingsPanelGroup>
-
-          <button
-            type="button"
-            onClick={() => void handleSaveDefaults()}
-            disabled={saveState === "saving" || saveState === "saved"}
-            className="mt-2 rounded-2xl border-2 border-white/15 bg-white/5 py-4 text-xl font-semibold uppercase tracking-wide text-white/90 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saveState === "saving"
-              ? "Сохранение…"
-              : saveState === "saved"
-                ? "Сохранено ✓"
-                : saveState === "error"
-                  ? "Ошибка — только dev-сервер"
-                  : "Сохранить по умолчанию"}
-          </button>
+          <p className="mt-2 rounded-2xl border-2 border-white/15 bg-white/5 px-4 py-4 text-center text-lg font-semibold uppercase tracking-wide text-white/80">
+            {themeSaveStatusLabel(saveState)}
+          </p>
         </div>
       ) : null}
     </div>

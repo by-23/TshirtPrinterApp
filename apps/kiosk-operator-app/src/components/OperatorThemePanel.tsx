@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { GripVertical, SlidersHorizontal } from "./icons.js";
 import {
   SettingsPanelGroup,
@@ -10,7 +10,12 @@ import {
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 import { OPERATOR_SCROLL_CSS_VARS, syncAllOperatorScrollElements } from "../lib/operatorScrollTheme.js";
 
-const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
+import {
+  clearThemeOverrideStorage,
+  createThemeCssSaver,
+  themeSaveStatusLabel,
+  type ThemeSaveState,
+} from "../lib/themeCssSave.js";
 
 interface ColorToken {
   key: string;
@@ -339,7 +344,6 @@ const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
 
 const ALL_TOKENS: Token[] = SECTIONS.flatMap((section) => section.tokens);
 const TOKEN_BY_KEY = new Map(ALL_TOKENS.map((token) => [token.key, token]));
-const STORAGE_KEY = "kiosk-operator-theme-overrides-v1";
 const SCOPE_SELECTOR = ".operator-theme-root";
 
 function normalizeValue(token: Token, value: string): string {
@@ -387,22 +391,23 @@ function getBaselineValues(): Record<string, string> {
   return readAllDefaults();
 }
 
-function loadStoredValues(): Record<string, string> {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    const normalized: Record<string, string> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      const token = TOKEN_BY_KEY.get(key);
-      if (!token) continue;
-      normalized[key] = normalizeValue(token, value);
-    }
-    return normalized;
-  } catch {
-    return {};
+
+function hardcodedDefaults(): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const token of ALL_TOKENS) {
+    values[token.key] = String(token.defaultValue);
   }
+  return values;
 }
+
+function tokensForCss(values: Record<string, string>): Record<string, string> {
+  const tokens: Record<string, string> = {};
+  for (const token of ALL_TOKENS) {
+    tokens[token.key] = formatCssValue(token, values[token.key] ?? String(token.defaultValue));
+  }
+  return tokens;
+}
+
 
 function applyValue(key: string, value: string) {
   const token = TOKEN_BY_KEY.get(key);
@@ -430,22 +435,20 @@ function clearToken(key: string) {
 }
 
 /**
- * Floating "design panel" for `/operator`, sibling to `ThemePanel` (kiosk
- * home), `EditorThemePanel` and `CheckoutThemePanel` — same mechanics: reads
- * and writes the `--operator-*` custom properties declared in `index.css`,
- * persists to localStorage, and «Сохранить по умолчанию» writes the current
- * values into `index.css` (dev server only). Covers every block on the
- * operator screen: sidebar, status bar, order list/cards, order details,
- * printer panel and the designs catalog.
+ * Floating design panel — every change writes CSS tokens into index.css (dev only).
  */
 export function OperatorThemePanel() {
   const [open, setOpen] = useState(false);
   const { containerRef, style: dragStyle, dragHandleProps } = useDraggablePanel("operator-theme-panel-position");
-  const [values, setValues] = useState<Record<string, string>>(() => ({
-    ...getBaselineValues(),
-    ...loadStoredValues(),
-  }));
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [values, setValues] = useState<Record<string, string>>(() => getBaselineValues());
+  const [saveState, setSaveState] = useState<ThemeSaveState>("idle");
+  const saverRef = useRef(createThemeCssSaver({ onState: setSaveState }));
+
+  useEffect(() => {
+    clearThemeOverrideStorage();
+    const saver = saverRef.current;
+    return () => saver.dispose();
+  }, []);
   const { isOpen: isSectionOpen, toggle: toggleSection } = useOpenSections("operator-theme-panel-open-sections");
 
   useEffect(() => {
@@ -471,64 +474,34 @@ export function OperatorThemePanel() {
     }
   }, [open, values]);
 
-  function persist(next: Record<string, string>) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  }
 
   function handleChange(key: string, value: string) {
-    setValues((prev) => {
-      const next = { ...prev, [key]: value };
-      persist(next);
-      return next;
-    });
+    const token = TOKEN_BY_KEY.get(key);
+    setValues((prev) => ({ ...prev, [key]: value }));
     applyValue(key, value);
+    if (token) {
+      saverRef.current.scheduleOne(key, formatCssValue(token, value));
+    }
   }
 
   function handleReset() {
-    window.localStorage.removeItem(STORAGE_KEY);
+    const defaults = hardcodedDefaults();
     for (const token of ALL_TOKENS) {
       clearToken(token.key);
+      applyValue(token.key, defaults[token.key]!);
     }
-    setValues(readAllDefaults());
+    setValues(defaults);
+    void saverRef.current.saveNow(tokensForCss(defaults));
   }
 
   function handleResetToken(token: Token) {
+    const defaultValue = String(token.defaultValue);
     clearToken(token.key);
-    const defaultValue = readTokenDefault(token);
-    setValues((prev) => {
-      const next = { ...prev, [token.key]: defaultValue };
-      persist(next);
-      return next;
-    });
+    applyValue(token.key, defaultValue);
+    setValues((prev) => ({ ...prev, [token.key]: defaultValue }));
+    saverRef.current.scheduleOne(token.key, formatCssValue(token, defaultValue));
   }
 
-  async function handleSaveDefaults() {
-    setSaveState("saving");
-    try {
-      const tokens: Record<string, string> = {};
-      for (const token of ALL_TOKENS) {
-        tokens[token.key] = formatCssValue(token, values[token.key] ?? String(token.defaultValue));
-      }
-
-      const response = await fetch(THEME_SAVE_PATH, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokens }),
-      });
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? `HTTP ${response.status}`);
-      }
-
-      window.localStorage.removeItem(STORAGE_KEY);
-      setSaveState("saved");
-      window.setTimeout(() => window.location.reload(), 500);
-    } catch {
-      setSaveState("error");
-      window.setTimeout(() => setSaveState("idle"), 2800);
-    }
-  }
 
   function renderToken(token: Token) {
     return (
@@ -641,21 +614,9 @@ export function OperatorThemePanel() {
               })}
             </SettingsPanelGroup>
           ))}
-
-          <button
-            type="button"
-            onClick={() => void handleSaveDefaults()}
-            disabled={saveState === "saving" || saveState === "saved"}
-            className="mt-2 rounded-2xl border-2 border-white/15 bg-white/5 py-4 text-xl font-semibold uppercase tracking-wide text-white/90 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saveState === "saving"
-              ? "Сохранение…"
-              : saveState === "saved"
-                ? "Сохранено ✓"
-                : saveState === "error"
-                  ? "Ошибка — только dev-сервер"
-                  : "Сохранить по умолчанию"}
-          </button>
+          <p className="mt-2 rounded-2xl border-2 border-white/15 bg-white/5 px-4 py-4 text-center text-lg font-semibold uppercase tracking-wide text-white/80">
+            {themeSaveStatusLabel(saveState)}
+          </p>
         </div>
       ) : null}
     </div>

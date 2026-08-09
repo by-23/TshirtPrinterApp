@@ -8,6 +8,7 @@ export type DesktopUpdateStatus = {
 type UpdateApi = {
   getUpdateStatus?: () => Promise<DesktopUpdateStatus>;
   installUpdate?: () => Promise<{ ok: boolean; error?: string }>;
+  checkForUpdate?: () => Promise<{ ok: boolean; error?: string; status?: DesktopUpdateStatus }>;
   onUpdateStatus?: (callback: (status: DesktopUpdateStatus) => void) => () => void;
 };
 
@@ -38,4 +39,10 @@ export async function installDesktopUpdate(): Promise<{ ok: boolean; error?: str
   const api = getUpdateApi();
   if (!api?.installUpdate) return { ok: false, error: "not desktop" };
   return api.installUpdate();
+}
+
+export async function checkDesktopUpdate(): Promise<{ ok: boolean; error?: string; status?: DesktopUpdateStatus }> {
+  const api = getUpdateApi();
+  if (!api?.checkForUpdate) return { ok: false, error: "not desktop" };
+  return api.checkForUpdate();
 }

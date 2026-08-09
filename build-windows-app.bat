@@ -1,13 +1,14 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title Build Tshirt Printer Windows apps (Operator + Kiosk + combined setup)
+title Build Tshirt Printer Windows apps (Operator + Kiosk)
 
 echo.
-echo  Building Operator + Kiosk + unified installer...
+echo  Building Operator + Kiosk installers...
 echo  Packs apps\point-server\.env (cloud relay https://api.kyoma.uk).
-echo  Result: dist-combined\TshirtPrinter-Setup-*.exe
-echo  (choice: Operator or Kiosk, desktop shortcut)
+echo  Result:
+echo    apps\point-desktop\release\TshirtPrinterOperator-Setup-*.exe
+echo    apps\kiosk-desktop\release\TshirtPrinterKiosk-Setup-*.exe
 echo  This downloads Node.js runtime and may take several minutes.
 echo.
 
@@ -22,8 +23,7 @@ if not "%ERR%"=="0" (
 )
 
 echo  Done.
-echo  Unified setup: dist-combined\
-echo  Operator:      apps\point-desktop\release\
-echo  Kiosk:         apps\kiosk-desktop\release\
-if exist "%~dp0dist-combined" explorer "%~dp0dist-combined"
+echo  Operator: apps\point-desktop\release\
+echo  Kiosk:    apps\kiosk-desktop\release\
+if exist "%~dp0apps\point-desktop\release" explorer "%~dp0apps\point-desktop\release"
 pause

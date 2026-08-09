@@ -479,6 +479,24 @@ export function subscribeOrderEvents(callback: (event: OrderEvent) => void): () 
   };
 }
 
+/** Fired by Operator after a UI module zip is applied — reload SPA on all clients. */
+export const UI_RELOAD_EVENT = "ui:reload";
+
+export function subscribeUiReload(callback: (payload: { version?: string }) => void): () => void {
+  const socket = getSocket();
+  const handler = (payload: unknown) => {
+    const version =
+      payload && typeof payload === "object" && "version" in payload
+        ? String((payload as { version?: unknown }).version ?? "")
+        : undefined;
+    callback({ version: version || undefined });
+  };
+  socket.on(UI_RELOAD_EVENT, handler);
+  return () => {
+    socket.off(UI_RELOAD_EVENT, handler);
+  };
+}
+
 // --- Point config + pricing (Этап 7: cached from central-relay's `sync:snapshot`) ---
 
 /** Cached name/status/uploadMode — kiosk gates checkout on `status` (see `pointStatusStore.ts`). */

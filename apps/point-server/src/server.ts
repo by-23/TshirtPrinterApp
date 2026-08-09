@@ -1,11 +1,12 @@
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import multipart from "@fastify/multipart";
 import { healthRoutes } from "./routes/health.js";
 import { lanInfoRoutes } from "./routes/lanInfo.js";
+import { uiVersionRoutes } from "./routes/uiVersion.js";
 import { catalogRoutes } from "./modules/catalog/routes.js";
 import { catalogScrapeRoutes } from "./modules/catalog-scraper/routes.js";
 import { ordersRoutes } from "./modules/orders/routes.js";
@@ -67,6 +68,7 @@ export async function buildServer() {
   await app.register(multipart, { limits: { fileSize: MAX_REQUEST_BODY_BYTES } });
   await app.register(healthRoutes);
   await app.register(lanInfoRoutes);
+  await app.register(uiVersionRoutes);
   await app.register(catalogRoutes);
   await app.register(catalogScrapeRoutes);
   await app.register(ordersRoutes);
@@ -89,6 +91,11 @@ export async function buildServer() {
       maxAge: "1y",
       // Vite hashed assets under /assets/ are content-addressed.
       immutable: true,
+      setHeaders(res, filePath) {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        }
+      },
     });
     app.setNotFoundHandler((request, reply) => {
       if (request.method === "GET") {
@@ -99,7 +106,13 @@ export async function buildServer() {
           urlPath.startsWith("/operator") ||
           urlPath === "/index.html";
         if (isSpaRoute) {
-          return reply.type("text/html").sendFile("index.html", uiDist);
+          // Don't use sendFile here — @fastify/static overwrites Cache-Control with maxAge.
+          const indexPath = path.join(uiDist, "index.html");
+          const html = readFileSync(indexPath);
+          return reply
+            .type("text/html; charset=utf-8")
+            .header("Cache-Control", "no-store, no-cache, must-revalidate")
+            .send(html);
         }
       }
       return reply.status(404).send({ error: "Not Found" });

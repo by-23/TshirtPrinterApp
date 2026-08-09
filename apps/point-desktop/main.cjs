@@ -1,10 +1,27 @@
 const { app, BrowserWindow, ipcMain, screen, dialog, shell } = require("electron");
+
+// Client GPU: without this Electron dies ("GPU process isn't usable").
+// Heavy --use-gl=swiftshader stacks then crashed the renderer (blank window).
+// Keep the minimum that keeps the process alive.
+if (app.isPackaged) {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch("disable-gpu-sandbox");
+}
+
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 const { setupAutoUpdater } = require("./updater.cjs");
+const {
+  ensureModulesSeeded,
+  resetModulesIfShellChanged,
+  resolveUiDistPath: resolveModuleUiDist,
+  resolveServerRoot: resolveModuleServerRoot,
+  resolveNodeBinary: resolveModuleNodeBinary,
+} = require("./modules.cjs");
+const { setupModuleUpdater } = require("./moduleUpdater.cjs");
 
 // Never inherit a random PORT from the parent shell (breaks packaged launches).
 const POINT_PORT = Number(process.env.TSHIRT_POINT_PORT || 4000);
@@ -57,16 +74,69 @@ let operatorWindow = null;
 let splashWindow = null;
 /** @type {string} */
 let logFile = "";
+/** True until operator UI is open (or fatal error shown). Prevents silent quit if splash closes. */
+let bootInProgress = false;
+
+function resolveLogFile() {
+  try {
+    return path.join(app.getPath("userData"), "desktop.log");
+  } catch {
+    return path.join(os.tmpdir(), "tshirt-operator-desktop.log");
+  }
+}
 
 function log(message) {
   const line = `[${new Date().toISOString()}] ${message}`;
   console.log(line);
   try {
-    if (logFile) fs.appendFileSync(logFile, line + "\n", "utf8");
+    if (!logFile) logFile = resolveLogFile();
+    fs.mkdirSync(path.dirname(logFile), { recursive: true });
+    fs.appendFileSync(logFile, line + "\n", "utf8");
+  } catch {
+    try {
+      const fallback = path.join(os.tmpdir(), "tshirt-operator-desktop.log");
+      fs.appendFileSync(fallback, line + "\n", "utf8");
+    } catch {
+      // ignore
+    }
+  }
+}
+
+/** Always under %LOCALAPPDATA%\TshirtPrinter — easy path to ask the client for. */
+function clientBootLogPath() {
+  const base =
+    process.env.LOCALAPPDATA ||
+    path.join(os.homedir(), "AppData", "Local");
+  return path.join(base, "TshirtPrinter", "operator-boot.log");
+}
+
+function writeClientBoot(message) {
+  const line = `[${new Date().toISOString()}] ${message}\n`;
+  try {
+    const file = clientBootLogPath();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.appendFileSync(file, line, "utf8");
   } catch {
     // ignore
   }
 }
+
+// Survive crashes before app.whenReady (no splash / no dialog otherwise).
+process.on("uncaughtException", (err) => {
+  const msg = `uncaughtException: ${err && err.stack ? err.stack : String(err)}`;
+  log(msg);
+  writeClientBoot(msg);
+});
+process.on("unhandledRejection", (reason) => {
+  const msg = `unhandledRejection: ${reason && reason.stack ? reason.stack : String(reason)}`;
+  log(msg);
+  writeClientBoot(msg);
+});
+
+writeClientBoot(
+  `process start v${app.getVersion()} pid=${process.pid} packaged=${app.isPackaged} exec=${process.execPath}`,
+);
+log(`process start v${app.getVersion()} pid=${process.pid} packaged=${app.isPackaged}`);
 
 function resourcesRoot() {
   return app.isPackaged ? process.resourcesPath : path.join(__dirname, "resources");
@@ -134,7 +204,6 @@ function ensurePointDataDir(pointRoot) {
     fs.mkdirSync(path.join(dataDir, sub), { recursive: true });
   }
 
-  const seedRoot = path.join(pointRoot, "data");
   const targetDb = path.join(dataDir, "point.db");
   const legacyDir = path.join(app.getPath("userData"), "point-data");
   const legacyDb = path.join(legacyDir, "point.db");
@@ -155,30 +224,7 @@ function ensurePointDataDir(pointRoot) {
     }
   }
 
-  const seedDb = path.join(seedRoot, "point.db.seed");
-  if (!fs.existsSync(targetDb) && fs.existsSync(seedDb)) {
-    fs.copyFileSync(seedDb, targetDb);
-    log(`Seeded database from ${seedDb}`);
-  }
-
-  // Catalog + order PNGs must live next to the DB (not only in install dir).
-  const seedCatalog = path.join(seedRoot, "catalog");
-  const destCatalog = path.join(dataDir, "catalog");
-  if (dirHasEntries(seedCatalog) && !dirHasEntries(destCatalog)) {
-    fs.cpSync(seedCatalog, destCatalog, { recursive: true });
-    log(`Seeded catalog images into ${destCatalog}`);
-  } else if (dirHasEntries(seedCatalog)) {
-    const n = copyMissingTree(seedCatalog, destCatalog);
-    if (n > 0) log(`Merged ${n} missing catalog entries into ${destCatalog}`);
-  }
-
-  const seedOrders = path.join(seedRoot, "orders");
-  const destOrders = path.join(dataDir, "orders");
-  if (dirHasEntries(seedOrders)) {
-    const n = copyMissingTree(seedOrders, destOrders);
-    if (n > 0) log(`Seeded/merged ${n} order image folders into ${destOrders}`);
-  }
-
+  // Catalog + order PNGs live in DATA_DIR (sync / runtime) — never seed from pack.
   log(`Point DATA_DIR=${dataDir}`);
   return dataDir;
 }
@@ -339,16 +385,47 @@ function createFramelessWindow(display, url) {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      // sandbox:true crashed renderer on client (render-process-gone, blank UI)
+      // while /operator still returned HTTP 200.
+      sandbox: false,
     },
   });
   win.setMenuBarVisibility(false);
+
+  let crashReloads = 0;
+  const loadOperator = () => {
+    if (win.isDestroyed()) return;
+    const bust = url.includes("?") ? `${url}&_=${Date.now()}` : `${url}?_=${Date.now()}`;
+    log(`loadURL ${bust}`);
+    void win.loadURL(bust);
+  };
 
   win.webContents.on("did-fail-load", (_e, code, desc, validatedURL) => {
     log(`did-fail-load code=${code} desc=${desc} url=${validatedURL}`);
   });
   win.webContents.on("did-finish-load", () => {
-    log(`did-finish-load ${url}`);
+    log(`did-finish-load ${win.webContents.getURL()}`);
+  });
+  win.webContents.on("console-message", (_e, level, message, line, sourceId) => {
+    if (level >= 2) log(`renderer[${level}] ${message} (${sourceId}:${line})`);
+  });
+  win.webContents.on("render-process-gone", (_e, details) => {
+    log(
+      `render-process-gone reason=${details && details.reason} exit=${details && details.exitCode} reloads=${crashReloads}`,
+    );
+    if (win.isDestroyed()) return;
+    if (crashReloads < 2) {
+      crashReloads += 1;
+      setTimeout(loadOperator, 400);
+      return;
+    }
+    const html = `<!doctype html><html><body style="margin:0;font-family:Segoe UI,sans-serif;background:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;height:100vh;padding:24px;box-sizing:border-box">
+      <div style="max-width:520px">
+        <div style="font-size:20px;font-weight:700;margin-bottom:12px">Сбой отображения</div>
+        <div style="font-size:14px;line-height:1.5;opacity:.9">Окно открылось, но движок Chromium упал (render-process-gone). Сервер при этом может быть жив. Перезапустите приложение. Лог: desktop.log</div>
+      </div></body></html>`;
+    void win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    placeOnDisplay(win, display);
   });
 
   win.once("ready-to-show", () => {
@@ -364,11 +441,7 @@ function createFramelessWindow(display, url) {
     }
   }, 4000);
 
-  // Bust Chromium HTTP cache so UI updates after rebuilds are visible immediately.
-  const bust = url.includes("?") ? `${url}&_=${Date.now()}` : `${url}?_=${Date.now()}`;
-  win.webContents.session.clearCache().finally(() => {
-    if (!win.isDestroyed()) win.loadURL(bust);
-  });
+  loadOperator();
   win.on("closed", () => {
     if (win === kioskWindow) kioskWindow = null;
     if (win === operatorWindow) operatorWindow = null;
@@ -401,6 +474,7 @@ function showSplash(statusText) {
     resizable: false,
     maximizable: false,
     fullscreenable: false,
+    closable: !bootInProgress,
     alwaysOnTop: true,
     backgroundColor: "#111827",
     title: "Tshirt Printer",
@@ -408,6 +482,13 @@ function showSplash(statusText) {
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
   splashWindow.setMenuBarVisibility(false);
+  // Closing the only window during boot used to fire window-all-closed → silent app.quit().
+  splashWindow.on("close", (event) => {
+    if (bootInProgress) {
+      event.preventDefault();
+      log("splash close ignored while bootInProgress");
+    }
+  });
   const html = `<!doctype html><html><body style="margin:0;font-family:Segoe UI,sans-serif;background:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;height:100vh;">
     <div style="text-align:center;padding:24px">
       <div style="font-size:22px;font-weight:700;margin-bottom:12px">Tshirt Printer Operator</div>
@@ -468,29 +549,120 @@ function waitForHealth(timeoutMs = 60_000) {
 }
 
 function resolveNodeBinary() {
-  const packagedNode = path.join(resourcesRoot(), "node", "node.exe");
-  if (fs.existsSync(packagedNode)) return packagedNode;
-  return process.env.NODE_BINARY || "node";
+  return resolveModuleNodeBinary(resourcesRoot());
 }
 
 function resolvePointServerRoot() {
-  const packaged = path.join(resourcesRoot(), "point-server");
-  if (fs.existsSync(path.join(packaged, "dist", "index.js"))) return packaged;
+  const fromModules = resolveModuleServerRoot(resourcesRoot());
+  if (fromModules) return fromModules;
   return path.resolve(__dirname, "..", "point-server");
 }
 
-async function ensurePointServer() {
+function resolveUiDist() {
+  const fromModules = resolveModuleUiDist(resourcesRoot());
+  if (fromModules) return fromModules;
+  const bundled = path.join(resourcesRoot(), "point-server", "ui-dist");
+  if (fs.existsSync(path.join(bundled, "index.html"))) return bundled;
+  return path.join(resolvePointServerRoot(), "ui-dist");
+}
+
+function reloadAllUiWindows() {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue;
+    // Skip splash (no URL / about:blank).
+    const url = win.webContents.getURL();
+    if (!url || url === "about:blank" || url.startsWith("data:")) continue;
+    win.webContents.reloadIgnoringCache();
+  }
+}
+
+/** Fail boot early if the SPA HTML is missing — health alone is not enough. */
+function probeOperatorUi() {
+  return new Promise((resolve, reject) => {
+    const req = http.get(`${POINT_ORIGIN}/operator?native=1&_probe=1`, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => {
+        const body = Buffer.concat(chunks).toString("utf8");
+        const ok =
+          res.statusCode === 200 &&
+          /<div[^>]+id=["']root["']/i.test(body) &&
+          /<script/i.test(body);
+        log(
+          `probe /operator status=${res.statusCode} bytes=${body.length} hasRoot=${ok}`,
+        );
+        if (!ok) {
+          reject(
+            new Error(
+              `Operator UI HTML invalid (HTTP ${res.statusCode}, ${body.length} bytes). UI_DIST broken on this PC.`,
+            ),
+          );
+          return;
+        }
+        resolve();
+      });
+    });
+    req.on("error", (err) => reject(err));
+    req.setTimeout(5000, () => {
+      req.destroy();
+      reject(new Error("probe /operator timed out"));
+    });
+  });
+}
+
+function notifyUiReload() {
   try {
-    await waitForHealth(1500);
-    log("point-server already healthy");
-    return;
+    const req = http.request(
+      `${POINT_ORIGIN}/internal/ui-reload`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, timeout: 3000 },
+      (res) => res.resume(),
+    );
+    req.on("error", () => undefined);
+    req.end("{}");
   } catch {
-    // not up yet
+    // ignore
+  }
+}
+
+async function restartPointServer() {
+  stopPointServer();
+  await new Promise((r) => setTimeout(r, 400));
+  await ensurePointServer();
+  reloadAllUiWindows();
+}
+
+async function ensurePointServer() {
+  // Only reuse an already-healthy port if WE own the child process.
+  // A stray `pnpm dev` on :4000 used to make packaged Operator skip spawn,
+  // then look "updated" while serving the wrong binary.
+  if (pointProcess && !pointProcess.killed) {
+    try {
+      await waitForHealth(1500);
+      log("point-server already healthy");
+      return;
+    } catch {
+      // fall through and restart
+    }
   }
 
+  // If something else (Vite-backed pnpm point-server) holds :4000, kill it
+  // before we spawn — otherwise waitForHealth succeeds on the WRONG process.
+  log(`ensurePointServer: freeing port ${POINT_PORT} if foreign`);
+  await freePointPortIfForeign();
+
+  log("ensurePointServer: seeding modules from resources (first run may take a while)");
+  resetModulesIfShellChanged({ shellVersion: app.getVersion(), log });
+  ensureModulesSeeded({ resourcesRoot: resourcesRoot(), log });
+
   const pointRoot = resolvePointServerRoot();
+  if (!pointRoot) {
+    throw new Error(
+      `point-server root missing under resources and modules. resources=${resourcesRoot()}`,
+    );
+  }
   const entry = path.join(pointRoot, "dist", "index.js");
   const nodeModules = path.join(pointRoot, "node_modules");
+  log(`ensurePointServer: root=${pointRoot}`);
   if (!fs.existsSync(entry)) {
     throw new Error(`point-server build missing: ${entry}`);
   }
@@ -501,19 +673,23 @@ async function ensurePointServer() {
   }
 
   const nodeBin = resolveNodeBinary();
-  const uiDist = path.join(pointRoot, "ui-dist");
+  if (!nodeBin || (path.isAbsolute(nodeBin) && !fs.existsSync(nodeBin))) {
+    throw new Error(`bundled node.exe missing: ${nodeBin || "(empty)"}`);
+  }
+  const uiDist = resolveUiDist();
   // One writable root for DB + catalog + order images on any Windows PC:
   // %LOCALAPPDATA%\TshirtPrinter\data (created/seeded if missing).
   const dataDir = ensurePointDataDir(pointRoot);
   const dbPath = path.join(dataDir, "point.db");
 
   const serverLog = path.join(app.getPath("userData"), "point-server.log");
+  log(`ensurePointServer: opening server log ${serverLog}`);
   const outFd = fs.openSync(serverLog, "a");
 
   const publicLanHost = resolvePublicLanHost();
   const syncEnv = resolveSyncEnv(pointRoot);
   log(
-    `Starting point-server: node=${nodeBin} cwd=${pointRoot} DATA_DIR=${dataDir} PUBLIC_LAN_HOST=${publicLanHost || "(none)"} sync=${syncEnv.CENTRAL_RELAY_URL ? "on" : "off"}`,
+    `Starting point-server: node=${nodeBin} cwd=${pointRoot} UI_DIST_PATH=${uiDist} DATA_DIR=${dataDir} PUBLIC_LAN_HOST=${publicLanHost || "(none)"} sync=${syncEnv.CENTRAL_RELAY_URL ? "on" : "off"}`,
   );
   pointProcess = spawn(nodeBin, [entry], {
     cwd: pointRoot,
@@ -538,17 +714,80 @@ async function ensurePointServer() {
   });
 
   await waitForHealth();
+  if (!pointProcess || pointProcess.killed) {
+    throw new Error(
+      `point-server exited before becoming ready (port ${POINT_PORT} may be taken by another process)`,
+    );
+  }
   log("point-server is healthy");
 }
 
-function stopPointServer() {
-  if (!pointProcess || pointProcess.killed) return;
-  try {
-    pointProcess.kill();
-  } catch {
-    // ignore
+/** Kill any non-owned listener on POINT_PORT (typical: monorepo `pnpm point-server`). */
+function freePointPortIfForeign() {
+  return new Promise((resolve) => {
+    if (process.platform !== "win32") {
+      resolve();
+      return;
+    }
+    const ps = `
+$ErrorActionPreference='SilentlyContinue'
+$conns = Get-NetTCPConnection -LocalPort ${POINT_PORT} -State Listen
+foreach ($c in $conns) {
+  $procId = $c.OwningProcess
+  if ($procId -and $procId -ne ${process.pid}) {
+    Write-Output "kill $procId"
+    Stop-Process -Id $procId -Force
   }
+}
+`;
+    const child = spawn(
+      "powershell",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps],
+      { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
+    );
+    let out = "";
+    child.stdout.on("data", (d) => {
+      out += String(d);
+    });
+    child.on("exit", () => {
+      if (out.trim()) log(`freed :${POINT_PORT}: ${out.trim()}`);
+      setTimeout(resolve, 800);
+    });
+    child.on("error", () => resolve());
+  });
+}
+
+function stopPointServer() {
+  if (!pointProcess) return;
+  const child = pointProcess;
   pointProcess = null;
+  const pid = child.pid;
+  try {
+    if (process.platform === "win32" && pid) {
+      // Kill the whole tree — node + any workers holding module files.
+      spawn("taskkill", ["/pid", String(pid), "/T", "/F"], {
+        windowsHide: true,
+        stdio: "ignore",
+        detached: true,
+      }).unref();
+    } else {
+      child.kill();
+    }
+  } catch {
+    try {
+      child.kill();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+async function prepareShellInstall() {
+  // Only stop point-server here. Do NOT taskkill our own exe — that races
+  // with the external update helper. The helper kills leftovers after we exit.
+  log("prepareShellInstall: stopping point-server");
+  stopPointServer();
+  await new Promise((r) => setTimeout(r, 800));
 }
 
 function registerIpc() {
@@ -599,6 +838,7 @@ function registerIpc() {
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   // Do not silently disappear — previous instance may be stuck invisible.
+  log("second instance: single-instance lock busy — showing dialog and quitting");
   app.whenReady().then(() => {
     dialog.showMessageBoxSync({
       type: "warning",
@@ -623,43 +863,75 @@ if (!gotLock) {
   });
 
   app.whenReady().then(async () => {
-    logFile = path.join(app.getPath("userData"), "desktop.log");
+    logFile = resolveLogFile();
+    log(`App ready packaged=${app.isPackaged} version=${app.getVersion()} resources=${resourcesRoot()} log=${logFile}`);
+    bootInProgress = true;
     try {
-      fs.mkdirSync(app.getPath("userData"), { recursive: true });
-      fs.writeFileSync(logFile, "", "utf8");
-    } catch {
-      // ignore
-    }
-    log(`App ready packaged=${app.isPackaged} resources=${resourcesRoot()}`);
-    registerIpc();
-    const updater = setupAutoUpdater({
-      log,
-      BrowserWindow,
-      ipcMain,
-      channel: "operator",
-    });
+      log("boot: registerIpc");
+      registerIpc();
+      log("boot: setupAutoUpdater");
+      const updater = setupAutoUpdater({
+        log,
+        BrowserWindow,
+        ipcMain,
+        channel: "operator",
+        prepareInstall: prepareShellInstall,
+      });
+      log("boot: setupModuleUpdater");
+      const moduleUpdater = setupModuleUpdater({
+        log,
+        BrowserWindow,
+        ipcMain,
+        beforeApply: async (zone) => {
+          if (zone === "ui" || zone === "server" || zone === "runtime") {
+            // Windows locks files under modules/server while point-server runs —
+            // stop first or rename/swap hangs forever ("Обновление…").
+            stopPointServer();
+          }
+        },
+        onApplied: async (zone) => {
+          if (zone === "ui" || zone === "server" || zone === "runtime") {
+            await ensurePointServer();
+            reloadAllUiWindows();
+            await new Promise((r) => setTimeout(r, 800));
+            notifyUiReload();
+          }
+        },
+      });
 
-    showSplash("Запуск сервера точки…");
-    try {
+      log("boot: showSplash");
+      showSplash("Запуск сервера точки…");
       await ensurePointServer();
+      showSplash("Проверка интерфейса…");
+      await probeOperatorUi();
       showSplash("Открытие интерфейса оператора…");
       openUiWindows();
+      bootInProgress = false;
       updater.start();
+      moduleUpdater.start();
+      log("boot: complete");
     } catch (err) {
       const message = err && err.message ? err.message : String(err);
       log(`FATAL: ${message}`);
-      closeSplash();
+      // Show error while splash still exists — closing splash first used to
+      // trigger window-all-closed → app.quit() and swallow the dialog.
       dialog.showErrorBox(
         "Tshirt Printer Operator",
         `Не удалось запустить точку.\n\n${message}\n\nЛог: ${logFile}\nЛог сервера: ${path.join(app.getPath("userData"), "point-server.log")}\n\nЕсли киоск на другом ПК не подключается — откройте порт ${POINT_PORT} в брандмауэре Windows.`,
       );
+      bootInProgress = false;
+      closeSplash();
       stopPointServer();
       app.quit();
     }
   });
 
   app.on("window-all-closed", () => {
-    // Keep running only if splash is gone and both UI windows closed.
+    // During boot the splash is the only window; closing it must not kill startup.
+    if (bootInProgress) {
+      log("window-all-closed ignored while bootInProgress");
+      return;
+    }
     if (splashWindow && !splashWindow.isDestroyed()) return;
     stopPointServer();
     app.quit();

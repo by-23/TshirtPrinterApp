@@ -2,8 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App.js";
-import { applyStoredUiFont } from "./lib/fonts.js";
 import { setReleaseMode } from "./lib/releaseMode.js";
+import { clearThemeOverrideStorage } from "./lib/themeCssSave.js";
 import "./lib/i18n.js";
 import "./index.css";
 
@@ -29,7 +29,44 @@ try {
   // ignore
 }
 
-applyStoredUiFont();
+clearThemeOverrideStorage();
+
+// Kiosk/operator SPAs load from Operator's point-server. When Operator applies
+// a UI module, it broadcasts `ui:reload` — never self-update on the kiosk shell.
+void import("./lib/pointServer.js").then(({ subscribeUiReload, POINT_SERVER_URL }) => {
+  const hardReload = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("_ui", String(Date.now()));
+    window.location.replace(url.toString());
+  };
+
+  subscribeUiReload(() => {
+    hardReload();
+  });
+
+  // Fallback if the socket miss fires (reconnect gaps): poll UI version.
+  let knownVersion: string | null = null;
+  const poll = async () => {
+    try {
+      const res = await fetch(`${POINT_SERVER_URL}/ui-version?_=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const body = (await res.json()) as { version?: string | null };
+      const next = body.version ?? null;
+      if (knownVersion == null) {
+        knownVersion = next;
+        return;
+      }
+      if (next && next !== knownVersion) {
+        knownVersion = next;
+        hardReload();
+      }
+    } catch {
+      // offline / server restarting
+    }
+  };
+  void poll();
+  window.setInterval(() => void poll(), 15_000);
+});
 
 function isScrollableAxis(element: HTMLElement, axis: "x" | "y"): boolean {
   const style = getComputedStyle(element);

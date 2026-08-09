@@ -133,22 +133,7 @@ if (Test-Path $assetsSrc) {
   Copy-Item -Recurse -Force $assetsSrc (Join-Path $pointPack "assets")
 }
 
-# Seed media for first launch on any PC -> copied into %LOCALAPPDATA%\TshirtPrinter\data
-$dataSrc = Join-Path $pointSrc "data"
-$packData = Join-Path $pointPack "data"
-$srcDb = Join-Path $dataSrc "point.db"
-if (Test-Path $srcDb) {
-  Copy-Item -Force $srcDb (Join-Path $packData "point.db.seed")
-} elseif (Test-Path (Join-Path $dataSrc "point.db.seed")) {
-  Copy-Item -Force (Join-Path $dataSrc "point.db.seed") (Join-Path $packData "point.db.seed")
-}
-foreach ($subdir in @("catalog", "orders", "ai-models", "ai-style-previews")) {
-  $from = Join-Path $dataSrc $subdir
-  if (Test-Path $from) {
-    Copy-Item -Recurse -Force $from (Join-Path $packData $subdir)
-  }
-}
-
+# Do NOT ship catalog/orders/data — points + admin sync own that.
 # Guard: fail the build if top-level deps are still symlinks (would vanish in the exe).
 $symlinkHit = cmd /c "dir /AL `"$pointPack\node_modules`" 2>nul"
 if ($symlinkHit -match "SYMLINK") {
@@ -268,36 +253,30 @@ try {
 $releaseDir = Join-Path $desktop "release"
 $kioskReleaseDir = Join-Path $kioskDesktop "release"
 
-Write-Step "Build combined installer (Operator or Kiosk in one setup.exe)"
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root "scripts\build-combined-installer.ps1") `
-  -OutDir (Join-Path $Root "dist-combined")
-if ($LASTEXITCODE -ne 0) { throw "combined installer failed" }
+Write-Step "Operator force installer (no NSIS Retry dialog)"
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root "scripts\make-operator-force-installer.ps1")
+if ($LASTEXITCODE -ne 0) { throw "make-operator-force-installer failed" }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  BUILD COMPLETE"
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Combined installer (give this file to the client):"
-Get-ChildItem (Join-Path $Root "dist-combined") -Filter "TshirtPrinter-Setup-*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+Write-Host "Operator for client (USE THIS — run INSTALL.bat inside):" -ForegroundColor Green
+Get-ChildItem $Root -Filter "dist-operator-install-*.zip" -ErrorAction SilentlyContinue | ForEach-Object {
   $mb = [math]::Round($_.Length / 1MB, 1)
   Write-Host ("  {0}  ({1} MB)" -f $_.FullName, $mb) -ForegroundColor Green
 }
+Write-Host "Folder: $(Join-Path $Root 'dist-operator-install')"
 Write-Host ""
-Write-Host "Operator artifacts:"
-Get-ChildItem $releaseDir -File -ErrorAction SilentlyContinue | ForEach-Object {
+Write-Host "Kiosk NSIS installer:" -ForegroundColor Green
+Get-ChildItem $kioskReleaseDir -Filter "TshirtPrinterKiosk-Setup-*-win-x64.exe" -ErrorAction SilentlyContinue | ForEach-Object {
   $mb = [math]::Round($_.Length / 1MB, 1)
-  Write-Host ("  {0}  ({1} MB)" -f $_.Name, $mb)
-}
-Write-Host "Folder: $releaseDir"
-Write-Host ""
-Write-Host "Kiosk artifacts:"
-Get-ChildItem $kioskReleaseDir -File -ErrorAction SilentlyContinue | ForEach-Object {
-  $mb = [math]::Round($_.Length / 1MB, 1)
-  Write-Host ("  {0}  ({1} MB)" -f $_.Name, $mb)
+  Write-Host ("  {0}  ({1} MB)" -f $_.FullName, $mb) -ForegroundColor Green
 }
 Write-Host "Folder: $kioskReleaseDir"
 Write-Host ""
+Write-Host "(NSIS Operator setup still in $releaseDir — prefer force zip above.)"
 Write-Host "To publish updates to GitHub Releases:"
 Write-Host "  powershell -File scripts\publish-windows-update.ps1"
 Write-Host "  (or -SkipBuild if artifacts above are already fresh)"

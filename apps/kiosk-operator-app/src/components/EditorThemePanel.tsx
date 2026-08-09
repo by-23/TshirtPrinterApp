@@ -1,9 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   POPULAR_SCROLL_CSS_VARS,
   syncAllPopularScrollElements,
 } from "../editor/popularScrollTheme.js";
+import {
+  clearThemeOverrideStorage,
+  createThemeCssSaver,
+  themeSaveStatusLabel,
+  type ThemeSaveState,
+} from "../lib/themeCssSave.js";
 import { GripVertical, SlidersVertical } from "./icons.js";
 import {
   SettingsPanelGroup,
@@ -15,8 +21,6 @@ import {
 } from "./settingsPanelUi.js";
 import { useDraggablePanel } from "../lib/useDraggablePanel.js";
 import { THEME_PANEL_CHROME_ATTR, useThemePickMode } from "../lib/themePick.js";
-
-const THEME_SAVE_PATH = "/__kiosk/save-theme-defaults";
 
 interface ColorToken {
   key: string;
@@ -504,15 +508,15 @@ const SECTIONS: Section[] = [
         step: 1,
         unit: "px",
       },
-      { key: "--editor-strip-bg", label: "Фон", type: "color", defaultValue: "#0b0f1e" },
-      { key: "--editor-strip-border-color", label: "Обводка — цвет", type: "color", defaultValue: "#1b2440" },
+      { key: "--editor-strip-bg", label: "Фон", type: "color", defaultValue: "#02060d" },
+      { key: "--editor-strip-border-color", label: "Обводка — цвет", type: "color", defaultValue: "#1c1e26" },
       { key: "--editor-strip-border-width", label: "Обводка — толщина", defaultValue: 1.5, ...BORDER_WIDTH_RANGE },
       { key: "--editor-strip-border-opacity", label: "Обводка — прозрачность", defaultValue: 1, ...OPACITY_RANGE },
       { key: "--editor-strip-height", label: "Высота блока (0 = авто)", defaultValue: 0, ...BLOCK_HEIGHT_RANGE },
       {
         key: "--editor-strip-offset-y",
         label: "Смещение по высоте (− вверх)",
-        defaultValue: 0,
+        defaultValue: -100,
         type: "range",
         min: -400,
         max: 200,
@@ -529,10 +533,10 @@ const SECTIONS: Section[] = [
         step: 1,
         unit: "px",
       },
-      { key: "--editor-strip-btn-bg", label: "Кнопки +/− — фон", type: "color", defaultValue: "#131a2e" },
-      { key: "--editor-strip-btn-width", label: "Кнопки +/− — ширина", defaultValue: 32, ...SIZE_RANGE },
+      { key: "--editor-strip-btn-bg", label: "Кнопки +/− — фон", type: "color", defaultValue: "#02060d" },
+      { key: "--editor-strip-btn-width", label: "Кнопки +/− — ширина", defaultValue: 24, ...SIZE_RANGE },
       { key: "--editor-strip-btn-height", label: "Кнопки +/− — высота", defaultValue: 32, ...SIZE_RANGE },
-      { key: "--editor-strip-btn-radius", label: "Кнопки +/− — скругление", defaultValue: 999, ...RADIUS_FULL },
+      { key: "--editor-strip-btn-radius", label: "Кнопки +/− — скругление", defaultValue: 0, ...RADIUS_FULL },
       { key: "--editor-strip-label-font-size", label: "Подпись — размер", defaultValue: 12, ...FONT_RANGE },
       { key: "--editor-strip-value-font-size", label: "Значение — размер", defaultValue: 16, ...FONT_RANGE },
     ],
@@ -781,7 +785,6 @@ const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
 
 const ALL_TOKENS: Token[] = SECTIONS.flatMap((section) => section.tokens);
 const TOKEN_BY_KEY = new Map(ALL_TOKENS.map((token) => [token.key, token]));
-const STORAGE_KEY = "kiosk-editor-theme-overrides-v2";
 const SCOPE_SELECTOR = ".editor-theme-root";
 
 function normalizeValue(token: Token, value: string): string {
@@ -795,10 +798,11 @@ function normalizeValue(token: Token, value: string): string {
 function formatCssValue(token: Token, value: string): string {
   const normalized = normalizeValue(token, value);
   if (token.key.endsWith("-height") && normalized === "0") return "auto";
+  // Control strip: 0 = fixed canvas card width (not full page).
   if (token.key === "--editor-strip-width" && normalized === "0") {
     return "var(--editor-canvas-card-width)";
   }
-  // Full-bleed bottom strips (popular / tips): 0 means 100% page width.
+  // Popular / Tips: 0 means 100% of the editor band.
   if (
     (token.key === "--editor-popular-block-width" || token.key === "--editor-tips-block-width") &&
     normalized === "0"
@@ -812,7 +816,9 @@ function formatCssValue(token: Token, value: string): string {
 
 function cssRawToState(token: Token, raw: string): string {
   if (token.key.endsWith("-height") && raw === "auto") return "0";
-  if (token.key === "--editor-strip-width" && raw === "var(--editor-canvas-card-width)") return "0";
+  if (token.key === "--editor-strip-width" && (raw === "var(--editor-canvas-card-width)" || raw === "100%")) {
+    return "0";
+  }
   if (
     (token.key === "--editor-popular-block-width" || token.key === "--editor-tips-block-width") &&
     raw === "100%"
@@ -853,28 +859,20 @@ function getBaselineValues(): Record<string, string> {
   return readAllDefaults();
 }
 
-function loadStoredValues(): Record<string, string> {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    if (parsed["--editor-popular-tile-gap"] && !parsed["--editor-popular-image-gap"]) {
-      parsed["--editor-popular-image-gap"] = parsed["--editor-popular-tile-gap"];
-    }
-    // Migrate previous defaults (temporary 1000px / prior 500px) to the wider panel.
-    if (parsed["--editor-tool-popover-width"] === "1000" || parsed["--editor-tool-popover-width"] === "500") {
-      parsed["--editor-tool-popover-width"] = "580";
-    }
-    const normalized: Record<string, string> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      const token = TOKEN_BY_KEY.get(key);
-      if (!token) continue;
-      normalized[key] = normalizeValue(token, value);
-    }
-    return normalized;
-  } catch {
-    return {};
+function hardcodedDefaults(): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const token of ALL_TOKENS) {
+    values[token.key] = String(token.defaultValue);
   }
+  return values;
+}
+
+function tokensForCss(values: Record<string, string>): Record<string, string> {
+  const tokens: Record<string, string> = {};
+  for (const token of ALL_TOKENS) {
+    tokens[token.key] = formatCssValue(token, values[token.key] ?? String(token.defaultValue));
+  }
+  return tokens;
 }
 
 function applyValue(key: string, value: string) {
@@ -903,25 +901,17 @@ function clearToken(key: string) {
 }
 
 /**
- * Floating "design panel" for the editor screen — a sibling to the main
- * ThemePanel (kiosk home), but scoped to `/kiosk/editor` and to the sizes
- * (width/height tracked independently), roundings and colors of every block
- * there, each tunable on its own. Same mechanics as ThemePanel: reads and
- * writes the `--editor-*` CSS custom properties declared in `index.css`,
- * persists to localStorage, and «Сохранить по умолчанию» writes the current
- * values into `index.css` (dev server only). Every numeric token can be
- * dragged via its slider or typed directly into the adjoining number field.
+ * Floating design panel for `/kiosk/editor`. Every change writes `--editor-*`
+ * tokens straight into `index.css` (dev server only) — no localStorage staging.
  */
 export function EditorThemePanel() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const { containerRef, style: dragStyle, dragHandleProps } = useDraggablePanel("editor-theme-panel-position");
-  const [values, setValues] = useState<Record<string, string>>(() => ({
-    ...getBaselineValues(),
-    ...loadStoredValues(),
-  }));
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [values, setValues] = useState<Record<string, string>>(() => getBaselineValues());
+  const [saveState, setSaveState] = useState<ThemeSaveState>("idle");
+  const saverRef = useRef(createThemeCssSaver({ onState: setSaveState }));
   const {
     isOpen: isSectionOpen,
     toggle: toggleSection,
@@ -941,6 +931,12 @@ export function EditorThemePanel() {
       requestAnimationFrame(() => scrollToSection(sectionId));
     },
   });
+
+  useEffect(() => {
+    clearThemeOverrideStorage();
+    const saver = saverRef.current;
+    return () => saver.dispose();
+  }, []);
 
   useEffect(() => {
     if (!open) setActiveSectionId(null);
@@ -975,64 +971,31 @@ export function EditorThemePanel() {
 
   if (!isEditorRoute) return null;
 
-  function persist(next: Record<string, string>) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  }
-
   function handleChange(key: string, value: string) {
-    setValues((prev) => {
-      const next = { ...prev, [key]: value };
-      persist(next);
-      return next;
-    });
+    const token = TOKEN_BY_KEY.get(key);
+    setValues((prev) => ({ ...prev, [key]: value }));
     applyValue(key, value);
+    if (token) {
+      saverRef.current.scheduleOne(key, formatCssValue(token, value));
+    }
   }
 
   function handleReset() {
-    window.localStorage.removeItem(STORAGE_KEY);
+    const defaults = hardcodedDefaults();
     for (const token of ALL_TOKENS) {
       clearToken(token.key);
+      applyValue(token.key, defaults[token.key]!);
     }
-    const defaults = readAllDefaults();
     setValues(defaults);
+    void saverRef.current.saveNow(tokensForCss(defaults));
   }
 
   function handleResetToken(token: Token) {
+    const defaultValue = String(token.defaultValue);
     clearToken(token.key);
-    const defaultValue = readTokenDefault(token);
-    setValues((prev) => {
-      const next = { ...prev, [token.key]: defaultValue };
-      persist(next);
-      return next;
-    });
-  }
-
-  async function handleSaveDefaults() {
-    setSaveState("saving");
-    try {
-      const tokens: Record<string, string> = {};
-      for (const token of ALL_TOKENS) {
-        tokens[token.key] = formatCssValue(token, values[token.key] ?? String(token.defaultValue));
-      }
-
-      const response = await fetch(THEME_SAVE_PATH, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokens }),
-      });
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error ?? `HTTP ${response.status}`);
-      }
-
-      window.localStorage.removeItem(STORAGE_KEY);
-      setSaveState("saved");
-      window.setTimeout(() => window.location.reload(), 500);
-    } catch {
-      setSaveState("error");
-      window.setTimeout(() => setSaveState("idle"), 2800);
-    }
+    applyValue(token.key, defaultValue);
+    setValues((prev) => ({ ...prev, [token.key]: defaultValue }));
+    saverRef.current.scheduleOne(token.key, formatCssValue(token, defaultValue));
   }
 
   function renderToken(token: Token) {
@@ -1147,20 +1110,9 @@ export function EditorThemePanel() {
             </SettingsPanelGroup>
           ))}
 
-          <button
-            type="button"
-            onClick={() => void handleSaveDefaults()}
-            disabled={saveState === "saving" || saveState === "saved"}
-            className="mt-2 rounded-2xl border-2 border-white/15 bg-white/5 py-4 text-xl font-semibold uppercase tracking-wide text-white/90 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saveState === "saving"
-              ? "Сохранение…"
-              : saveState === "saved"
-                ? "Сохранено ✓"
-                : saveState === "error"
-                  ? "Ошибка — только dev-сервер"
-                  : "Сохранить по умолчанию"}
-          </button>
+          <p className="mt-2 rounded-2xl border-2 border-white/15 bg-white/5 px-4 py-4 text-center text-lg font-semibold uppercase tracking-wide text-white/80">
+            {themeSaveStatusLabel(saveState)}
+          </p>
         </div>
       ) : null}
     </div>

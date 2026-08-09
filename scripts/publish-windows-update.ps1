@@ -60,18 +60,87 @@ if (-not (Test-Path $kioskYml)) {
   throw "Missing $kioskYml - rebuild Kiosk (channel must be 'kiosk')"
 }
 
-# Collect uploadable artifacts (skip folders / unpacked).
-$files = @()
-foreach ($dir in @($operatorRelease, $kioskRelease)) {
-  Get-ChildItem $dir -File | Where-Object {
-    $_.Extension -in @(".exe", ".yml", ".yaml", ".zip", ".blockmap") -or
-    $_.Name -like "*.exe.blockmap"
-  } | ForEach-Object { $files += $_.FullName }
+# Collect uploadable artifacts; rename to hyphenated names so they match *.yml
+# (gh release upload turns spaces into dots, which breaks electron-updater).
+function Get-HyphenatedName([string]$name) {
+  return ($name -replace "\s+", "-")
 }
 
-if ($files.Count -lt 4) {
-  throw "Too few release artifacts found. Expected NSIS + yml (+ blockmap) for both apps."
+function Stage-ReleaseFile([string]$sourcePath) {
+  $dir = Split-Path $sourcePath -Parent
+  $leaf = Split-Path $sourcePath -Leaf
+  $targetName = Get-HyphenatedName $leaf
+  $targetPath = Join-Path $dir $targetName
+  if ($leaf -ne $targetName) {
+    Copy-Item -Force $sourcePath $targetPath
+  }
+  return $targetPath
 }
+
+function Patch-YmlPaths([string]$ymlPath) {
+  $text = Get-Content $ymlPath -Raw
+  # electron-builder already writes hyphenated / Setup paths; keep as-is if present.
+  # Rewrite any legacy space-containing product paths just in case.
+  $text = [regex]::Replace($text, "Tshirt Printer Operator", "Tshirt-Printer-Operator")
+  $text = [regex]::Replace($text, "Tshirt Printer Kiosk", "Tshirt-Printer-Kiosk")
+  Set-Content -Path $ymlPath -Value $text -Encoding ASCII -NoNewline
+}
+
+function Resolve-ReleaseArtifact([string]$dir, [string[]]$candidates) {
+  foreach ($name in $candidates) {
+    $path = Join-Path $dir $name
+    if (Test-Path $path) { return $path }
+  }
+  throw "Missing artifact in $dir. Tried: $($candidates -join ', ')"
+}
+
+$files = @()
+$operatorExe = Resolve-ReleaseArtifact $operatorRelease @(
+  "TshirtPrinterOperator-Setup-$operatorVersion-win-x64.exe",
+  "Tshirt Printer Operator-$operatorVersion-win-x64.exe",
+  "Tshirt-Printer-Operator-$operatorVersion-win-x64.exe"
+)
+$operatorBlockmap = Resolve-ReleaseArtifact $operatorRelease @(
+  "TshirtPrinterOperator-Setup-$operatorVersion-win-x64.exe.blockmap",
+  "Tshirt Printer Operator-$operatorVersion-win-x64.exe.blockmap",
+  "Tshirt-Printer-Operator-$operatorVersion-win-x64.exe.blockmap"
+)
+$operatorZip = Resolve-ReleaseArtifact $operatorRelease @(
+  "TshirtPrinterOperator-Setup-$operatorVersion-win-x64.zip",
+  "Tshirt Printer Operator-$operatorVersion-win-x64.zip",
+  "Tshirt-Printer-Operator-$operatorVersion-win-x64.zip"
+)
+$kioskExe = Resolve-ReleaseArtifact $kioskRelease @(
+  "TshirtPrinterKiosk-Setup-$kioskVersion-win-x64.exe",
+  "Tshirt Printer Kiosk-$kioskVersion-win-x64.exe",
+  "Tshirt-Printer-Kiosk-$kioskVersion-win-x64.exe"
+)
+$kioskBlockmap = Resolve-ReleaseArtifact $kioskRelease @(
+  "TshirtPrinterKiosk-Setup-$kioskVersion-win-x64.exe.blockmap",
+  "Tshirt Printer Kiosk-$kioskVersion-win-x64.exe.blockmap",
+  "Tshirt-Printer-Kiosk-$kioskVersion-win-x64.exe.blockmap"
+)
+$kioskZip = Resolve-ReleaseArtifact $kioskRelease @(
+  "TshirtPrinterKiosk-Setup-$kioskVersion-win-x64.zip",
+  "Tshirt Printer Kiosk-$kioskVersion-win-x64.zip",
+  "Tshirt-Printer-Kiosk-$kioskVersion-win-x64.zip"
+)
+
+$operatorYmlPath = Join-Path $operatorRelease "operator.yml"
+$kioskYmlPath = Join-Path $kioskRelease "kiosk.yml"
+if (-not (Test-Path $operatorYmlPath)) { throw "Missing $operatorYmlPath" }
+if (-not (Test-Path $kioskYmlPath)) { throw "Missing $kioskYmlPath" }
+Patch-YmlPaths $operatorYmlPath
+Patch-YmlPaths $kioskYmlPath
+
+$files += $operatorYmlPath
+$files += (Stage-ReleaseFile $operatorExe)
+$files += (Stage-ReleaseFile $operatorBlockmap)
+$files += (Stage-ReleaseFile $operatorZip)
+$files += $kioskYmlPath
+$files += (Stage-ReleaseFile $kioskExe)
+$files += (Stage-ReleaseFile $kioskBlockmap)
+$files += (Stage-ReleaseFile $kioskZip)
 
 Write-Step "Publishing GitHub release $Tag"
 Write-Host "Operator v$operatorVersion | Kiosk v$kioskVersion"
@@ -89,8 +158,14 @@ Clients download automatically; install when the operator/kiosk presses «Обн
 "@
 }
 
+# gh writes "release not found" to stderr; do not let that abort under Stop.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 $existing = gh release view $Tag --repo by-23/TshirtPrinterApp 2>$null
-if ($LASTEXITCODE -eq 0 -and $existing) {
+$viewExit = $LASTEXITCODE
+$ErrorActionPreference = $prevEap
+
+if ($viewExit -eq 0 -and $existing) {
   Write-Host "Release $Tag exists - uploading/replacing assets"
   gh release upload $Tag @files --repo by-23/TshirtPrinterApp --clobber
   if ($LASTEXITCODE -ne 0) { throw "gh release upload failed" }
@@ -98,7 +173,8 @@ if ($LASTEXITCODE -eq 0 -and $existing) {
   gh release create $Tag @files `
     --repo by-23/TshirtPrinterApp `
     --title "Desktop Operator $operatorVersion / Kiosk $kioskVersion" `
-    --notes $Notes
+    --notes $Notes `
+    --latest
   if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
 }
 

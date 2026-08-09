@@ -22,6 +22,22 @@ export type DesktopUpdateStatus = {
   error?: string;
 };
 
+export type ModuleZoneId = "ui" | "server" | "runtime";
+
+export type ModuleZoneStatus = {
+  id: ModuleZoneId;
+  localVersion?: string;
+  remoteVersion?: string;
+  state: string;
+  percent?: number;
+  error?: string;
+};
+
+export type ModulesUpdateSnapshot = {
+  zones: ModuleZoneStatus[];
+  error?: string;
+};
+
 export type PointDesktopApi = {
   isDesktop: true;
   listDisplays: () => Promise<DesktopDisplayInfo[]>;
@@ -35,6 +51,10 @@ export type PointDesktopApi = {
   installUpdate?: () => Promise<{ ok: boolean; error?: string }>;
   checkForUpdate?: () => Promise<{ ok: boolean; error?: string; status?: DesktopUpdateStatus }>;
   onUpdateStatus?: (callback: (status: DesktopUpdateStatus) => void) => () => void;
+  getModulesStatus?: () => Promise<ModulesUpdateSnapshot>;
+  checkModuleUpdates?: () => Promise<{ ok: boolean; error?: string; status?: ModulesUpdateSnapshot }>;
+  applyModuleUpdate?: (zone: ModuleZoneId) => Promise<{ ok: boolean; error?: string }>;
+  onModulesStatus?: (callback: (status: ModulesUpdateSnapshot) => void) => () => void;
 };
 
 declare global {
