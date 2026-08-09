@@ -35,11 +35,32 @@ function setupAutoUpdater(opts) {
     );
   }
 
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.autoRunAppAfterInstall = true;
   autoUpdater.allowDowngrade = false;
   if (channel) autoUpdater.channel = channel;
+
+  function isNewerVersion(remote, local) {
+    const parse = (v) =>
+      String(v || "")
+        .replace(/^v/i, "")
+        .split(/[.-]/)
+        .map((p) => {
+          const n = parseInt(p, 10);
+          return Number.isFinite(n) ? n : 0;
+        });
+    const a = parse(remote);
+    const b = parse(local);
+    const len = Math.max(a.length, b.length);
+    for (let i = 0; i < len; i += 1) {
+      const x = a[i] || 0;
+      const y = b[i] || 0;
+      if (x > y) return true;
+      if (x < y) return false;
+    }
+    return false;
+  }
 
   autoUpdater.on("checking-for-update", () => {
     if (status.state === "ready" || status.state === "downloading") return;
@@ -47,10 +68,22 @@ function setupAutoUpdater(opts) {
   });
 
   autoUpdater.on("update-available", (info) => {
+    const remote = info && info.version ? String(info.version) : "";
+    const local = app.getVersion();
+    if (!remote || !isNewerVersion(remote, local)) {
+      log(`updater: ignore remote v${remote || "?"} (local v${local})`);
+      setStatus({ state: "idle", version: local });
+      return;
+    }
     setStatus({
       state: "downloading",
-      version: info.version,
+      version: remote,
       percent: 0,
+    });
+    autoUpdater.downloadUpdate().catch((err) => {
+      const message = err && err.message ? String(err.message) : String(err);
+      log(`downloadUpdate failed: ${message}`);
+      setStatus({ state: "error", error: message, version: remote });
     });
   });
 
@@ -221,10 +254,20 @@ if (-not $ok) {
   }
   if ($zip -and (Test-Path $zip)) {
     Log "zip fallback $zip"
-    $staging = Join-Path $env:TEMP ("tshirt-op-zip-" + [guid]::NewGuid().ToString('N'))
+    $staging = Join-Path $env:TEMP ("tshirt-kiosk-zip-" + [guid]::NewGuid().ToString('N'))
+    if (Test-Path $staging) { Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue }
     New-Item -ItemType Directory -Path $staging -Force | Out-Null
     try {
-      Expand-Archive -Path $zip -DestinationPath $staging -Force
+      $tar = Join-Path $env:SystemRoot 'System32\tar.exe'
+      $extracted = $false
+      if (Test-Path -LiteralPath $tar) {
+        $tp = Start-Process -FilePath $tar -ArgumentList @('-xf', $zip, '-C', $staging) -Wait -PassThru -WindowStyle Hidden
+        if ($tp.ExitCode -eq 0) { $extracted = $true }
+      }
+      if (-not $extracted) {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zip, $staging)
+      }
       $src = $staging
       if (-not (Test-Path (Join-Path $src $exeName))) {
         $found = Get-ChildItem $staging -Recurse -Filter $exeName -File -ErrorAction SilentlyContinue | Select-Object -First 1

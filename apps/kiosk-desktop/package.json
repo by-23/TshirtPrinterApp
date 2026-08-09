@@ -1,6 +1,6 @@
 {
   "name": "@tshirt/kiosk-desktop",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "description": "Thin Windows client for the kiosk PC (connects to operator point-server over LAN)",
   "main": "main.cjs",
@@ -33,6 +33,7 @@
       }
     ],
     "win": {
+      "executableName": "TshirtPrinterKiosk",
       "target": [
         {
           "target": "nsis",
@@ -56,8 +57,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Tshirt Printer Kiosk",
-      "runAfterFinish": true,
-      "include": "installer.nsh"
+      "runAfterFinish": true
     },
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"

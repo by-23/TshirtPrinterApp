@@ -1,13 +1,12 @@
-# Force-install Operator from TshirtPrinterOperator-app.zip in the same folder.
+# Force-install Kiosk from TshirtPrinterKiosk-app.zip in the same folder.
 $ErrorActionPreference = "Stop"
 
 $Root = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
-$Zip = Join-Path $Root "TshirtPrinterOperator-app.zip"
-# Avoid "@" in path — Expand-Archive / some tools break on it (@tshirtpoint-desktop).
-$Inst = Join-Path $env:LOCALAPPDATA "Programs\TshirtPrinterOperator"
-$InstLegacy = Join-Path $env:LOCALAPPDATA "Programs\@tshirtpoint-desktop"
-$Exe = Join-Path $Inst "TshirtPrinterOperator.exe"
-$ExeOld = Join-Path $Inst "Tshirt Printer Operator.exe"
+$Zip = Join-Path $Root "TshirtPrinterKiosk-app.zip"
+# Avoid "@" in path — Expand-Archive / some tools break on it.
+$Inst = Join-Path $env:LOCALAPPDATA "Programs\TshirtPrinterKiosk"
+$InstLegacy = Join-Path $env:LOCALAPPDATA "Programs\@tshirtkiosk-desktop"
+$Exe = Join-Path $Inst "TshirtPrinterKiosk.exe"
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Write-Step([string]$msg) {
@@ -24,7 +23,6 @@ function Remove-TreeFast([string]$path) {
 }
 
 function Expand-ZipFast([string]$zipPath, [string]$dest) {
-  # Always extract into a fresh empty directory.
   Remove-TreeFast $dest
   New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
@@ -46,15 +44,15 @@ function Expand-ZipFast([string]$zipPath, [string]$dest) {
 
 function Resolve-AppExe([string]$root) {
   $candidates = @(
-    (Join-Path $root "TshirtPrinterOperator.exe"),
-    (Join-Path $root "Tshirt Printer Operator.exe")
+    (Join-Path $root "TshirtPrinterKiosk.exe"),
+    (Join-Path $root "Tshirt Printer Kiosk.exe")
   )
   foreach ($c in $candidates) {
     if (Test-Path -LiteralPath $c) { return $c }
   }
   $nested = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue | Where-Object {
-    (Test-Path -LiteralPath (Join-Path $_.FullName "TshirtPrinterOperator.exe")) -or
-    (Test-Path -LiteralPath (Join-Path $_.FullName "Tshirt Printer Operator.exe"))
+    (Test-Path -LiteralPath (Join-Path $_.FullName "TshirtPrinterKiosk.exe")) -or
+    (Test-Path -LiteralPath (Join-Path $_.FullName "Tshirt Printer Kiosk.exe"))
   } | Select-Object -First 1
   if (-not $nested) { return $null }
 
@@ -73,14 +71,14 @@ function Resolve-AppExe([string]$root) {
 }
 
 Write-Host ""
-Write-Host "=== Tshirt Printer Operator force install ===" -ForegroundColor Cyan
+Write-Host "=== Tshirt Printer Kiosk force install ===" -ForegroundColor Cyan
 Write-Host "Folder: $Root"
 if (-not (Test-Path -LiteralPath $Zip)) {
-  throw "Missing TshirtPrinterOperator-app.zip next to INSTALL.bat. Extract the whole dist-operator-install zip into one folder, then run INSTALL.bat from there."
+  throw "Missing TshirtPrinterKiosk-app.zip next to INSTALL.bat. Extract the whole dist-kiosk-install zip into one folder, then run INSTALL.bat from there."
 }
 
 Write-Step "Kill old processes..."
-foreach ($name in @("Tshirt Printer Operator", "TshirtPrinterOperator")) {
+foreach ($name in @("Tshirt Printer Kiosk", "TshirtPrinterKiosk")) {
   Get-Process -Name $name -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 }
 foreach ($dir in @($Inst, $InstLegacy)) {
@@ -95,23 +93,17 @@ Remove-TreeFast $Inst
 Remove-TreeFast $InstLegacy
 Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall" -ErrorAction SilentlyContinue | ForEach-Object {
   $p = Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue
-  if ($p.DisplayName -like "Tshirt Printer Operator*") {
+  if ($p.DisplayName -like "Tshirt Printer Kiosk*") {
     Remove-Item -LiteralPath $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
   }
 }
 
-# Client-only corruption lives here (failed module zip extract). Must wipe or
-# a new shell still serves the broken modules/ui → blank Operator window.
-$modulesDir = Join-Path $env:LOCALAPPDATA "TshirtPrinter\modules"
-Write-Step "Wipe broken modules cache..."
-Remove-TreeFast $modulesDir
-
-$stage = Join-Path $env:TEMP ("tshirt-operator-extract-" + [guid]::NewGuid().ToString("n"))
+$stage = Join-Path $env:TEMP ("tshirt-kiosk-extract-" + [guid]::NewGuid().ToString("n"))
 try {
   Write-Step "Extract app zip..."
   Expand-ZipFast -zipPath $Zip -dest $stage
 
-  Write-Step "Move into Programs\TshirtPrinterOperator..."
+  Write-Step "Move into Programs\TshirtPrinterKiosk..."
   New-Item -ItemType Directory -Force -Path (Split-Path $Inst -Parent) | Out-Null
   Move-Item -LiteralPath $stage -Destination $Inst -Force
   $stage = $null
@@ -121,10 +113,10 @@ try {
 
 $resolved = Resolve-AppExe $Inst
 if (-not $resolved) {
-  throw "TshirtPrinterOperator.exe missing after extract. Zip layout unexpected."
+  throw "TshirtPrinterKiosk.exe missing after extract. Zip layout unexpected."
 }
-if ($resolved -ne $Exe -and (Split-Path -Leaf $resolved) -eq "Tshirt Printer Operator.exe") {
-  Rename-Item -LiteralPath $resolved -NewName "TshirtPrinterOperator.exe"
+if ($resolved -ne $Exe -and (Split-Path -Leaf $resolved) -eq "Tshirt Printer Kiosk.exe") {
+  Rename-Item -LiteralPath $resolved -NewName "TshirtPrinterKiosk.exe"
   $resolved = $Exe
 }
 
@@ -137,7 +129,7 @@ $desktopCandidates = @(
 ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
 
 $ws = New-Object -ComObject WScript.Shell
-$lnkName = "Tshirt Printer Operator.lnk"
+$lnkName = "Tshirt Printer Kiosk.lnk"
 $created = @()
 foreach ($desk in $desktopCandidates) {
   $lnkPath = Join-Path $desk $lnkName
@@ -146,7 +138,7 @@ foreach ($desk in $desktopCandidates) {
     $lnk.TargetPath = $Exe
     $lnk.WorkingDirectory = $Inst
     $lnk.IconLocation = "$Exe,0"
-    $lnk.Description = "Tshirt Printer Operator"
+    $lnk.Description = "Tshirt Printer Kiosk"
     $lnk.Save()
     if (Test-Path -LiteralPath $lnkPath) {
       $created += $lnkPath
@@ -164,7 +156,7 @@ if ($startMenu -and (Test-Path -LiteralPath $startMenu)) {
     $lnk.TargetPath = $Exe
     $lnk.WorkingDirectory = $Inst
     $lnk.IconLocation = "$Exe,0"
-    $lnk.Description = "Tshirt Printer Operator"
+    $lnk.Description = "Tshirt Printer Kiosk"
     $lnk.Save()
     Write-Host "  start menu: $smLnk"
   } catch {

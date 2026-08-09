@@ -1,4 +1,11 @@
-const { app, BrowserWindow, ipcMain, screen, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, screen, dialog, shell } = require("electron");
+
+// Same client GPU path as Operator: keep process alive without blank-window GL stacks.
+if (app.isPackaged) {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch("disable-gpu-sandbox");
+}
+
 const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
@@ -223,7 +230,7 @@ function showSetup(statusText = "") {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
   setupWindow.setMenuBarVisibility(false);
@@ -297,7 +304,7 @@ function showReconnect(config) {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
   setupWindow.setMenuBarVisibility(false);
@@ -334,13 +341,40 @@ function openKiosk(config) {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      // sandbox:true crashed renderer on client Operator PCs — same risk here.
+      sandbox: false,
     },
   });
   kioskWindow.setMenuBarVisibility(false);
 
+  let crashReloads = 0;
+  const loadKiosk = () => {
+    if (!kioskWindow || kioskWindow.isDestroyed()) return;
+    const bust = `${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`;
+    log(`loadURL ${bust}`);
+    void kioskWindow.loadURL(bust);
+  };
+
   kioskWindow.webContents.on("did-fail-load", (_e, code, desc, validatedURL) => {
     log(`did-fail-load code=${code} desc=${desc} url=${validatedURL}`);
+    showReconnect(config);
+  });
+  kioskWindow.webContents.on("did-finish-load", () => {
+    log(`did-finish-load ${kioskWindow.webContents.getURL()}`);
+  });
+  kioskWindow.webContents.on("console-message", (_e, level, message, line, sourceId) => {
+    if (level >= 2) log(`renderer[${level}] ${message} (${sourceId}:${line})`);
+  });
+  kioskWindow.webContents.on("render-process-gone", (_e, details) => {
+    log(
+      `render-process-gone reason=${details && details.reason} exit=${details && details.exitCode} reloads=${crashReloads}`,
+    );
+    if (!kioskWindow || kioskWindow.isDestroyed()) return;
+    if (crashReloads < 2) {
+      crashReloads += 1;
+      setTimeout(loadKiosk, 400);
+      return;
+    }
     showReconnect(config);
   });
 
@@ -354,17 +388,14 @@ function openKiosk(config) {
 
   setTimeout(() => {
     if (kioskWindow && !kioskWindow.isDestroyed() && !kioskWindow.isVisible()) {
+      log(`ready-to-show timeout — forcing show for ${url}`);
       kioskWindow.show();
       kioskWindow.setFullScreen(true);
     }
   }, 4000);
 
-  // Drop Chromium HTTP cache so hashed assets from a new UI module aren't sticky.
-  const load = () => {
-    if (!kioskWindow || kioskWindow.isDestroyed()) return;
-    kioskWindow.loadURL(url);
-  };
-  kioskWindow.webContents.session.clearCache().finally(load);
+  // Never gate loadURL on clearCache (can hang → blank window on some PCs).
+  loadKiosk();
   kioskWindow.on("closed", () => {
     kioskWindow = null;
   });
@@ -398,6 +429,28 @@ async function tryConnect(config) {
   writeConfig(config);
   openKiosk(config);
   return { ok: true };
+}
+
+function ensureDesktopShortcut() {
+  if (!app.isPackaged || process.platform !== "win32") return;
+  try {
+    const desktop = app.getPath("desktop");
+    const lnk = path.join(desktop, "Tshirt Printer Kiosk.lnk");
+    if (fs.existsSync(lnk)) {
+      log(`desktop shortcut ok: ${lnk}`);
+      return;
+    }
+    const ok = shell.writeShortcutLink(lnk, {
+      target: process.execPath,
+      cwd: path.dirname(process.execPath),
+      description: "Tshirt Printer Kiosk",
+      icon: process.execPath,
+      iconIndex: 0,
+    });
+    log(ok ? `desktop shortcut created: ${lnk}` : `desktop shortcut write failed: ${lnk}`);
+  } catch (err) {
+    log(`desktop shortcut error: ${err && err.message ? err.message : err}`);
+  }
 }
 
 function registerIpc() {
@@ -446,12 +499,13 @@ if (!gotLock) {
     logFile = path.join(app.getPath("userData"), "kiosk-desktop.log");
     try {
       fs.mkdirSync(app.getPath("userData"), { recursive: true });
-      fs.writeFileSync(logFile, "", "utf8");
     } catch {
       // ignore
     }
-    log(`App ready packaged=${app.isPackaged}`);
+    log(`process start v${app.getVersion()} pid=${process.pid} packaged=${app.isPackaged}`);
+    log(`App ready packaged=${app.isPackaged} version=${app.getVersion()} log=${logFile}`);
     registerIpc();
+    ensureDesktopShortcut();
 
     // Shell self-update (electron-updater). UI still comes from Operator.
     try {

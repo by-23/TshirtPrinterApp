@@ -506,6 +506,29 @@ function closeSplash() {
   splashWindow = null;
 }
 
+/** Force-install / OneDrive Desktop sometimes skip the .lnk — recreate on boot. */
+function ensureDesktopShortcut() {
+  if (!app.isPackaged || process.platform !== "win32") return;
+  try {
+    const desktop = app.getPath("desktop");
+    const lnk = path.join(desktop, "Tshirt Printer Operator.lnk");
+    if (fs.existsSync(lnk)) {
+      log(`desktop shortcut ok: ${lnk}`);
+      return;
+    }
+    const ok = shell.writeShortcutLink(lnk, {
+      target: process.execPath,
+      cwd: path.dirname(process.execPath),
+      description: "Tshirt Printer Operator",
+      icon: process.execPath,
+      iconIndex: 0,
+    });
+    log(ok ? `desktop shortcut created: ${lnk}` : `desktop shortcut write failed: ${lnk}`);
+  } catch (err) {
+    log(`desktop shortcut error: ${err && err.message ? err.message : err}`);
+  }
+}
+
 function openUiWindows(config = readDisplayConfig()) {
   const { operator } = pickDisplays(config);
   log(`Opening operator UI bounds=${JSON.stringify(operator.bounds)} (kiosk is LAN Android, not opened here)`);
@@ -906,6 +929,7 @@ if (!gotLock) {
       await probeOperatorUi();
       showSplash("Открытие интерфейса оператора…");
       openUiWindows();
+      ensureDesktopShortcut();
       bootInProgress = false;
       updater.start();
       moduleUpdater.start();

@@ -257,6 +257,10 @@ Write-Step "Operator force installer (no NSIS Retry dialog)"
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root "scripts\make-operator-force-installer.ps1")
 if ($LASTEXITCODE -ne 0) { throw "make-operator-force-installer failed" }
 
+Write-Step "Kiosk force installer (no NSIS Retry dialog)"
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root "scripts\make-kiosk-force-installer.ps1")
+if ($LASTEXITCODE -ne 0) { throw "make-kiosk-force-installer failed" }
+
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  BUILD COMPLETE"
@@ -269,14 +273,14 @@ Get-ChildItem $Root -Filter "dist-operator-install-*.zip" -ErrorAction SilentlyC
 }
 Write-Host "Folder: $(Join-Path $Root 'dist-operator-install')"
 Write-Host ""
-Write-Host "Kiosk NSIS installer:" -ForegroundColor Green
-Get-ChildItem $kioskReleaseDir -Filter "TshirtPrinterKiosk-Setup-*-win-x64.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+Write-Host "Kiosk for client (USE THIS — run INSTALL.bat inside):" -ForegroundColor Green
+Get-ChildItem $Root -Filter "dist-kiosk-install-*.zip" -ErrorAction SilentlyContinue | ForEach-Object {
   $mb = [math]::Round($_.Length / 1MB, 1)
   Write-Host ("  {0}  ({1} MB)" -f $_.FullName, $mb) -ForegroundColor Green
 }
-Write-Host "Folder: $kioskReleaseDir"
+Write-Host "Folder: $(Join-Path $Root 'dist-kiosk-install')"
 Write-Host ""
-Write-Host "(NSIS Operator setup still in $releaseDir — prefer force zip above.)"
+Write-Host "(NSIS setups still in $releaseDir / $kioskReleaseDir — prefer force zips above.)"
 Write-Host "To publish updates to GitHub Releases:"
 Write-Host "  powershell -File scripts\publish-windows-update.ps1"
 Write-Host "  (or -SkipBuild if artifacts above are already fresh)"
