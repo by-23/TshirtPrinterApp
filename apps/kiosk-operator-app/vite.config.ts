@@ -7,6 +7,18 @@ const configDir = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   plugins: [react(), kioskThemeSavePlugin(resolveIndexCssPath(configDir))],
+  resolve: {
+    alias: {
+      // Workspace packages ship `dist/` — Vite otherwise keeps a stale prebundle
+      // after src edits until a full rebuild/restart.
+      "@tshirt/shared-pricing": fileURLToPath(
+        new URL("../../packages/shared-pricing/src/index.ts", import.meta.url),
+      ),
+    },
+  },
+  optimizeDeps: {
+    exclude: ["@tshirt/shared-pricing"],
+  },
   server: {
     host: true,
     port: 5173,

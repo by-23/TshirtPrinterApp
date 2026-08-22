@@ -1,9 +1,21 @@
 import type { Canvas } from "fabric";
-import type { PrintCoverageThresholds, PrintSize } from "@tshirt/shared-types";
-import { DEFAULT_PRINT_COVERAGE_THRESHOLDS } from "@tshirt/shared-types";
+import {
+  DEFAULT_PRINT_COVERAGE_THRESHOLDS,
+  garmentHasSelectableBackSide,
+  type GarmentSide,
+  type GarmentType,
+  type PrintCoverageThresholds,
+  type PrintSize,
+} from "@tshirt/shared-types";
 import { printSizeFromCoverageRatio } from "@tshirt/shared-pricing";
 import { usePricingConfigStore } from "../lib/pricingConfigStore.js";
-import { getDesignAreaSize } from "./selectionControlOverscan.js";
+import { canvasHasDesign, fabricJsonHasDesign, getDesignAreaSize } from "./selectionControlOverscan.js";
+import {
+  useEditorStore,
+  type CanvasSnapshots,
+  type HasDesignBySide,
+  type PrintSizeBySide,
+} from "./store.js";
 
 /**
  * There's no S/M/L print-size picker on the editor mockup — the price
@@ -48,4 +60,30 @@ export function computePrintSize(
   const ratio = boundingArea / canvasArea;
 
   return printSizeFromCoverageRatio(ratio, effectiveThresholds);
+}
+
+/** Recompute coverage for `side` and persist both the tier and whether it has artwork. */
+export function syncPrintSizeFromCanvas(side: GarmentSide, canvas: Canvas | null): PrintSize {
+  const printSize = computePrintSize(canvas);
+  useEditorStore.getState().setPrintSize(side, printSize, Boolean(canvas && canvasHasDesign(canvas)));
+  return printSize;
+}
+
+/**
+ * Print-size tiers of every side that actually has artwork.
+ * Uses the live flag and the saved snapshot so switching front/back cannot
+ * drop the hidden side from the price.
+ * Empty editor → `["small"]` so the live price still matches the single-side default.
+ */
+export function collectDesignedPrintSizes(
+  garmentType: GarmentType,
+  printSizeBySide: PrintSizeBySide,
+  hasDesignBySide: HasDesignBySide,
+  canvasSnapshots: CanvasSnapshots,
+): PrintSize[] {
+  const sides: GarmentSide[] = garmentHasSelectableBackSide(garmentType) ? ["front", "back"] : ["front"];
+  const designed = sides.filter(
+    (side) => hasDesignBySide[side] || fabricJsonHasDesign(canvasSnapshots[side]),
+  );
+  return designed.length > 0 ? designed.map((side) => printSizeBySide[side]) : ["small"];
 }

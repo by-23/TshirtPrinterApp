@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IText, type Canvas, type FabricObject } from "fabric";
 import { TouchButton } from "@tshirt/ui-kit";
-import { applyEffects, DEFAULT_EFFECTS_STATE, EFFECTS_PRESETS, type EffectsState } from "../effects.js";
+import { applyEffects, DEFAULT_EFFECTS_STATE, EFFECTS_PRESETS, STROKE_WIDTH_SLIDER, type EffectsState } from "../effects.js";
 import { recordHistoryEntry } from "../history.js";
+import { TEXT_COLORS } from "../types.js";
 import { ColorPickerPopover } from "./ColorPickerPopover.js";
 
 export interface EffectsToolProps {
@@ -150,8 +151,17 @@ export function EffectsTool({ canvas }: EffectsToolProps) {
         </label>
         {state.strokeEnabled && (
           <div className="flex flex-col gap-2 pl-1">
-            <div className="flex items-center gap-2">
-              <span className="editor-tool-caption text-ink-300">{t("editor.toolbar.effectsList.color")}</span>
+            <div className="editor-tool-color-row">
+              {TEXT_COLORS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => update({ strokeColor: option })}
+                  aria-pressed={state.strokeColor === option}
+                  className={`editor-tool-swatch shrink-0 rounded-full border-2 ${state.strokeColor === option ? "border-neon-pink" : "border-ink-600"}`}
+                  style={{ backgroundColor: option }}
+                />
+              ))}
               <ColorPickerPopover color={state.strokeColor} onChange={(color) => update({ strokeColor: color })} />
             </div>
             <label className="editor-tool-label flex flex-col gap-1.5 text-ink-200">
@@ -161,9 +171,9 @@ export function EffectsTool({ canvas }: EffectsToolProps) {
               </span>
               <input
                 type="range"
-                min={0.5}
-                max={10}
-                step={0.5}
+                min={STROKE_WIDTH_SLIDER.min}
+                max={STROKE_WIDTH_SLIDER.max}
+                step={STROKE_WIDTH_SLIDER.step}
                 value={state.strokeWidth}
                 onChange={(event) => update({ strokeWidth: Number(event.target.value) })}
                 className="h-8 w-full accent-neon-pink"

@@ -8,7 +8,7 @@ import {
   type PrintSize,
 } from "@tshirt/shared-types";
 import { snapshotCanvasJson } from "./applyGarmentClipToCanvas.js";
-import { computePrintSize } from "./printSize.js";
+import { syncPrintSizeFromCanvas } from "./printSize.js";
 import { useEditorStore } from "./store.js";
 import { usePrintAreaStore } from "../lib/printAreaStore.js";
 import {
@@ -37,9 +37,8 @@ export async function exportDesignedSides(
   garmentType: GarmentType,
 ): Promise<ExportedSideDesign[]> {
   const liveSnapshot = snapshotCanvasJson(liveCanvas);
-  const livePrintSize = computePrintSize(liveCanvas);
+  const livePrintSize = syncPrintSizeFromCanvas(liveSide, liveCanvas);
   useEditorStore.getState().setCanvasSnapshot(liveSide, liveSnapshot);
-  useEditorStore.getState().setPrintSize(liveSide, livePrintSize);
 
   const sides: GarmentSide[] = garmentHasSelectableBackSide(garmentType) ? ["front", "back"] : ["front"];
   const snapshots = useEditorStore.getState().canvasSnapshots;

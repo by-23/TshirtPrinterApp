@@ -1,4 +1,5 @@
 import { Gradient, IText, Shadow, type FabricObject } from "fabric";
+import "./imageSilhouetteStroke.js";
 
 export type GradientDirection = "horizontal" | "vertical" | "diagonal";
 
@@ -8,9 +9,10 @@ export interface EffectsState {
   shadowBlur: number;
   shadowOffsetX: number;
   shadowOffsetY: number;
-  /** Native `stroke`/`strokeWidth` for `IText`; for raster images approximated as a colored silhouette shadow whose blur follows `strokeWidth`. */
+  /** Native `stroke`/`strokeWidth` for `IText`; for raster images a silhouette ring whose on-canvas thickness follows `strokeWidth`. */
   strokeEnabled: boolean;
   strokeColor: string;
+  /** On-canvas thickness in scene pixels (images are converted to local units so scale-down doesn't hide the outline). */
   strokeWidth: number;
   opacity: number;
   /** Text-only — `fill` swapped for a `fabric.Gradient` while enabled. */
@@ -29,8 +31,8 @@ export const DEFAULT_EFFECTS_STATE: EffectsState = {
   shadowOffsetX: 4,
   shadowOffsetY: 4,
   strokeEnabled: false,
-  strokeColor: "#ffffff",
-  strokeWidth: 2,
+  strokeColor: "#111111",
+  strokeWidth: 8,
   opacity: 1,
   gradientEnabled: false,
   gradientFrom: "#ff2d95",
@@ -92,13 +94,21 @@ export const EFFECTS_PRESETS: Record<"neon" | "vintage" | "metallic", EffectsPre
   },
 };
 
+export const STROKE_WIDTH_SLIDER = { min: 1, max: 40, step: 1 } as const;
+
+/** Converts a visible scene-pixel thickness into the object's local stroke units. */
+export function visualStrokeToLocalWidth(object: FabricObject, visualWidth: number): number {
+  const scale = Math.max(Math.abs(object.scaleX ?? 1), Math.abs(object.scaleY ?? 1), 0.05);
+  return visualWidth / scale;
+}
+
 function gradientCoords(direction: GradientDirection, width: number, height: number) {
   if (direction === "horizontal") return { x1: 0, y1: 0, x2: width, y2: 0 };
   if (direction === "vertical") return { x1: 0, y1: 0, x2: 0, y2: height };
   return { x1: 0, y1: 0, x2: width, y2: height };
 }
 
-/** Applies every field of `state` to `object` — text gets native stroke + optional gradient fill; images get the shadow-based stroke approximation. */
+/** Applies every field of `state` to `object` — text gets native stroke + optional gradient fill; images get a silhouette ring via `stroke`/`strokeWidth`. */
 export function applyEffects(object: FabricObject, state: EffectsState): void {
   object.set("opacity", state.opacity);
 
@@ -127,17 +137,27 @@ export function applyEffects(object: FabricObject, state: EffectsState): void {
     } else {
       object.set("fill", state.plainFill);
     }
+  } else if (state.strokeEnabled) {
+    const localWidth = visualStrokeToLocalWidth(object, state.strokeWidth);
+    object.set({
+      stroke: state.strokeColor,
+      strokeWidth: localWidth,
+      padding: localWidth,
+      objectCaching: false,
+    });
+  } else {
+    object.set({
+      stroke: undefined,
+      strokeWidth: 0,
+      padding: 0,
+    });
   }
 
   if (state.shadowEnabled) {
     object.set("shadow", new Shadow({ color: state.shadowColor, blur: state.shadowBlur, offsetX: state.shadowOffsetX, offsetY: state.shadowOffsetY }));
-  } else if (!isText && state.strokeEnabled) {
-    // Silhouette outline: blur ≈ thickness (Fabric has a single shadow slot).
-    object.set(
-      "shadow",
-      new Shadow({ color: state.strokeColor, blur: Math.max(0.5, state.strokeWidth), offsetX: 0, offsetY: 0 }),
-    );
   } else {
     object.set("shadow", null);
   }
+
+  object.setCoords();
 }

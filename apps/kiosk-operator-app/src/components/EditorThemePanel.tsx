@@ -715,10 +715,6 @@ const SECTIONS: Section[] = [
         ...OPACITY_RANGE,
       },
       ...blockBorderTokens("popular-block", { ...BLOCK_BORDER_DEFAULT, radius: 16, padding: 16 }),
-      { key: "--editor-popular-add-text-color", label: "«Своя картинка» — цвет текста", type: "color", defaultValue: "#9ca3af" },
-      { key: "--editor-popular-add-icon-size", label: "«Своя картинка» — иконка", defaultValue: 32, ...SIZE_RANGE },
-      { key: "--editor-popular-add-font-size", label: "«Своя картинка» — текст", defaultValue: 12, ...FONT_RANGE },
-      ...tileBorderTokens("popular-add", { ...TILE_BORDER_DEFAULT, radius: 12 }),
     ],
   },
   {

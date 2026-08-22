@@ -21,6 +21,9 @@ export type CanvasSnapshots = Record<GarmentSide, string | null>;
 /** Auto-detected print size (see `printSize.ts`), tracked per side like the canvas snapshot. */
 export type PrintSizeBySide = Record<GarmentSide, PrintSize>;
 
+/** Whether a side currently has artwork — empty sides must not add a print surcharge. */
+export type HasDesignBySide = Record<GarmentSide, boolean>;
+
 interface EditorState {
   garmentType: GarmentType;
   side: GarmentSide;
@@ -29,6 +32,7 @@ interface EditorState {
   fabricName: string;
   canvasSnapshots: CanvasSnapshots;
   printSizeBySide: PrintSizeBySide;
+  hasDesignBySide: HasDesignBySide;
   hasSelection: boolean;
   setGarmentType: (type: GarmentType) => void;
   setSide: (side: GarmentSide) => void;
@@ -36,7 +40,7 @@ interface EditorState {
   setSize: (size: string) => void;
   setFabricName: (fabricName: string) => void;
   setCanvasSnapshot: (side: GarmentSide, json: string | null) => void;
-  setPrintSize: (side: GarmentSide, printSize: PrintSize) => void;
+  setPrintSize: (side: GarmentSide, printSize: PrintSize, hasDesign?: boolean) => void;
   setHasSelection: (hasSelection: boolean) => void;
   reset: () => void;
 }
@@ -49,6 +53,7 @@ const initialState = {
   fabricName: GARMENT_FABRICS[0],
   canvasSnapshots: { front: null, back: null } as CanvasSnapshots,
   printSizeBySide: { front: "small", back: "small" } as PrintSizeBySide,
+  hasDesignBySide: { front: false, back: false } as HasDesignBySide,
   hasSelection: false,
 };
 
@@ -71,13 +76,20 @@ export const useEditorStore = create<EditorState>((set) => ({
   setFabricName: (fabricName) => set({ fabricName }),
   setCanvasSnapshot: (side, json) =>
     set((state) => ({ canvasSnapshots: { ...state.canvasSnapshots, [side]: json } })),
-  setPrintSize: (side, printSize) =>
-    set((state) => ({ printSizeBySide: { ...state.printSizeBySide, [side]: printSize } })),
+  setPrintSize: (side, printSize, hasDesign) =>
+    set((state) => ({
+      printSizeBySide: { ...state.printSizeBySide, [side]: printSize },
+      hasDesignBySide:
+        hasDesign === undefined
+          ? state.hasDesignBySide
+          : { ...state.hasDesignBySide, [side]: hasDesign },
+    })),
   setHasSelection: (hasSelection) => set({ hasSelection }),
   reset: () =>
     set({
       ...initialState,
       canvasSnapshots: { front: null, back: null },
       printSizeBySide: { front: "small", back: "small" },
+      hasDesignBySide: { front: false, back: false },
     }),
 }));

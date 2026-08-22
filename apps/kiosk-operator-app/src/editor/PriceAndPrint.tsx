@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { TouchButton } from "@tshirt/ui-kit";
 import { calculatePriceTenge } from "@tshirt/shared-pricing";
 import { type GarmentFabric } from "@tshirt/shared-types";
+import { collectDesignedPrintSizes } from "./printSize.js";
 import { useEditorStore } from "./store.js";
 import { usePricingConfigStore } from "../lib/pricingConfigStore.js";
 import { useAiFlowStore } from "../lib/aiFlowStore.js";
@@ -19,7 +20,8 @@ export interface PriceAndPrintProps {
  * Price block + "Печать" button + footer note, matching the right panel of
  * `docs/ui-mockups/editor.png`. The amount is a live `shared-pricing`
  * estimate — print size auto-updates as the customer resizes their design
- * (see `printSize.ts`), so this can shift while editing.
+ * (see `printSize.ts`), and both front and back are summed when both have
+ * artwork, so this can shift while editing.
  */
 export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
   const { t } = useTranslation();
@@ -28,15 +30,24 @@ export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
   const garmentType = useEditorStore((state) => state.garmentType);
   const size = useEditorStore((state) => state.size);
   const fabricName = useEditorStore((state) => state.fabricName);
-  const printSize = useEditorStore((state) => state.printSizeBySide[state.side]);
+  const printSizeBySide = useEditorStore((state) => state.printSizeBySide);
+  const hasDesignBySide = useEditorStore((state) => state.hasDesignBySide);
+  const canvasSnapshots = useEditorStore((state) => state.canvasSnapshots);
   const priceConfig = usePricingConfigStore((state) => state.config);
   const aiProvider = useAiFlowStore((state) => state.aiProvider);
+  const printSizes = collectDesignedPrintSizes(
+    garmentType,
+    printSizeBySide,
+    hasDesignBySide,
+    canvasSnapshots,
+  );
   const price = calculatePriceTenge(
     {
       garmentType,
       fabric: fabricName as GarmentFabric,
       size,
-      printSize,
+      printSize: printSizes[0] ?? "small",
+      extraPrintSizes: printSizes.slice(1),
       aiProvider: category === "ai_style" ? aiProvider : "standard",
     },
     priceConfig,

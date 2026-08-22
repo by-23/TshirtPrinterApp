@@ -213,12 +213,14 @@ export function Editor() {
       const extra = designedSides[1];
       const aiProvider =
         category === "ai_style" ? useAiFlowStore.getState().aiProvider : ("standard" as const);
+      const extraPrintSizes = designedSides.slice(1).map((item) => item.printSize);
       const priceBreakdown = getPriceBreakdown(
         {
           garmentType,
           fabric: fabricName as GarmentFabric,
           size,
           printSize: primary.printSize,
+          extraPrintSizes,
           aiProvider,
         },
         priceConfig,

@@ -20,8 +20,8 @@ import {
   getMockupPixelSize,
 } from "./selectionControlOverscan.js";
 import { useEditorStore } from "./store.js";
-import { computePrintSize } from "./printSize.js";
-import { initHistoryForSide, recordHistoryEntry, setHistorySuspended } from "./history.js";
+import { syncPrintSizeFromCanvas } from "./printSize.js";
+import { initHistoryForSide, isHistorySuspended, recordHistoryEntry, setHistorySuspended } from "./history.js";
 
 export interface FabricCanvasProps {
   side: GarmentSide;
@@ -98,7 +98,10 @@ export function FabricCanvas({
     });
 
     function recomputePrintSize() {
-      useEditorStore.getState().setPrintSize(loadedSideRef.current, computePrintSize(canvas));
+      if (isHistorySuspended()) return;
+      const currentSide = loadedSideRef.current;
+      syncPrintSizeFromCanvas(currentSide, canvas);
+      useEditorStore.getState().setCanvasSnapshot(currentSide, snapshotCanvasJson(canvas));
     }
 
     canvas.on("object:added", (event) => {
@@ -123,7 +126,8 @@ export function FabricCanvas({
       void canvas.loadFromJSON(initialSnapshot).then(() => {
         syncViewportAndClip(canvas);
         applySelectionStyleToAllObjects(canvas);
-        recomputePrintSize();
+        syncPrintSizeFromCanvas(loadedSideRef.current, canvas);
+        useEditorStore.getState().setCanvasSnapshot(loadedSideRef.current, snapshotCanvasJson(canvas));
         setHistorySuspended(false);
         initHistoryForSide(side, snapshotCanvasJson(canvas));
       });
@@ -159,6 +163,7 @@ export function FabricCanvas({
     if (!canvas || loadedSideRef.current === side) return;
 
     const previousSide = loadedSideRef.current;
+    syncPrintSizeFromCanvas(previousSide, canvas);
     useEditorStore.getState().setCanvasSnapshot(previousSide, snapshotCanvasJson(canvas));
     loadedSideRef.current = side;
 
@@ -167,15 +172,16 @@ export function FabricCanvas({
     const snapshot = useEditorStore.getState().canvasSnapshots[side];
     if (snapshot) {
       void canvas.loadFromJSON(snapshot).then(() => {
+        if (loadedSideRef.current !== side) return;
         syncViewportAndClip(canvas);
         applySelectionStyleToAllObjects(canvas);
-        useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
+        syncPrintSizeFromCanvas(side, canvas);
         setHistorySuspended(false);
         initHistoryForSide(side, snapshotCanvasJson(canvas));
       });
     } else {
+      syncPrintSizeFromCanvas(side, canvas);
       syncViewportAndClip(canvas);
-      useEditorStore.getState().setPrintSize(side, computePrintSize(canvas));
       setHistorySuspended(false);
       initHistoryForSide(side, snapshotCanvasJson(canvas));
     }

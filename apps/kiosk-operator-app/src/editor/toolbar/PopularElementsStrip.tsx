@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { FabricImage, type Canvas } from "fabric";
-import { Plus } from "../../components/icons.js";
-import { addImageFromUrl, placeImageCentered } from "../canvasImage.js";
+import { type Canvas } from "fabric";
+import { addImageFromUrl } from "../canvasImage.js";
 import { blockBorderStyle, tileBorderStyle } from "../borderStyle.js";
 import { syncPopularScrollElement } from "../popularScrollTheme.js";
 import { useKioskImage } from "../../lib/kioskImages.js";
@@ -38,46 +37,13 @@ function PopularPrintTile({
   );
 }
 
-function AddOwnTile({ onClick }: { onClick: () => void }) {
-  const { t } = useTranslation();
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        ...tileBorderStyle("popular-add"),
-        color: "var(--editor-popular-add-text-color)",
-      }}
-      className="editor-popular-tile flex flex-shrink-0 flex-col items-center justify-center gap-1.5 transition-colors hover:brightness-125 hover:text-white"
-    >
-      <Plus
-        aria-hidden
-        strokeWidth={2.2}
-        style={{
-          width: "var(--editor-popular-add-icon-size)",
-          height: "var(--editor-popular-add-icon-size)",
-        }}
-      />
-      <span
-        className="font-semibold uppercase leading-none"
-        style={{ fontSize: "var(--editor-popular-add-font-size)" }}
-      >
-        {t("editor.addOwn")}
-      </span>
-    </button>
-  );
-}
-
 /**
  * Bottom "Популярные элементы" strip: same highest use-count designs as the
- * home "Популярные принты" banner (see `usePopularPrintSlides`), plus an
- * "Add your own" tile that opens the file picker.
+ * home "Популярные принты" banner (see `usePopularPrintSlides`).
  */
 export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
   const { t } = useTranslation();
   const slides = usePopularPrintSlides();
-  const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,20 +56,6 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
   function addPrint(url: string) {
     if (!canvas) return;
     void addImageFromUrl(canvas, url);
-  }
-
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || !canvas) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      if (typeof dataUrl !== "string") return;
-      void FabricImage.fromURL(dataUrl).then((image) => placeImageCentered(canvas, image));
-    };
-    reader.readAsDataURL(file);
   }
 
   return (
@@ -137,8 +89,6 @@ export function PopularElementsStrip({ canvas }: PopularElementsStripProps) {
         {slides.map((slide) => (
           <PopularPrintTile key={slide.id} slide={slide} onAdd={addPrint} />
         ))}
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-        <AddOwnTile onClick={() => inputRef.current?.click()} />
       </div>
     </section>
   );

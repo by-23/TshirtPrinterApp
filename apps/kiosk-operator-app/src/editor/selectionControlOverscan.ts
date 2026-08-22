@@ -1,4 +1,5 @@
 import { StaticCanvas, type Canvas } from "fabric";
+import "./imageSilhouetteStroke.js";
 import { MOCKUP_DISPLAY_SCALE, MOCKUP_HEIGHT, MOCKUP_WIDTH, type PrintAreaRect } from "./mockup/garmentShape.js";
 
 /** Padding around the print-area so selection controls cover the whole mockup. */

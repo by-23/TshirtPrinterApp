@@ -14,7 +14,13 @@ export interface PriceInput {
   garmentType: GarmentType;
   fabric: GarmentFabric;
   size: string;
+  /** Print size of the first designed side (front or back). */
   printSize: PrintSize;
+  /**
+   * Print sizes of every extra designed side (the other of front/back).
+   * Each side is charged on its own coverage tier and the surcharges are summed.
+   */
+  extraPrintSizes?: PrintSize[];
   /** AI stylization provider — only set for `ai_style` orders; defaults to no surcharge. */
   aiProvider?: AiProvider;
 }
@@ -40,45 +46,55 @@ export const SIZE_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.sizeSurchargeTenge;
 export const PRINT_SIZE_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.printSizeSurchargeTenge;
 export const AI_PROVIDER_SURCHARGE_TENGE = DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge;
 
-/**
- * Single-side pricing only for now — the mockup's "Сторона печати" row is
- * always `+0 ₸`. Charging extra for a second (front + back) print is future
- * scope once orders support more than one side.
- */
-const SIDE_SURCHARGE_TENGE = 0;
+function printSizeSurcharge(printSize: PrintSize, config: PriceConfig): number {
+  return config.printSizeSurchargeTenge[printSize] ?? 0;
+}
+
+function singleSideAmounts(input: PriceInput, printSize: PrintSize, config: PriceConfig) {
+  const usesSizeFabric = garmentUsesSizeFabric(input.garmentType);
+  const garmentAmount =
+    (config.basePriceTenge[input.garmentType] ?? DEFAULT_PRICE_CONFIG.basePriceTenge.tshirt ?? 0) +
+    (usesSizeFabric ? config.fabricSurchargeTenge[input.fabric] ?? 0 : 0);
+  const sizeAmount = usesSizeFabric ? config.sizeSurchargeTenge[input.size] ?? 0 : 0;
+  const aiProvider = input.aiProvider ?? "standard";
+  const aiSurchargeMap = config.aiProviderSurchargeTenge ?? DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge;
+  return {
+    garmentAmount,
+    designAmount: printSizeSurcharge(printSize, config),
+    sizeAmount,
+    aiAmount: aiSurchargeMap[aiProvider] ?? 0,
+  };
+}
 
 /**
- * `цена = f(тип одежды, ткань, размер, размер принта, ИИ-провайдер)` — see `docs/PLAN.md`.
- * Returns the line items shown in the checkout order summary.
- *
- * `config` defaults to `DEFAULT_PRICE_CONFIG` (Stage 6 hardcoded values) so
- * existing call sites keep working unchanged; pass the point's synced
- * `PriceConfig` (Stage 7, `GET /pricing` on point-server) once available.
+ * Each designed side is priced on its own (garment + fabric + size + print + AI)
+ * and the sides are added together. One side → same as before; front + back →
+ * `цена(перед) + цена(зад)`.
  */
 export function getPriceBreakdown(
   input: PriceInput,
   config: PriceConfig = DEFAULT_PRICE_CONFIG,
 ): PriceBreakdownLine[] {
-  // Cap/shopper are one-size/one-material (see `garmentUsesSizeFabric`) — the
-  // editor pins `size`/`fabric` to fixed values for them, so their surcharges
-  // must stay excluded here too, or a leftover t-shirt selection would leak
-  // into the price.
-  const usesSizeFabric = garmentUsesSizeFabric(input.garmentType);
-  const garmentAmount =
-    (config.basePriceTenge[input.garmentType] ?? DEFAULT_PRICE_CONFIG.basePriceTenge.tshirt ?? 0) +
-    (usesSizeFabric ? config.fabricSurchargeTenge[input.fabric] ?? 0 : 0);
-  const designAmount = config.printSizeSurchargeTenge[input.printSize] ?? 0;
-  const sizeAmount = usesSizeFabric ? config.sizeSurchargeTenge[input.size] ?? 0 : 0;
-  const aiProvider = input.aiProvider ?? "standard";
-  const aiSurchargeMap = config.aiProviderSurchargeTenge ?? DEFAULT_PRICE_CONFIG.aiProviderSurchargeTenge;
-  const aiAmount = aiSurchargeMap[aiProvider] ?? 0;
+  const printSizes = [input.printSize, ...(input.extraPrintSizes ?? [])];
+  const totals = printSizes.reduce(
+    (sum, printSize) => {
+      const side = singleSideAmounts(input, printSize, config);
+      return {
+        garmentAmount: sum.garmentAmount + side.garmentAmount,
+        designAmount: sum.designAmount + side.designAmount,
+        sizeAmount: sum.sizeAmount + side.sizeAmount,
+        aiAmount: sum.aiAmount + side.aiAmount,
+      };
+    },
+    { garmentAmount: 0, designAmount: 0, sizeAmount: 0, aiAmount: 0 },
+  );
 
   return [
-    { key: "garment", amountTenge: garmentAmount },
-    { key: "design", amountTenge: designAmount },
-    { key: "size", amountTenge: sizeAmount },
-    { key: "side", amountTenge: SIDE_SURCHARGE_TENGE },
-    { key: "ai", amountTenge: aiAmount },
+    { key: "garment", amountTenge: totals.garmentAmount },
+    { key: "design", amountTenge: totals.designAmount },
+    { key: "size", amountTenge: totals.sizeAmount },
+    { key: "side", amountTenge: 0 },
+    { key: "ai", amountTenge: totals.aiAmount },
   ];
 }
 
