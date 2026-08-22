@@ -137,9 +137,34 @@ async function migrateLegacyLocalStorage(db: IDBDatabase, allowedKeys: ReadonlyS
   window.localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEY);
 }
 
+/** One-shot key remaps so operator image overrides survive category id changes. */
+const IMAGE_KEY_RENAMES: Record<string, string> = {
+  "category-memes": "category-misc",
+};
+
+async function remapLegacyImageKeys(db: IDBDatabase): Promise<void> {
+  const entries = await readAllEntries(db);
+  const remaps = entries.filter(([key]) => IMAGE_KEY_RENAMES[key]);
+  if (remaps.length === 0) return;
+
+  const existing = new Set(entries.map(([key]) => key));
+  const transaction = db.transaction(STORE_NAME, "readwrite");
+  const store = transaction.objectStore(STORE_NAME);
+  for (const [oldKey, blob] of remaps) {
+    const nextKey = IMAGE_KEY_RENAMES[oldKey]!;
+    if (!existing.has(nextKey)) {
+      store.put(blob, nextKey);
+      existing.add(nextKey);
+    }
+    store.delete(oldKey);
+  }
+  await transactionComplete(transaction);
+}
+
 async function hydrateCache(allowedKeys: ReadonlySet<string>): Promise<void> {
   const db = await openDatabase();
   await migrateLegacyLocalStorage(db, allowedKeys);
+  await remapLegacyImageKeys(db);
 
   clearCache();
   const entries = await readAllEntries(db);

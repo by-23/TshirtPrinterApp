@@ -39,11 +39,15 @@ export function AiSourceSelect() {
           className="ai-source-card ai-source-card--camera"
           {...aiThemeSection("cameraCard")}
         >
-          <span className="ai-source-card-title">{t("ai.source.cameraTitle")}</span>
+          <span className="ai-source-card-title" {...aiThemeSection("cardText")}>
+            {t("ai.source.cameraTitle")}
+          </span>
           <div className="ai-source-card-icon-wrap">
             <TintedIcon src={cameraIcon} />
           </div>
-          <span className="ai-source-card-subtitle">{t("ai.source.cameraSubtitle")}</span>
+          <span className="ai-source-card-subtitle" {...aiThemeSection("cardText")}>
+            {t("ai.source.cameraSubtitle")}
+          </span>
         </button>
 
         <button
@@ -52,11 +56,15 @@ export function AiSourceSelect() {
           className="ai-source-card ai-source-card--phone"
           {...aiThemeSection("phoneCard")}
         >
-          <span className="ai-source-card-title">{t("ai.source.phoneTitle")}</span>
+          <span className="ai-source-card-title" {...aiThemeSection("cardText")}>
+            {t("ai.source.phoneTitle")}
+          </span>
           <div className="ai-source-card-icon-wrap">
             <TintedIcon src={phoneUploadIcon} />
           </div>
-          <span className="ai-source-card-subtitle">{t("ai.source.phoneSubtitle")}</span>
+          <span className="ai-source-card-subtitle" {...aiThemeSection("cardText")}>
+            {t("ai.source.phoneSubtitle")}
+          </span>
         </button>
       </div>
     </div>

@@ -15,10 +15,10 @@ interface CategoryImageVars {
 }
 
 const CATEGORY_IMAGE_VAR: Record<DesignCategory, CategoryImageVars> = {
-  memes: {
-    scale: "--cat-memes-image-scale",
-    offsetX: "--cat-memes-image-offset-x",
-    offsetY: "--cat-memes-image-offset-y",
+  misc: {
+    scale: "--cat-misc-image-scale",
+    offsetX: "--cat-misc-image-offset-x",
+    offsetY: "--cat-misc-image-offset-y",
   },
   anime_movies: {
     scale: "--cat-anime-image-scale",
@@ -55,11 +55,11 @@ interface CategoryGradientVars {
 }
 
 const CATEGORY_GRADIENT_VAR: Record<DesignCategory, CategoryGradientVars> = {
-  memes: {
-    start: "--cat-memes-start",
-    middle: "--cat-memes-middle",
-    end: "--cat-memes-end",
-    border: "--cat-memes-border",
+  misc: {
+    start: "--cat-misc-start",
+    middle: "--cat-misc-middle",
+    end: "--cat-misc-end",
+    border: "--cat-misc-border",
   },
   anime_movies: {
     start: "--cat-anime-start",
@@ -95,7 +95,7 @@ const CATEGORY_GRADIENT_VAR: Record<DesignCategory, CategoryGradientVars> = {
 
 // Light text tint per card so headings/icons stay readable against every accent hue.
 const CATEGORY_ACCENT_TEXT: Record<DesignCategory, string> = {
-  memes: "text-violet-100",
+  misc: "text-violet-100",
   anime_movies: "text-fuchsia-100",
   games: "text-blue-100",
   text: "text-teal-100",
@@ -119,7 +119,7 @@ function CategoryArt({ category, accent }: { category: DesignCategory; accent: s
     );
   } else {
     switch (category) {
-      case "memes":
+      case "misc":
         content = <PhotoIcon aria-hidden className={`h-[104px] w-[104px] ${accent}`} />;
         break;
       case "anime_movies":
@@ -185,9 +185,9 @@ export function CategoryGrid() {
     <div className="grid grid-cols-3 gap-6" {...homeThemeSection("categories")}>
       {categories.map((category) => {
         const label = getCategoryHomeLabel(category, i18n.language);
-        const accent = CATEGORY_ACCENT_TEXT[category];
-        const gradient = CATEGORY_GRADIENT_VAR[category];
-        const imageLayout = CATEGORY_IMAGE_VAR[category];
+        const accent = CATEGORY_ACCENT_TEXT[category] ?? CATEGORY_ACCENT_TEXT.misc;
+        const gradient = CATEGORY_GRADIENT_VAR[category] ?? CATEGORY_GRADIENT_VAR.misc;
+        const imageLayout = CATEGORY_IMAGE_VAR[category] ?? CATEGORY_IMAGE_VAR.misc;
         const cardStyle = {
           "--cat-gradient-start": `var(${gradient.start})`,
           "--cat-gradient-middle": `var(${gradient.middle})`,

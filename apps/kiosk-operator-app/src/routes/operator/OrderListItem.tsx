@@ -1,7 +1,14 @@
-import type { Order } from "@tshirt/shared-types";
+import { getOrderPrintSides, type Order } from "@tshirt/shared-types";
 import { StatusBadge } from "./StatusBadge.js";
 import { OrderImage } from "./OrderImage.js";
-import { GARMENT_TYPE_LABELS, GARMENT_SIDE_LABELS, formatOrderTime, formatPrice, garmentColorLabel } from "./orderLabels.js";
+import {
+  GARMENT_TYPE_LABELS,
+  formatDesignCount,
+  formatOrderSides,
+  formatOrderTime,
+  formatPrice,
+  garmentColorLabel,
+} from "./orderLabels.js";
 
 export function OrderListItem({
   order,
@@ -12,6 +19,7 @@ export function OrderListItem({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const printSides = getOrderPrintSides(order);
   const garmentLine = `${GARMENT_TYPE_LABELS[order.garment.type]} ${garmentColorLabel(order.garment.color)}, ${order.garment.size}`;
 
   return (
@@ -58,7 +66,7 @@ export function OrderListItem({
           </span>
         </div>
         <span className="truncate" style={{ fontSize: "var(--operator-item-detail-size)", color: "var(--operator-text-muted)" }}>
-          {garmentLine} · 1 дизайн · {GARMENT_SIDE_LABELS[order.side]}
+          {garmentLine} · {formatDesignCount(printSides.length)} · {formatOrderSides(printSides.map((item) => item.side))}
         </span>
         <div className="flex items-center justify-between gap-2 pt-0.5">
           <div className="flex items-center gap-2">

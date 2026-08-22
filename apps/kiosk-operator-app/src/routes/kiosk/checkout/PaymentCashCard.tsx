@@ -34,7 +34,7 @@ export function PaymentCashCard({ orderId }: PaymentCashCardProps) {
 
   return (
     <div
-      className="flex flex-1 flex-col items-center"
+      className="flex flex-col items-center"
       {...checkoutThemeSection("cashCard")}
       style={{
         ...cardGradientStyle("cash-card"),

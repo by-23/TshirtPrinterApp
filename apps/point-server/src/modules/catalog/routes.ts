@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { and, eq, inArray, like, sql } from "drizzle-orm";
 import {
   createDesignSchema,
-  designCategorySchema,
+  normalizeDesignCategory,
   updateDesignSchema,
   setDesignIsolatedSchema,
   POPULAR_DESIGNS_DEFAULT_LIMIT,
@@ -78,11 +78,11 @@ export async function catalogRoutes(app: FastifyInstance) {
 
     let categoryFilter: DesignCategory | undefined;
     if (query.category !== undefined) {
-      const parsedCategory = designCategorySchema.safeParse(query.category);
-      if (!parsedCategory.success) {
+      const parsedCategory = normalizeDesignCategory(query.category);
+      if (!parsedCategory) {
         return reply.status(400).send({ error: "Invalid category" });
       }
-      categoryFilter = parsedCategory.data;
+      categoryFilter = parsedCategory;
     }
 
     const search = typeof query.search === "string" ? query.search.trim() : "";
@@ -275,12 +275,12 @@ export async function catalogRoutes(app: FastifyInstance) {
   // uploads are excluded — read-only on the point, see the isolate guard above.
   app.delete("/catalog/designs", async (request, reply) => {
     const query = request.query as Record<string, unknown>;
-    const parsedCategory = designCategorySchema.safeParse(query.category);
-    if (!parsedCategory.success) {
+    const parsedCategory = normalizeDesignCategory(query.category);
+    if (!parsedCategory) {
       return reply.status(400).send({ error: "Missing or invalid category" });
     }
 
-    const allRows = await db.select().from(designs).where(eq(designs.category, parsedCategory.data));
+    const allRows = await db.select().from(designs).where(eq(designs.category, parsedCategory));
     const rows = allRows.filter((row) => !isAdminDesign(row));
     if (rows.length > 0) {
       await db.delete(designs).where(

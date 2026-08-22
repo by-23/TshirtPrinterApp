@@ -30,6 +30,7 @@ import {
 import {
   clearThemeOverrideStorage,
   createThemeCssSaver,
+  overlayThemeRuntimeOverrides,
   themeSaveStatusLabel,
   type ThemeSaveState,
 } from "../lib/themeCssSave.js";
@@ -729,10 +730,10 @@ const SECTIONS: Section[] = [
   {
     title: "Градиенты категорий",
     tokens: [
-      { key: "--cat-memes-start", label: "Мемы верх", type: "color", defaultValue: "#4f2db8" },
-      { key: "--cat-memes-middle", label: "Мемы центр", type: "color", defaultValue: "#1f123f" },
-      { key: "--cat-memes-end", label: "Мемы низ", type: "color", defaultValue: "#05050d" },
-      { key: "--cat-memes-border", label: "Мемы обводка", type: "color", defaultValue: "#a78bfa" },
+      { key: "--cat-misc-start", label: "Разное верх", type: "color", defaultValue: "#4f2db8" },
+      { key: "--cat-misc-middle", label: "Разное центр", type: "color", defaultValue: "#1f123f" },
+      { key: "--cat-misc-end", label: "Разное низ", type: "color", defaultValue: "#05050d" },
+      { key: "--cat-misc-border", label: "Разное обводка", type: "color", defaultValue: "#a78bfa" },
 
       { key: "--cat-anime-start", label: "Аниме верх", type: "color", defaultValue: "#8b174f" },
       { key: "--cat-anime-middle", label: "Аниме центр", type: "color", defaultValue: "#3a0d24" },
@@ -874,7 +875,7 @@ function categoryLayoutTokens(prefix: string): RangeToken[] {
 
 /** Per-category image scale and offset (from card bottom). */
 const CATEGORY_IMAGE_LAYOUT_SECTIONS: CategoryImageLayoutSection[] = [
-  { title: "МЕМЫ", tokens: categoryLayoutTokens("memes") },
+  { title: "РАЗНОЕ", tokens: categoryLayoutTokens("misc") },
   { title: "АНИМЕ", tokens: categoryLayoutTokens("anime") },
   { title: "ИГРЫ", tokens: categoryLayoutTokens("games") },
   { title: "НАДПИСЬ", tokens: categoryLayoutTokens("text") },
@@ -930,7 +931,7 @@ function getBaselineValues(): Record<string, string> {
       values[token.key] = cssRawToState(token, raw);
     }
   }
-  return values;
+  return overlayThemeRuntimeOverrides(values, ALL_TOKENS);
 }
 
 function defaultValues(): Record<string, string> {

@@ -1,4 +1,4 @@
-import type { Canvas } from "fabric";
+import { StaticCanvas, type Canvas } from "fabric";
 import { MOCKUP_DISPLAY_SCALE, MOCKUP_HEIGHT, MOCKUP_WIDTH, type PrintAreaRect } from "./mockup/garmentShape.js";
 
 /** Padding around the print-area so selection controls cover the whole mockup. */
@@ -9,7 +9,7 @@ export interface ControlOverscanInsets {
   bottom: number;
 }
 
-const overscanByCanvas = new WeakMap<Canvas, ControlOverscanInsets>();
+const overscanByCanvas = new WeakMap<StaticCanvas, ControlOverscanInsets>();
 
 /** Full mockup pixel size — the selection/control layer spans this entire block. */
 export function getMockupPixelSize() {
@@ -30,12 +30,12 @@ export function computeMockupControlOverscan(printArea: PrintAreaRect): ControlO
   };
 }
 
-export function getControlOverscanInsets(canvas: Canvas): ControlOverscanInsets {
+export function getControlOverscanInsets(canvas: StaticCanvas): ControlOverscanInsets {
   return overscanByCanvas.get(canvas) ?? { left: 0, top: 0, right: 0, bottom: 0 };
 }
 
 /** Print-area size in scene units (excludes mockup gutter around the design). */
-export function getDesignAreaSize(canvas: Canvas): { width: number; height: number } {
+export function getDesignAreaSize(canvas: StaticCanvas): { width: number; height: number } {
   const insets = getControlOverscanInsets(canvas);
   return {
     width: canvas.getWidth() - insets.left - insets.right,
@@ -48,7 +48,7 @@ export function getDesignAreaSize(canvas: Canvas): { width: number; height: numb
  * When called without `insets`, re-applies the last insets stored for this canvas
  * (e.g. after `loadFromJSON` / undo).
  */
-export function applySelectionControlOverscan(canvas: Canvas, insets?: ControlOverscanInsets) {
+export function applySelectionControlOverscan(canvas: StaticCanvas, insets?: ControlOverscanInsets) {
   const resolved = insets ?? overscanByCanvas.get(canvas);
   if (!resolved) return;
   overscanByCanvas.set(canvas, resolved);
@@ -57,6 +57,12 @@ export function applySelectionControlOverscan(canvas: Canvas, insets?: ControlOv
 
 /** Cap Fabric export scale so a kiosk tablet doesn't OOM on huge print areas. */
 const DTF_EXPORT_MAX_MULTIPLIER = 20;
+
+function multiplierForWidth(widthPx: number, widthMm: number, dpi: number): number {
+  if (widthPx <= 0 || widthMm <= 0) return 2;
+  const targetPx = (widthMm / 25.4) * dpi;
+  return Math.min(DTF_EXPORT_MAX_MULTIPLIER, Math.max(2, Math.ceil(targetPx / widthPx)));
+}
 
 /**
  * Fabric `toDataURL` multiplier so the PNG is ≈ `widthMm` at `dpi`
@@ -68,14 +74,20 @@ export function computeDtfExportMultiplier(
   dpi = 300,
 ): number {
   const { width } = getDesignAreaSize(canvas);
-  if (width <= 0 || widthMm <= 0) return 2;
-  const targetPx = (widthMm / 25.4) * dpi;
-  return Math.min(DTF_EXPORT_MAX_MULTIPLIER, Math.max(2, Math.ceil(targetPx / width)));
+  return multiplierForWidth(width, widthMm, dpi);
+}
+
+export function computeDtfExportMultiplierForArea(
+  printArea: PrintAreaRect,
+  widthMm: number,
+  dpi = 300,
+): number {
+  return multiplierForWidth(printArea.width * MOCKUP_DISPLAY_SCALE, widthMm, dpi);
 }
 
 /** PNG of just the print-area design (no mockup gutter, no selection chrome). */
 export function exportPrintAreaDataURL(
-  canvas: Canvas,
+  canvas: StaticCanvas,
   options?: { multiplier?: number; format?: "png" | "jpeg" },
 ): string {
   const insets = getControlOverscanInsets(canvas);
@@ -88,4 +100,47 @@ export function exportPrintAreaDataURL(
     width,
     height,
   });
+}
+
+/** True when the live canvas has at least one design object. */
+export function canvasHasDesign(canvas: Canvas): boolean {
+  return canvas.getObjects().length > 0;
+}
+
+/** True when a Fabric `toJSON` snapshot contains design objects. */
+export function fabricJsonHasDesign(json: string | null | undefined): boolean {
+  if (!json) return false;
+  try {
+    const parsed = JSON.parse(json) as { objects?: unknown };
+    return Array.isArray(parsed.objects) && parsed.objects.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Offscreen PNG export of a saved side snapshot — used when the customer
+ * designed both front and back but the live canvas is only showing one.
+ */
+export async function exportPrintAreaFromSnapshot(
+  snapshot: string,
+  printArea: PrintAreaRect,
+  options?: { multiplier?: number; format?: "png" | "jpeg" },
+): Promise<string> {
+  const size = getMockupPixelSize();
+  const canvas = new StaticCanvas(document.createElement("canvas"), {
+    width: size.width,
+    height: size.height,
+    backgroundColor: "transparent",
+  });
+  try {
+    const overscan = computeMockupControlOverscan(printArea);
+    applySelectionControlOverscan(canvas, overscan);
+    await canvas.loadFromJSON(snapshot);
+    applySelectionControlOverscan(canvas, overscan);
+    canvas.requestRenderAll();
+    return exportPrintAreaDataURL(canvas, options);
+  } finally {
+    await canvas.dispose();
+  }
 }

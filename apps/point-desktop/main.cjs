@@ -8,7 +8,7 @@ if (app.isPackaged) {
   app.commandLine.appendSwitch("disable-gpu-sandbox");
 }
 
-const { spawn } = require("node:child_process");
+const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
 const os = require("node:os");
@@ -195,6 +195,7 @@ function ensurePointDataDir(pointRoot) {
     "catalog",
     "catalog-tmp",
     "orders",
+    "order-sources",
     "ads-videos",
     "stickers-cache",
     "stickers-tmp",
@@ -482,7 +483,8 @@ function showSplash(statusText) {
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
   splashWindow.setMenuBarVisibility(false);
-  // Closing the only window during boot used to fire window-all-closed → silent app.quit().
+  // User X during boot must not kill startup via window-all-closed.
+  // closeSplash() uses destroy() so this preventDefault does not leave a zombie splash.
   splashWindow.on("close", (event) => {
     if (bootInProgress) {
       event.preventDefault();
@@ -501,7 +503,8 @@ function showSplash(statusText) {
 
 function closeSplash() {
   if (splashWindow && !splashWindow.isDestroyed()) {
-    splashWindow.close();
+    // destroy() bypasses the bootInProgress close-preventDefault (close() did not).
+    splashWindow.destroy();
   }
   splashWindow = null;
 }
@@ -787,12 +790,20 @@ function stopPointServer() {
   const pid = child.pid;
   try {
     if (process.platform === "win32" && pid) {
-      // Kill the whole tree — node + any workers holding module files.
-      spawn("taskkill", ["/pid", String(pid), "/T", "/F"], {
-        windowsHide: true,
-        stdio: "ignore",
-        detached: true,
-      }).unref();
+      // Sync kill — async taskkill left file locks and module swap hung forever
+      // on "Установка сервера…".
+      try {
+        execFileSync("taskkill", ["/pid", String(pid), "/T", "/F"], {
+          windowsHide: true,
+          stdio: "ignore",
+        });
+      } catch {
+        try {
+          child.kill();
+        } catch {
+          // ignore
+        }
+      }
     } else {
       child.kill();
     }
@@ -803,6 +814,13 @@ function stopPointServer() {
       // ignore
     }
   }
+}
+
+/** Stop owned point-server and anything still listening on POINT_PORT. */
+async function stopPointServerForModuleSwap() {
+  stopPointServer();
+  await freePointPortIfForeign();
+  await new Promise((r) => setTimeout(r, 400));
 }
 
 async function prepareShellInstall() {
@@ -908,13 +926,18 @@ if (!gotLock) {
         beforeApply: async (zone) => {
           if (zone === "ui" || zone === "server" || zone === "runtime") {
             // Windows locks files under modules/server while point-server runs —
-            // stop first or rename/swap hangs forever ("Обновление…").
-            stopPointServer();
+            // stop first or rename/swap hangs forever ("Установка сервера…").
+            await stopPointServerForModuleSwap();
           }
         },
         onApplied: async (zone) => {
           if (zone === "ui" || zone === "server" || zone === "runtime") {
-            await ensurePointServer();
+            try {
+              await ensurePointServer();
+            } catch (err) {
+              log(`onApplied ensurePointServer failed: ${err && err.message ? err.message : err}`);
+              throw err;
+            }
             reloadAllUiWindows();
             await new Promise((r) => setTimeout(r, 800));
             notifyUiReload();

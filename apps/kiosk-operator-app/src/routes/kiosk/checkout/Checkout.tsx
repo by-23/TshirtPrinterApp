@@ -9,9 +9,7 @@ import { ArrowLeft } from "../../../components/icons.js";
 import { blockBorderStyle, dividerStyle } from "./borderStyle.js";
 import { CheckoutPreview } from "./CheckoutPreview.js";
 import { OrderSummary } from "./OrderSummary.js";
-import { PaymentQrCard } from "./PaymentQrCard.js";
 import { PaymentCashCard } from "./PaymentCashCard.js";
-import { PaymentSteps } from "./PaymentSteps.js";
 import { CheckoutFooter } from "./CheckoutFooter.js";
 import { AcceptedNotice } from "./AcceptedNotice.js";
 import { CancelledNotice } from "./CancelledNotice.js";
@@ -20,10 +18,10 @@ import { checkoutThemeSection } from "./themeSections.js";
 const POLL_INTERVAL_MS = 3000;
 
 /**
- * `/kiosk/checkout` — "Оформление заказа" screen, strictly matching
- * `docs/ui-mockups/checkout.png`. Reads the order created by `Editor.tsx`'s
- * "Печать" button from `checkoutStore`; if that's empty (e.g. a page
- * refresh), there's nothing to check out, so bounce back to the editor.
+ * `/kiosk/checkout` — "Оформление заказа" screen. Cashier payment only.
+ * Reads the order created by `Editor.tsx`'s "Печать" button from
+ * `checkoutStore`; if that's empty (e.g. a page refresh), bounce back
+ * to the editor.
  */
 export function Checkout() {
   const { t } = useTranslation();
@@ -159,24 +157,10 @@ export function Checkout() {
         >
           {t("checkout.payment.title")}
         </h2>
-
-        <div className="flex flex-col items-stretch lg:flex-row" style={{ gap: "var(--checkout-payment-cards-gap)" }}>
-          <PaymentQrCard orderId={order.id} />
-          <div className="flex flex-shrink-0 items-center justify-center lg:flex-col" style={{ gap: "var(--checkout-payment-or-gap)" }}>
-            <div aria-hidden className="lg:hidden" style={dividerStyle("payment-or")} />
-            <span
-              className="font-bold uppercase tracking-wide text-ink-300"
-              style={{ fontSize: "var(--checkout-payment-or-font-size)" }}
-            >
-              {t("checkout.payment.or")}
-            </span>
-            <div aria-hidden className="hidden lg:block" style={dividerStyle("payment-or", "vertical")} />
-          </div>
+        <div className="flex w-full justify-center">
           <PaymentCashCard orderId={order.id} />
         </div>
       </section>
-
-      <PaymentSteps />
 
       <p
         {...checkoutThemeSection("infoBar")}

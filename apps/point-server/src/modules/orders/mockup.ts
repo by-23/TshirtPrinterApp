@@ -1,13 +1,17 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import type { GarmentSide, GarmentType } from "@tshirt/shared-types";
 import { dataPath } from "../../lib/dataDir.js";
 import { MOCKUP_HEIGHT, MOCKUP_WIDTH, getPrintAreas } from "./garmentGeometry.js";
 
-/** Per-order design/mockup PNGs under DATA_DIR/orders (served at /files/orders/...). */
+/** Per-order mockup / DTF PNGs under DATA_DIR/orders (served at /files/orders/...). */
 const ORDERS_DIR = dataPath("orders");
-const ASSETS_DIR = path.resolve("assets", "garments");
+/** Original unmirrored print-area — kept out of the cashier-facing order folder. */
+const SOURCES_DIR = dataPath("order-sources");
+const ASSETS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../assets/garments");
 
 /** Matches the client's `MOCKUP_DISPLAY_SCALE` — arbitrary (cancels out in the math below) but kept for readability/parity. */
 const RENDER_SCALE = 2;
@@ -169,6 +173,8 @@ export interface GenerateOrderImagesInput {
   garmentColor: string;
   side: GarmentSide;
   designImageBase64: string;
+  /** Appended to filenames (`mockup-back.png`) so a second side doesn't overwrite the primary. */
+  nameSuffix?: string;
 }
 
 export interface GenerateOrderImagesResult {
@@ -176,19 +182,56 @@ export interface GenerateOrderImagesResult {
   mockupImagePath: string;
 }
 
+function fileSuffixFor(nameSuffix?: string): string {
+  return nameSuffix ? `-${nameSuffix}` : "";
+}
+
+export function orderMockupRelativePath(orderId: string, nameSuffix?: string): string {
+  return `orders/${orderId}/mockup${fileSuffixFor(nameSuffix)}.png`;
+}
+
+export function orderSourceRelativePath(orderId: string, nameSuffix?: string): string {
+  return `order-sources/${orderId}${fileSuffixFor(nameSuffix)}.png`;
+}
+
+function absoluteFromRelative(relativePath: string): string {
+  return dataPath(...relativePath.split("/").filter(Boolean));
+}
+
 /**
- * Saves the customer's design PNG and composites it onto a garment template
- * via `sharp`, producing the two files Stage 5 requires: a clean design PNG
- * and a photorealistic mockup PNG. Paths returned are relative to `data/`,
- * ready to be served under `/files`.
+ * Finds the original print-area PNG for a side. Extra sides never fall back
+ * to the unsuffixed primary file.
  */
-export async function generateOrderImages(input: GenerateOrderImagesInput): Promise<GenerateOrderImagesResult> {
+export function resolveOrderDesignAbsolutePath(input: {
+  orderId: string;
+  storedRelativePath: string | null;
+  nameSuffix?: string;
+  allowUnsuffixed?: boolean;
+}): string | null {
+  if (input.storedRelativePath) {
+    const storedAbs = absoluteFromRelative(input.storedRelativePath);
+    if (existsSync(storedAbs)) return storedAbs;
+  }
+
+  const candidates = [
+    dataPath("order-sources", `${input.orderId}${fileSuffixFor(input.nameSuffix)}.png`),
+    input.allowUnsuffixed ? dataPath("order-sources", `${input.orderId}.png`) : null,
+    dataPath("orders", input.orderId, `design${fileSuffixFor(input.nameSuffix)}.png`),
+    input.allowUnsuffixed ? dataPath("orders", input.orderId, "design.png") : null,
+  ];
+  return candidates.find((candidate): candidate is string => Boolean(candidate && existsSync(candidate))) ?? null;
+}
+
+async function writeOrderMockup(input: {
+  orderId: string;
+  garmentType: GarmentType;
+  garmentColor: string;
+  side: GarmentSide;
+  designBuffer: Buffer;
+  nameSuffix?: string;
+}): Promise<string> {
   const orderDir = path.join(ORDERS_DIR, input.orderId);
   await mkdir(orderDir, { recursive: true });
-
-  const designBuffer = decodeDataUrl(input.designImageBase64);
-  const designPngPath = path.join(orderDir, "design.png");
-  await writeFile(designPngPath, designBuffer);
 
   const { buffer: baseBuffer, width, height } = await tintedGarmentBase(
     input.garmentType,
@@ -196,17 +239,55 @@ export async function generateOrderImages(input: GenerateOrderImagesInput): Prom
     input.side,
   );
   const rect = await designRect(input.garmentType, input.side, width, height);
-  const resizedDesign = await sharp(designBuffer).resize(rect.width, rect.height, { fit: "fill" }).png().toBuffer();
+  const resizedDesign = await sharp(input.designBuffer).resize(rect.width, rect.height, { fit: "fill" }).png().toBuffer();
   const finalDesignLayer = await applyFabricShading(baseBuffer, resizedDesign, rect);
 
-  const mockupPngPath = path.join(orderDir, "mockup.png");
+  const relativePath = orderMockupRelativePath(input.orderId, input.nameSuffix);
   await sharp(baseBuffer)
     .composite([{ input: finalDesignLayer, left: rect.left, top: rect.top }])
     .png()
-    .toFile(mockupPngPath);
+    .toFile(path.join(orderDir, `mockup${fileSuffixFor(input.nameSuffix)}.png`));
 
-  return {
-    designImagePath: `orders/${input.orderId}/design.png`,
-    mockupImagePath: `orders/${input.orderId}/mockup.png`,
-  };
+  return relativePath;
+}
+
+/**
+ * Writes mockup.png (or mockup-front/back.png) into the cashier-facing order
+ * folder from the stored print-area source.
+ */
+export async function ensureOrderMockup(input: {
+  orderId: string;
+  garmentType: GarmentType;
+  garmentColor: string;
+  side: GarmentSide;
+  designAbsolutePath: string;
+  nameSuffix?: string;
+}): Promise<string> {
+  const designBuffer = await readFile(input.designAbsolutePath);
+  return writeOrderMockup({ ...input, designBuffer });
+}
+
+/**
+ * Saves the original print-area PNG outside the cashier-facing order folder
+ * (so they only see mockup + mirrored DTF) and composites a photorealistic
+ * mockup. Paths returned are relative to `data/`, ready to be served under `/files`.
+ */
+export async function generateOrderImages(input: GenerateOrderImagesInput): Promise<GenerateOrderImagesResult> {
+  await mkdir(path.join(ORDERS_DIR, input.orderId), { recursive: true });
+  await mkdir(SOURCES_DIR, { recursive: true });
+
+  const designBuffer = decodeDataUrl(input.designImageBase64);
+  const designImagePath = orderSourceRelativePath(input.orderId, input.nameSuffix);
+  await writeFile(path.join(SOURCES_DIR, `${input.orderId}${fileSuffixFor(input.nameSuffix)}.png`), designBuffer);
+
+  const mockupImagePath = await writeOrderMockup({
+    orderId: input.orderId,
+    garmentType: input.garmentType,
+    garmentColor: input.garmentColor,
+    side: input.side,
+    designBuffer,
+    nameSuffix: input.nameSuffix,
+  });
+
+  return { designImagePath, mockupImagePath };
 }

@@ -16,6 +16,8 @@ export interface CheckoutGarment {
   side: GarmentSide;
   /** JSON snapshot (fabric.Canvas#toJSON) of the ordered side, for the read-only checkout preview. */
   canvasSnapshot: string | null;
+  /** Sides that actually have artwork — used for «Сторона печати» and preview pills. */
+  designedSides?: GarmentSide[];
 }
 
 interface CheckoutState {

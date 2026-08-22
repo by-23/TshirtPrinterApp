@@ -9,7 +9,7 @@ import { addImageFromUrl } from "../canvasImage.js";
 import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
 import { CircleX, FilmIcon, GamepadIcon, PhotoIcon, SearchIcon, SpinnerIcon, StarIcon } from "../../components/icons.js";
 
-const GALLERY_TABS = ["memes", "anime_movies", "games"] as const satisfies readonly DesignCategory[];
+const GALLERY_TABS = ["misc", "anime_movies", "games"] as const satisfies readonly DesignCategory[];
 type GalleryTabCategory = (typeof GALLERY_TABS)[number];
 type TabId = GalleryTabCategory | "popular";
 
@@ -19,7 +19,7 @@ const POPULAR_LIMIT = 48;
 
 const TAB_ICON: Record<TabId, (props: { className?: string }) => JSX.Element> = {
   popular: StarIcon,
-  memes: PhotoIcon,
+  misc: PhotoIcon,
   anime_movies: FilmIcon,
   games: GamepadIcon,
 };

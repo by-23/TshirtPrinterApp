@@ -123,7 +123,7 @@ export const uploadSessions = pgTable("upload_sessions", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
-export const catalogManualCategoryEnum = pgEnum("catalog_manual_category", ["memes", "anime_movies", "games"]);
+export const catalogManualCategoryEnum = pgEnum("catalog_manual_category", ["misc", "anime_movies", "games"]);
 export const catalogManualPointStatusEnum = pgEnum("catalog_manual_point_status", [
   "pending",
   "applied",

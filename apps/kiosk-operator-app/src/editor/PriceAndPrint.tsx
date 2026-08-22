@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { TouchButton } from "@tshirt/ui-kit";
 import { calculatePriceTenge } from "@tshirt/shared-pricing";
-import { designCategorySchema, type GarmentFabric } from "@tshirt/shared-types";
+import { type GarmentFabric } from "@tshirt/shared-types";
 import { useEditorStore } from "./store.js";
 import { usePricingConfigStore } from "../lib/pricingConfigStore.js";
 import { useAiFlowStore } from "../lib/aiFlowStore.js";
+import { parseDesignCategoryParam } from "../lib/categoryLabels.js";
 import { blockBorderStyle } from "./borderStyle.js";
 import { editorThemeSection } from "./themeSections.js";
 
@@ -23,8 +24,7 @@ export interface PriceAndPrintProps {
 export function PriceAndPrint({ onPrint, isSubmitting }: PriceAndPrintProps) {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const categoryParam = designCategorySchema.safeParse(searchParams.get("category"));
-  const category = categoryParam.success ? categoryParam.data : null;
+  const category = parseDesignCategoryParam(searchParams.get("category"));
   const garmentType = useEditorStore((state) => state.garmentType);
   const size = useEditorStore((state) => state.size);
   const fabricName = useEditorStore((state) => state.fabricName);

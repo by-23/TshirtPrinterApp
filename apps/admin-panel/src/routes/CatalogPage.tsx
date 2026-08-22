@@ -20,11 +20,11 @@ import type { CatalogManualDesign, CatalogManualPointStatus, GalleryCategory } f
 import { apiClient, ApiError } from "../lib/apiClient.js";
 
 const CATEGORY_LABELS: Record<GalleryCategory, string> = {
-  memes: "Мемы",
+  misc: "Разное",
   anime_movies: "Аниме",
   games: "Игры",
 };
-const CATEGORIES: GalleryCategory[] = ["memes", "anime_movies", "games"];
+const CATEGORIES: GalleryCategory[] = ["misc", "anime_movies", "games"];
 
 /** How many uploads run in parallel when an admin selects several files at once. */
 const UPLOAD_CONCURRENCY = 3;
@@ -135,13 +135,13 @@ function SyncStatus({ design }: { design: CatalogManualDesign }) {
 }
 
 export function CatalogPage() {
-  const [category, setCategory] = useState<GalleryCategory>("memes");
+  const [category, setCategory] = useState<GalleryCategory>("misc");
   const [designs, setDesigns] = useState<CatalogManualDesign[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState<CatalogManualDesign | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  const [editCategory, setEditCategory] = useState<GalleryCategory>("memes");
+  const [editCategory, setEditCategory] = useState<GalleryCategory>("misc");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

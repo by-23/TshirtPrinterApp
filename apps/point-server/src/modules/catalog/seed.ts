@@ -3,7 +3,7 @@ import { db } from "../../db/client.js";
 import { designs } from "../../db/schema.js";
 
 /**
- * The gallery categories (memes/anime_movies/games) used to ship with 18
+ * The gallery categories (misc/anime_movies/games) used to ship with 18
  * placeholder rows (title only, no image — see git history). Real artwork
  * now arrives automatically via the Pinterest catalog scraper (Этап 3,
  * `modules/catalog-scraper`), which fills the categories on point-server

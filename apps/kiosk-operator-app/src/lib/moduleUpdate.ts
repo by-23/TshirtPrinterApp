@@ -19,6 +19,9 @@ type ModulesApi = {
   getModulesStatus?: () => Promise<ModulesUpdateSnapshot>;
   checkModuleUpdates?: () => Promise<{ ok: boolean; error?: string; status?: ModulesUpdateSnapshot }>;
   applyModuleUpdate?: (zone: ModuleZoneId) => Promise<{ ok: boolean; error?: string }>;
+  applyModulePipeline?: (
+    zones: ModuleZoneId[],
+  ) => Promise<{ ok: boolean; error?: string; status?: ModulesUpdateSnapshot }>;
   onModulesStatus?: (callback: (status: ModulesUpdateSnapshot) => void) => () => void;
 };
 
@@ -57,4 +60,18 @@ export async function applyModuleUpdate(zone: ModuleZoneId): Promise<{ ok: boole
   const api = getModulesApi();
   if (!api?.applyModuleUpdate) return { ok: false, error: "not desktop" };
   return api.applyModuleUpdate(zone);
+}
+
+export async function applyModulePipeline(
+  zones: ModuleZoneId[],
+): Promise<{ ok: boolean; error?: string; status?: ModulesUpdateSnapshot }> {
+  const api = getModulesApi();
+  if (api?.applyModulePipeline) return api.applyModulePipeline(zones);
+  // Older shells: sequential apply (may reload between zones).
+  for (const zone of zones) {
+    if (!api?.applyModuleUpdate) return { ok: false, error: "not desktop" };
+    const res = await api.applyModuleUpdate(zone);
+    if (!res.ok) return res;
+  }
+  return { ok: true };
 }

@@ -39,7 +39,7 @@ function pickRendition(images: Record<string, GiphyRendition>): GiphyRendition |
 
 /**
  * Giphy's sticker index is English-biased and ignores "png" as a format
- * hint — strip it so queries like "memes png" / "мемы png" search the
+ * hint — strip it so queries like "sticker png" / "стикер png" search the
  * subject, not a nonexistent "png" sticker tag.
  */
 function normalizeGiphyQuery(query: string): string {
@@ -50,7 +50,7 @@ function normalizeGiphyQuery(query: string): string {
 /**
  * Official, free (API-key-gated) JSON API — no browser, no rate-limit
  * roulette like Pinterest scraping. Stickers are the closest match GIPHY has
- * to "meme/anime/game png" (many are transparent cut-outs already).
+ * to "sticker/anime/game png" (many are transparent cut-outs already).
  * Silently contributes nothing if no API key is configured — see
  * `config.resolveGiphyApiKey` and the operator panel's "Настройки автозаполнения".
  *

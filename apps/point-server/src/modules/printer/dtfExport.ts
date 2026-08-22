@@ -1,4 +1,5 @@
-import { copyFile, mkdir } from "node:fs/promises";
+import { copyFile, mkdir, unlink } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import {
@@ -14,9 +15,11 @@ export interface PrepareDtfPrintInput {
   orderId: string;
   garmentType: GarmentType;
   side: GarmentSide;
-  /** Absolute path to the source design.png (transparent print-area). */
+  /** Absolute path to the original unmirrored print-area PNG. */
   designAbsolutePath: string;
   config: DtfPrinterConfig;
+  /** Appended to filenames so dual-side jobs don't overwrite each other. */
+  nameSuffix?: string;
 }
 
 export interface PrepareDtfPrintResult {
@@ -35,10 +38,51 @@ export interface PrepareDtfPrintResult {
   printerModel: string;
 }
 
+function fileSuffixFor(nameSuffix?: string): string {
+  return nameSuffix ? `-${nameSuffix}` : "";
+}
+
+function sanitizeHotfolderName(name: string): string {
+  const cleaned = name.replace(/[<>:"|?*\\/]/g, "").trim();
+  return cleaned || "dtf-print-jobs";
+}
+
+export function hotfolderDirFor(config: DtfPrinterConfig): string {
+  return dataPath(sanitizeHotfolderName(config.hotfolderName));
+}
+
+export function hotfolderFileName(orderId: string, kind: "dtf-print" | "mockup", nameSuffix?: string): string {
+  return `order-${orderId}${fileSuffixFor(nameSuffix)}-${kind}.png`;
+}
+
+/** Copies a PNG into the cashier/RIP hotfolder (`dtf-print-jobs`). */
+export async function copyOrderFileToHotfolder(input: {
+  orderId: string;
+  kind: "dtf-print" | "mockup";
+  sourceAbsolutePath: string;
+  config: DtfPrinterConfig;
+  nameSuffix?: string;
+}): Promise<{ hotfolderDir: string; hotfolderAbsolutePath: string }> {
+  ensureDataDir();
+  const hotfolderDir = hotfolderDirFor(input.config);
+  await mkdir(hotfolderDir, { recursive: true });
+  const hotfolderAbsolutePath = path.join(
+    hotfolderDir,
+    hotfolderFileName(input.orderId, input.kind, input.nameSuffix),
+  );
+  await copyFile(input.sourceAbsolutePath, hotfolderAbsolutePath);
+  const legacyName = `order-${input.orderId}${fileSuffixFor(input.nameSuffix)}.png`;
+  const legacyPath = path.join(hotfolderDir, legacyName);
+  if (legacyName !== path.basename(hotfolderAbsolutePath) && existsSync(legacyPath)) {
+    await unlink(legacyPath);
+  }
+  return { hotfolderDir, hotfolderAbsolutePath };
+}
+
 /**
  * Builds a RIP-ready DTF PNG: physical size at configured DPI, optional
  * horizontal mirror, density metadata. Copies into the hotfolder as
- * `order-{id}.png` (overwrites on reprint).
+ * `order-{id}-dtf-print.png` (overwrites on reprint).
  */
 export async function prepareDtfPrint(input: PrepareDtfPrintInput): Promise<PrepareDtfPrintResult> {
   ensureDataDir();
@@ -49,7 +93,7 @@ export async function prepareDtfPrint(input: PrepareDtfPrintInput): Promise<Prep
 
   const orderDir = dataPath("orders", input.orderId);
   await mkdir(orderDir, { recursive: true });
-  const absolutePath = path.join(orderDir, "dtf-print.png");
+  const absolutePath = path.join(orderDir, `dtf-print${fileSuffixFor(input.nameSuffix)}.png`);
 
   let pipeline = sharp(input.designAbsolutePath, { failOn: "none" })
     .ensureAlpha()
@@ -67,14 +111,16 @@ export async function prepareDtfPrint(input: PrepareDtfPrintInput): Promise<Prep
     .png({ compressionLevel: 6, adaptiveFiltering: true })
     .toFile(absolutePath);
 
-  const hotfolderName = sanitizeHotfolderName(input.config.hotfolderName);
-  const hotfolderDir = dataPath(hotfolderName);
-  await mkdir(hotfolderDir, { recursive: true });
-  const hotfolderAbsolutePath = path.join(hotfolderDir, `order-${input.orderId}.png`);
-  await copyFile(absolutePath, hotfolderAbsolutePath);
+  const { hotfolderDir, hotfolderAbsolutePath } = await copyOrderFileToHotfolder({
+    orderId: input.orderId,
+    kind: "dtf-print",
+    sourceAbsolutePath: absolutePath,
+    config: input.config,
+    nameSuffix: input.nameSuffix,
+  });
 
   return {
-    dtfPrintImagePath: `orders/${input.orderId}/dtf-print.png`,
+    dtfPrintImagePath: `orders/${input.orderId}/dtf-print${fileSuffixFor(input.nameSuffix)}.png`,
     absolutePath,
     hotfolderAbsolutePath,
     hotfolderDir,
@@ -87,9 +133,4 @@ export async function prepareDtfPrint(input: PrepareDtfPrintInput): Promise<Prep
     mediaSize: input.config.mediaSize,
     printerModel: input.config.printerModel,
   };
-}
-
-function sanitizeHotfolderName(name: string): string {
-  const cleaned = name.replace(/[<>:"|?*\\/]/g, "").trim();
-  return cleaned || "dtf-print-jobs";
 }

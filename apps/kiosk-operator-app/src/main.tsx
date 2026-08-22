@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App.js";
 import { setReleaseMode } from "./lib/releaseMode.js";
-import { clearThemeOverrideStorage } from "./lib/themeCssSave.js";
+import { applyThemeRuntimeOverrides, clearThemeOverrideStorage } from "./lib/themeCssSave.js";
 import "./lib/i18n.js";
 import "./index.css";
 
@@ -30,6 +30,7 @@ try {
 }
 
 clearThemeOverrideStorage();
+applyThemeRuntimeOverrides();
 
 // Kiosk/operator SPAs load from Operator's point-server. When Operator applies
 // a UI module, it broadcasts `ui:reload` — never self-update on the kiosk shell.

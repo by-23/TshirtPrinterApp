@@ -17,6 +17,16 @@ export const GARMENT_SIDE_LABELS: Record<GarmentSide, string> = {
   back: "Спина",
 };
 
+export function formatOrderSides(sides: GarmentSide[]): string {
+  return sides.map((side) => GARMENT_SIDE_LABELS[side]).join(" + ");
+}
+
+export function formatDesignCount(count: number): string {
+  if (count === 1) return "1 дизайн";
+  if (count >= 2 && count <= 4) return `${count} дизайна`;
+  return `${count} дизайнов`;
+}
+
 export const FABRIC_LABELS: Record<string, string> = {
   cotton: "100% хлопок",
   premium: "Премиум ткань",

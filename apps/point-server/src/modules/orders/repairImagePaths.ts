@@ -13,8 +13,8 @@ function fileExistsForRelative(relativePath: string | null): boolean {
 }
 
 /**
- * If mockup/design paths were cleared but PNGs still exist under DATA_DIR/orders/<id>/,
- * restore the relative paths so /files/orders/... works again.
+ * If mockup/design paths were cleared but PNGs still exist on disk,
+ * restore the relative paths so /files/... works again.
  */
 export async function repairOrderImagePaths(log?: FastifyBaseLogger): Promise<number> {
   const rows = await db.select().from(orders);
@@ -22,35 +22,78 @@ export async function repairOrderImagePaths(log?: FastifyBaseLogger): Promise<nu
 
   for (const row of rows) {
     const orderId = String(row.id);
-    const designRel = `orders/${orderId}/design.png`;
+    const sourceRel = `order-sources/${orderId}.png`;
+    const extraSourceRel = row.otherSide ? `order-sources/${orderId}-${row.otherSide}.png` : null;
+    const primarySourceRel = row.otherSide ? `order-sources/${orderId}-${row.side}.png` : sourceRel;
+    const legacyDesignRel = `orders/${orderId}/design.png`;
     const mockupRel = `orders/${orderId}/mockup.png`;
-    const designAbs = dataPath("orders", orderId, "design.png");
+    const primaryMockupRel = row.otherSide ? `orders/${orderId}/mockup-${row.side}.png` : mockupRel;
+    const extraMockupRel = row.otherSide ? `orders/${orderId}/mockup-${row.otherSide}.png` : null;
+    const sourceAbs = dataPath("order-sources", `${orderId}.png`);
+    const extraSourceAbs = row.otherSide ? dataPath("order-sources", `${orderId}-${row.otherSide}.png`) : null;
+    const primarySourceAbs = row.otherSide ? dataPath("order-sources", `${orderId}-${row.side}.png`) : sourceAbs;
+    const legacyDesignAbs = dataPath("orders", orderId, "design.png");
     const mockupAbs = dataPath("orders", orderId, "mockup.png");
+    const primaryMockupAbs = row.otherSide ? dataPath("orders", orderId, `mockup-${row.side}.png`) : mockupAbs;
+    const extraMockupAbs = extraMockupRel ? dataPath("orders", orderId, `mockup-${row.otherSide}.png`) : null;
 
     const nextDesign = fileExistsForRelative(row.designImagePath)
       ? row.designImagePath
-      : existsSync(designAbs)
-        ? designRel
-        : row.designImagePath;
+      : existsSync(primarySourceAbs)
+        ? primarySourceRel
+        : existsSync(sourceAbs)
+          ? sourceRel
+          : existsSync(legacyDesignAbs)
+            ? legacyDesignRel
+            : row.designImagePath;
     const nextMockup = fileExistsForRelative(row.mockupImagePath)
       ? row.mockupImagePath
-      : existsSync(mockupAbs)
-        ? mockupRel
-        : row.mockupImagePath;
+      : existsSync(primaryMockupAbs)
+        ? primaryMockupRel
+        : existsSync(mockupAbs)
+          ? mockupRel
+          : row.mockupImagePath;
 
-    if (nextDesign === row.designImagePath && nextMockup === row.mockupImagePath) {
+    const nextOtherDesign =
+      !row.otherSide
+        ? row.otherDesignImagePath
+        : fileExistsForRelative(row.otherDesignImagePath)
+          ? row.otherDesignImagePath
+          : extraSourceAbs && existsSync(extraSourceAbs)
+            ? extraSourceRel
+            : row.otherDesignImagePath;
+    const nextOtherMockup =
+      !row.otherSide
+        ? row.otherMockupImagePath
+        : fileExistsForRelative(row.otherMockupImagePath)
+          ? row.otherMockupImagePath
+          : extraMockupAbs && existsSync(extraMockupAbs)
+            ? extraMockupRel
+            : row.otherMockupImagePath;
+
+    if (
+      nextDesign === row.designImagePath &&
+      nextMockup === row.mockupImagePath &&
+      nextOtherDesign === row.otherDesignImagePath &&
+      nextOtherMockup === row.otherMockupImagePath
+    ) {
       continue;
     }
 
     await db
       .update(orders)
-      .set({ designImagePath: nextDesign, mockupImagePath: nextMockup })
+      .set({
+        designImagePath: nextDesign,
+        mockupImagePath: nextMockup,
+        otherDesignImagePath: nextOtherDesign,
+        otherMockupImagePath: nextOtherMockup,
+      })
       .where(eq(orders.id, row.id));
     repaired += 1;
   }
 
   if (repaired > 0) {
-    log?.info(`Repaired image paths for ${repaired} order(s) from DATA_DIR/orders`);
+    log?.info(`Repaired image paths for ${repaired} order(s)`);
   }
   return repaired;
 }

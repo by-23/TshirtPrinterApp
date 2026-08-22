@@ -57,6 +57,13 @@
       "when": 1785542000000,
       "tag": "0007_managed_fonts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787409000000,
+      "tag": "0008_misc_category",
+      "breakpoints": true
     }
   ]
 }

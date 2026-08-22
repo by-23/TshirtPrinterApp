@@ -4,8 +4,9 @@ import { env } from "../env.js";
 
 /**
  * Absolute path to the point's writable data root.
- * Dev default: `./data` (cwd = apps/point-server).
- * Packaged Windows: `%LOCALAPPDATA%\TshirtPrinter\data` via DATA_DIR env.
+ * Dev default: `./data` (cwd = apps/point-server), except Windows which uses
+ * `%LOCALAPPDATA%\TshirtPrinter\data` so the kiosk and cashiers share one folder.
+ * Packaged Windows: same LOCALAPPDATA path via DATA_DIR env.
  *
  * All runtime files live here: SQLite, catalog/, orders/, ads/, stickers/, AI weights.
  * `/files/*` is served from this directory.
@@ -18,6 +19,7 @@ const RUNTIME_SUBDIRS = [
   "catalog",
   "catalog-tmp",
   "orders",
+  "order-sources",
   "dtf-print-jobs",
   "ads-videos",
   "stickers",

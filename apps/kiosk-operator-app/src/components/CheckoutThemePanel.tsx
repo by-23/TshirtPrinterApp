@@ -22,6 +22,7 @@ import { useDesignPanelPick } from "../lib/useDesignPanelPick.js";
 import {
   clearThemeOverrideStorage,
   createThemeCssSaver,
+  overlayThemeRuntimeOverrides,
   themeSaveStatusLabel,
   type ThemeSaveState,
 } from "../lib/themeCssSave.js";
@@ -84,14 +85,6 @@ const FONT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
 };
 
 const ORDER_NUMBER_FONT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
-  type: "range",
-  min: 16,
-  max: 120,
-  step: 1,
-  unit: "px",
-};
-
-const TIMER_VALUE_FONT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
   type: "range",
   min: 16,
   max: 120,
@@ -246,7 +239,6 @@ const SECTIONS: Section[] = [
       { key: "--checkout-main-columns-gap", label: "Между превью и сводкой", defaultValue: 24, ...LAYOUT_GAP_RANGE },
       { key: "--checkout-preview-column-width", label: "Ширина колонки превью", defaultValue: 380, ...BLOCK_WIDTH_RANGE },
       { key: "--checkout-payment-section-gap", label: "В блоке способов оплаты", defaultValue: 20, ...LAYOUT_GAP_RANGE },
-      { key: "--checkout-payment-cards-gap", label: "Между карточками QR/касса", defaultValue: 20, ...LAYOUT_GAP_RANGE },
       { key: "--checkout-footer-gap", label: "Между кнопками футера", defaultValue: 16, ...LAYOUT_GAP_RANGE },
     ],
   },
@@ -324,85 +316,6 @@ const SECTIONS: Section[] = [
     title: "Способ оплаты — заголовок",
     tokens: [
       { key: "--checkout-payment-title-size", label: "Заголовок «СПОСОБ ОПЛАТЫ»", defaultValue: 20, ...FONT_RANGE },
-      { key: "--checkout-payment-or-gap", label: "«ИЛИ» — зазор", defaultValue: 10, ...GAP_RANGE },
-      { key: "--checkout-payment-or-font-size", label: "«ИЛИ» — текст", defaultValue: 14, ...FONT_RANGE },
-      ...dividerTokens("payment-or", DIVIDER_DEFAULT),
-    ],
-  },
-  {
-    title: "Карточка «Оплата по QR»",
-    tokens: [
-      {
-        key: "--checkout-qr-card-bg-direction",
-        label: "Фон — направление",
-        type: "select",
-        defaultValue: "to bottom",
-        options: [...GRADIENT_DIRECTION_OPTIONS],
-      },
-      { key: "--checkout-qr-card-bg-start", label: "Фон — верх", type: "color", defaultValue: "#2a0f3d" },
-      { key: "--checkout-qr-card-bg-end", label: "Фон — низ", type: "color", defaultValue: "#1a0a26" },
-      { key: "--checkout-qr-card-gap", label: "Зазор между элементами", defaultValue: 12, ...GAP_RANGE },
-      { key: "--checkout-qr-title-size", label: "Заголовок — размер", defaultValue: 16, ...FONT_RANGE },
-      { key: "--checkout-qr-subtitle-size", label: "Подпись — размер", defaultValue: 13, ...FONT_RANGE },
-      { key: "--checkout-qr-subtitle-width", label: "Подпись — ширина", defaultValue: 300, ...BLOCK_WIDTH_RANGE },
-      { key: "--checkout-qr-code-size", label: "QR-код — размер", defaultValue: 160, ...SIZE_RANGE },
-      { key: "--checkout-qr-code-radius", label: "QR-код — скругление рамки", defaultValue: 12, ...RADIUS_RANGE },
-      { key: "--checkout-qr-code-padding", label: "QR-код — внутренний отступ", defaultValue: 10, ...PADDING_RANGE },
-      { key: "--checkout-qr-timer-label-size", label: "Таймер — подпись", defaultValue: 12, ...FONT_RANGE },
-      { key: "--checkout-qr-timer-label-color", label: "Таймер — цвет подписи", type: "color", defaultValue: "#a7b0d0" },
-      { key: "--checkout-qr-timer-value-size", label: "Таймер — цифры", defaultValue: 26, ...TIMER_VALUE_FONT_RANGE },
-      { key: "--checkout-qr-timer-value-color", label: "Таймер — цвет цифр", type: "color", defaultValue: "#ffffff" },
-      {
-        key: "--checkout-qr-timer-box-border-width",
-        label: "Рамка таймера — толщина",
-        defaultValue: 1.5,
-        ...BORDER_WIDTH_RANGE,
-      },
-      {
-        key: "--checkout-qr-timer-box-border-color",
-        label: "Рамка таймера — цвет",
-        type: "color",
-        defaultValue: "#ff2d95",
-      },
-      {
-        key: "--checkout-qr-timer-box-border-opacity",
-        label: "Рамка таймера — прозрачность",
-        defaultValue: 0.75,
-        ...OPACITY_RANGE,
-      },
-      {
-        key: "--checkout-qr-timer-box-radius",
-        label: "Рамка таймера — скругление",
-        defaultValue: 16,
-        ...RADIUS_RANGE,
-      },
-      {
-        key: "--checkout-qr-timer-box-padding-x",
-        label: "Рамка таймера — отступ X",
-        defaultValue: 32,
-        ...PADDING_RANGE,
-      },
-      {
-        key: "--checkout-qr-timer-box-padding-y",
-        label: "Рамка таймера — отступ Y",
-        defaultValue: 16,
-        ...PADDING_RANGE,
-      },
-      {
-        key: "--checkout-qr-timer-box-gap",
-        label: "Рамка таймера — зазор внутри",
-        defaultValue: 8,
-        ...GAP_RANGE,
-      },
-      {
-        key: "--checkout-qr-timer-box-bg",
-        label: "Рамка таймера — фон",
-        type: "color",
-        defaultValue: "#131a2e",
-      },
-      { key: "--checkout-qr-note-size", label: "Сноска — размер", defaultValue: 12, ...FONT_RANGE },
-      { key: "--checkout-qr-note-width", label: "Сноска — ширина", defaultValue: 280, ...BLOCK_WIDTH_RANGE },
-      ...blockBorderTokens("qr-card", { width: 1.5, color: "#ff2d95", opacity: 0.5, radius: 20, padding: 24, contentAlign: "center" }),
     ],
   },
   {
@@ -418,6 +331,7 @@ const SECTIONS: Section[] = [
       { key: "--checkout-cash-card-bg-start", label: "Фон — верх", type: "color", defaultValue: "#0d1a3a" },
       { key: "--checkout-cash-card-bg-end", label: "Фон — низ", type: "color", defaultValue: "#05060f" },
       { key: "--checkout-cash-card-gap", label: "Зазор между элементами", defaultValue: 12, ...GAP_RANGE },
+      { key: "--checkout-cash-card-width", label: "Ширина карточки", defaultValue: 520, ...BLOCK_WIDTH_RANGE },
       { key: "--checkout-cash-title-size", label: "Заголовок — размер", defaultValue: 16, ...FONT_RANGE },
       { key: "--checkout-cash-subtitle-size", label: "Подпись — размер", defaultValue: 13, ...FONT_RANGE },
       { key: "--checkout-cash-subtitle-width", label: "Подпись — ширина", defaultValue: 300, ...BLOCK_WIDTH_RANGE },
@@ -481,20 +395,6 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "Шаги «КАК ОПЛАТИТЬ ПО QR»",
-    tokens: [
-      { key: "--checkout-steps-title-size", label: "Заголовок — размер", defaultValue: 20, ...FONT_RANGE },
-      { key: "--checkout-steps-title-gap", label: "Отступ иконок от заголовка", defaultValue: 24, ...GAP_RANGE },
-      { key: "--checkout-steps-gap", label: "Зазор между шагами", defaultValue: 20, ...GAP_RANGE },
-      { key: "--checkout-steps-item-width", label: "Ширина одного шага", defaultValue: 220, ...SIZE_RANGE },
-      { key: "--checkout-steps-item-gap", label: "Зазор внутри шага", defaultValue: 10, ...GAP_RANGE },
-      { key: "--checkout-steps-badge-size", label: "Картинка шага — размер", defaultValue: 72, ...SIZE_RANGE },
-      { key: "--checkout-steps-badge-radius", label: "Картинка шага — скругление", defaultValue: 20, ...RADIUS_FULL },
-      { key: "--checkout-steps-text-size", label: "Текст шага — размер", defaultValue: 18, ...FONT_RANGE },
-      ...blockBorderTokens("steps-block", { ...BLOCK_BORDER_DEFAULT, radius: 20, padding: 20, contentAlign: "center" }),
-    ],
-  },
-  {
     title: "Инфо-бар",
     tokens: [
       { key: "--checkout-info-bar-font-size", label: "Текст — размер", defaultValue: 13, ...FONT_RANGE },
@@ -553,9 +453,7 @@ const PANEL_GROUPS: Array<{ label: string; titles: readonly string[] }> = [
     label: "Оплата",
     titles: [
       "Способ оплаты — заголовок",
-      "Карточка «Оплата по QR»",
       "Карточка «Оплата в кассу»",
-      "Шаги «КАК ОПЛАТИТЬ ПО QR»",
     ],
   },
   {
@@ -614,8 +512,8 @@ function getBaselineValues(): Record<string, string> {
   for (const token of ALL_TOKENS) {
     values[token.key] = String(token.defaultValue);
   }
-  if (typeof document === "undefined") return values;
-  return readAllDefaults();
+  if (typeof document === "undefined") return overlayThemeRuntimeOverrides(values, ALL_TOKENS);
+  return overlayThemeRuntimeOverrides(readAllDefaults(), ALL_TOKENS);
 }
 
 
@@ -868,7 +766,7 @@ export function CheckoutThemePanel() {
           <SettingsPanelGroup label="Изображения">
             <SettingsPanelSection
               id="section-checkout-images"
-              title="Иллюстрации и шаги QR"
+              title="Иллюстрации"
               open={isSectionOpen("section-checkout-images")}
               onToggle={() => toggleSection("section-checkout-images")}
               highlighted={activeSectionId === "section-checkout-images"}

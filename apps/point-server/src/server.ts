@@ -7,6 +7,7 @@ import multipart from "@fastify/multipart";
 import { healthRoutes } from "./routes/health.js";
 import { lanInfoRoutes } from "./routes/lanInfo.js";
 import { uiVersionRoutes } from "./routes/uiVersion.js";
+import { themeSaveRoutes } from "./routes/themeSave.js";
 import { catalogRoutes } from "./modules/catalog/routes.js";
 import { catalogScrapeRoutes } from "./modules/catalog-scraper/routes.js";
 import { ordersRoutes } from "./modules/orders/routes.js";
@@ -69,6 +70,7 @@ export async function buildServer() {
   await app.register(healthRoutes);
   await app.register(lanInfoRoutes);
   await app.register(uiVersionRoutes);
+  await app.register(themeSaveRoutes);
   await app.register(catalogRoutes);
   await app.register(catalogScrapeRoutes);
   await app.register(ordersRoutes);

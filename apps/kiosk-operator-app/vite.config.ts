@@ -10,6 +10,12 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    watch: {
+      // Cursor/Windows often miss atomic saves; without this the kiosk keeps
+      // serving the previous module until a manual refresh.
+      usePolling: true,
+      interval: 400,
+    },
   },
   build: {
     rollupOptions: {

@@ -162,6 +162,20 @@
       "when": 1785943000000,
       "tag": "0022_printer_config_dtf",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1787409000000,
+      "tag": "0023_misc_category",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1787412000000,
+      "tag": "0024_order_other_side",
+      "breakpoints": true
     }
   ]
 }

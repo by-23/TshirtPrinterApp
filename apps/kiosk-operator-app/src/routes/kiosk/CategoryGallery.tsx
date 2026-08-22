@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { designCategorySchema, type Design, type DesignCategory } from "@tshirt/shared-types";
+import { type Design, type DesignCategory } from "@tshirt/shared-types";
 import { isMostlyDarkArtwork } from "../../lib/imageBrightness.js";
 import { appendDesignPage, fetchDesignsPage, resolveDesignImageUrl, resolveDesignThumbUrl } from "../../lib/pointServer.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
-import { CATEGORY_LABEL_KEYS } from "../../lib/categoryLabels.js";
+import { CATEGORY_LABEL_KEYS, parseDesignCategoryParam } from "../../lib/categoryLabels.js";
 import { ArrowLeft, FilmIcon, GamepadIcon, Heart, PhotoIcon, SearchIcon, SpinnerIcon } from "../../components/icons.js";
 import { galleryThemeSection } from "./themeSectionsGallery.js";
 
@@ -36,7 +36,7 @@ const SCRAPE_POLL_MS = 2500;
 const ACCENT_COUNT = 7;
 
 const CATEGORY_ICON: Partial<Record<DesignCategory, (props: { className?: string }) => JSX.Element>> = {
-  memes: PhotoIcon,
+  misc: PhotoIcon,
   anime_movies: FilmIcon,
   games: GamepadIcon,
 };
@@ -137,7 +137,8 @@ export function CategoryGallery() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { category } = useParams<{ category: string }>();
-  const parsedCategory = designCategorySchema.safeParse(category);
+  const categoryValue = parseDesignCategoryParam(category);
+  const categorySuccess = categoryValue !== null;
   const [state, setState] = useState<LoadState>("loading");
   const [designs, setDesigns] = useState<Design[]>([]);
   const [total, setTotal] = useState(0);
@@ -152,8 +153,6 @@ export function CategoryGallery() {
   // the IntersectionObserver below — read by the scrape-poll timer so it
   // doesn't keep firing requests once the user scrolls back up.
   const isSentinelVisibleRef = useRef(false);
-  const categorySuccess = parsedCategory.success;
-  const categoryValue = parsedCategory.success ? parsedCategory.data : null;
 
   // Debounce the search box so every keystroke doesn't fire a request.
   useEffect(() => {
@@ -280,7 +279,7 @@ export function CategoryGallery() {
     return () => clearInterval(timer);
   }, [scraping, hasMore]);
 
-  if (!parsedCategory.success) {
+  if (!categoryValue) {
     return (
       <div className="gallery-theme-root flex h-full w-full flex-col items-center justify-center gap-4 text-white">
         <Link
@@ -293,7 +292,7 @@ export function CategoryGallery() {
     );
   }
 
-  const title = t(CATEGORY_LABEL_KEYS[parsedCategory.data]);
+  const title = t(CATEGORY_LABEL_KEYS[categoryValue]);
 
   return (
     <div
@@ -388,7 +387,7 @@ export function CategoryGallery() {
               design={design}
               index={index}
               onSelect={() =>
-                navigate(`/kiosk/editor?category=${parsedCategory.data}&designId=${design.id}`)
+                navigate(`/kiosk/editor?category=${categoryValue}&designId=${design.id}`)
               }
             />
           ))}

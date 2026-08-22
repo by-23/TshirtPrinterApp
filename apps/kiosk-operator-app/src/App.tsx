@@ -17,13 +17,16 @@ const OperatorHome = lazy(() =>
   import("./routes/operator/OperatorHome.js").then((m) => ({ default: m.OperatorHome })),
 );
 
-// Memes/anime/games are gallery categories (Stage 3); ai_style has its own
+// Misc/anime/games are gallery categories (Stage 3); ai_style has its own
 // wizard (`/kiosk/ai`, Этап 9, see `getCategoryRoute`); everything else
 // still stays on the placeholder stub.
-const GALLERY_CATEGORIES = new Set(["memes", "anime_movies", "games"]);
+const GALLERY_CATEGORIES = new Set(["misc", "anime_movies", "games"]);
 
 function CategoryRoute() {
   const { category } = useParams<{ category: string }>();
+  if (category === "memes") {
+    return <Navigate to="/kiosk/category/misc" replace />;
+  }
   const parsed = designCategorySchema.safeParse(category);
   if (parsed.success && GALLERY_CATEGORIES.has(parsed.data)) {
     return <CategoryGallery />;

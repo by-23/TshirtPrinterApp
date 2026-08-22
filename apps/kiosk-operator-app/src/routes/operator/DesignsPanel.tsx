@@ -40,7 +40,7 @@ import {
 } from "../../components/icons.js";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  memes: "Мемы",
+  misc: "Разное",
   anime_movies: "Аниме",
   games: "Игры",
   text: "Надписи",
@@ -49,7 +49,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 /** All 6 catalog categories, in the same order shown on the kiosk's home grid — used by the "Галерея" tab's filter. */
-const ALL_CATEGORIES: DesignCategory[] = ["memes", "anime_movies", "games", "text", "custom", "ai_style"];
+const ALL_CATEGORIES: DesignCategory[] = ["misc", "anime_movies", "games", "text", "custom", "ai_style"];
 
 const STATUS_LABELS: Record<CatalogScrapeStatus["status"], string> = {
   idle: "Ожидание",
@@ -973,7 +973,7 @@ type GalleryFilter = DesignCategory | typeof ISOLATED_FILTER;
  * can be restored or deleted for good.
  */
 function GalleryTab() {
-  const [category, setCategory] = useState<GalleryFilter>("memes");
+  const [category, setCategory] = useState<GalleryFilter>("misc");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [designs, setDesigns] = useState<Design[]>([]);

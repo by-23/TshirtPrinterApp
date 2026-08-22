@@ -7,6 +7,7 @@ import {
 import {
   clearThemeOverrideStorage,
   createThemeCssSaver,
+  overlayThemeRuntimeOverrides,
   themeSaveStatusLabel,
   type ThemeSaveState,
 } from "../lib/themeCssSave.js";
@@ -854,9 +855,9 @@ function getBaselineValues(): Record<string, string> {
     values[token.key] = String(token.defaultValue);
   }
 
-  if (typeof document === "undefined") return values;
+  if (typeof document === "undefined") return overlayThemeRuntimeOverrides(values, ALL_TOKENS);
 
-  return readAllDefaults();
+  return overlayThemeRuntimeOverrides(readAllDefaults(), ALL_TOKENS);
 }
 
 function hardcodedDefaults(): Record<string, string> {

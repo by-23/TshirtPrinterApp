@@ -8,7 +8,8 @@
   "home": {
     "chooseLanguage": "选择语言",
     "categories": {
-      "memes": "表情包",
+      "misc": "其他",
+      "memes": "其他",
       "animeMovies": "动漫",
       "games": "游戏",
       "text": "文字",

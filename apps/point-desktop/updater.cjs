@@ -110,6 +110,36 @@ function setupAutoUpdater(opts) {
       version: info.version,
       percent: 100,
     });
+    // Auto-apply shell so Operator is not stuck installing ui/server modules first.
+    setTimeout(() => {
+      if (status.state !== "ready") return;
+      log(`updater: auto-installing operator shell v${info.version}`);
+      void (async () => {
+        setStatus({ ...status, state: "installing", version: info.version, percent: 100 });
+        try {
+          if (typeof prepareInstall === "function") await prepareInstall();
+        } catch (err) {
+          log(`prepareInstall failed: ${err && err.message ? err.message : err}`);
+        }
+        const installerPath = resolveDownloadedInstaller();
+        if (!installerPath) {
+          setStatus({
+            state: "ready",
+            version: info.version,
+            percent: 100,
+            error: "installer file not found in updater cache",
+          });
+          return;
+        }
+        try {
+          launchExternalInstaller(installerPath);
+          setTimeout(() => app.quit(), 400);
+        } catch (err) {
+          const message = err && err.message ? String(err.message) : String(err);
+          setStatus({ state: "ready", version: info.version, percent: 100, error: message });
+        }
+      })();
+    }, 2_000);
   });
 
   autoUpdater.on("error", (err) => {

@@ -8,13 +8,13 @@ import type { GalleryCategory } from "@tshirt/shared-types";
  * lists are editable from the "Дизайны" tab.
  */
 export const DEFAULT_QUERY_VARIANTS: Record<GalleryCategory, string[]> = {
-  memes: [
-    "мемы png",
-    "мем png",
-    "memes png",
-    "смешной мем png",
-    "мем стикер png",
-    "meme sticker png",
+  misc: [
+    "стикер png",
+    "наклейка png",
+    "clipart png",
+    "sticker png",
+    "иллюстрация png",
+    "illustration png",
   ],
   anime_movies: [
     "аниме png",

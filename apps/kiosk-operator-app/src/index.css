@@ -502,10 +502,10 @@ textarea {
     --ambient-color-shift-amp: 1;
   /* Direct gradient stops per category card. The panel exposes these as
      gradient controls (top / middle / bottom / border), not a single accent. */
-  --cat-memes-start: #07408c;
-  --cat-memes-middle: #031758;
-  --cat-memes-end: #020c43;
-  --cat-memes-border: #0d619a;
+  --cat-misc-start: #07408c;
+  --cat-misc-middle: #031758;
+  --cat-misc-end: #020c43;
+  --cat-misc-border: #0d619a;
 
   --cat-anime-start: #aa4e1d;
   --cat-anime-middle: #a33505;
@@ -533,9 +533,9 @@ textarea {
   --cat-ai-border: #6d338b;
 
   /* Per-category image layout (scale + vertical offset from card bottom). */
-  --cat-memes-image-scale: 2.5;
-    --cat-memes-image-offset-x: -6px;
-    --cat-memes-image-offset-y: 42px;
+  --cat-misc-image-scale: 2.5;
+    --cat-misc-image-offset-x: -6px;
+    --cat-misc-image-offset-y: 42px;
   --cat-anime-image-scale: 2.5;
   --cat-anime-image-offset-x: 0px;
   --cat-anime-image-offset-y: 40px;
@@ -824,7 +824,7 @@ textarea {
      tuned from EditorThemePanel.tsx.
      ======================================================================== */
   --checkout-page-bg: #02060d;
-  --checkout-page-section-gap: 16px;
+  --checkout-page-section-gap: 24px;
 
   --checkout-back-btn-width: 150px;
   --checkout-back-btn-height: 52px;
@@ -870,10 +870,10 @@ textarea {
   --checkout-summary-block-padding: 36px;
   --checkout-summary-block-height: var(--checkout-preview-card-height);
   --checkout-summary-block-content-align: start;
-  --checkout-summary-section-gap: 8px;
+  --checkout-summary-section-gap: 0px;
   --checkout-summary-title-size: 24px;
   --checkout-summary-title-color: #dd366f;
-  --checkout-summary-row-gap: 11px;
+  --checkout-summary-row-gap: 14px;
   --checkout-summary-row-icon-gap: 16px;
   --checkout-summary-row-icon-size: 38px;
   --checkout-summary-row-label-size: 26px;
@@ -947,6 +947,7 @@ textarea {
   --checkout-cash-card-border-opacity: 1;
   --checkout-cash-card-radius: 16px;
   --checkout-cash-card-padding: 24px;
+  --checkout-cash-card-width: 520px;
   --checkout-cash-card-height: auto;
   --checkout-cash-card-content-align: center;
   --checkout-cash-title-size: 26px;
@@ -1129,11 +1130,13 @@ textarea {
   --ai-source-header-subtitle-color: #a7b0d0;
   --ai-source-header-subtitle-margin-top: 6px;
 
-  --ai-source-cards-gap: 64px;
+  --ai-source-cards-gap: 29px;
   --ai-source-cards-padding-y: 24px;
+  --ai-source-cards-offset-x: 0px;
+  --ai-source-cards-offset-y: -270px;
 
-  --ai-source-card-width: 900px;
-  --ai-source-card-height: 700px;
+  --ai-source-card-width: 600px;
+  --ai-source-card-height: 500px;
   --ai-source-card-gap: 10px;
   --ai-source-card-padding-x: 28px;
   --ai-source-card-padding-top: 80px;
@@ -1142,11 +1145,21 @@ textarea {
   --ai-source-card-border-width: 5px;
   --ai-source-card-active-scale: 0.98;
 
-  --ai-source-card-title-size: 44px;
-  --ai-source-card-subtitle-size: 38px;
+  --ai-source-card-title-size: 34px;
+  --ai-source-card-title-weight: 800;
+  --ai-source-card-title-letter-spacing: 0.05em;
+  --ai-source-card-title-line-height: 1.25;
+  --ai-source-card-title-offset-x: 0px;
+  --ai-source-card-title-offset-y: -30px;
+  --ai-source-card-subtitle-size: 34px;
+  --ai-source-card-subtitle-weight: 500;
+  --ai-source-card-subtitle-letter-spacing: 0em;
+  --ai-source-card-subtitle-line-height: 1.35;
   --ai-source-card-subtitle-color: #a7b0d0;
+  --ai-source-card-subtitle-offset-x: 0px;
+  --ai-source-card-subtitle-offset-y: 30px;
 
-  --ai-source-icon-size: 250px;
+  --ai-source-icon-size: 200px;
   --ai-source-icon-wrap-min-height: 120px;
 
   --ai-source-camera-bg-direction: to bottom;
@@ -1207,8 +1220,8 @@ textarea {
 
   /* AI QR upload screen ("/kiosk/ai", step "qr") — tuned from AiThemePanel.tsx. */
   --ai-qr-screen-padding-x: 80px;
-  --ai-qr-screen-padding-top: 12px;
-  --ai-qr-screen-padding-bottom: 48px;
+  --ai-qr-screen-padding-top: 20px;
+  --ai-qr-screen-padding-bottom: 340px;
 
   --ai-qr-header-title-size: 38px;
   --ai-qr-header-title-color: #ffffff;
@@ -1216,15 +1229,15 @@ textarea {
   --ai-qr-header-subtitle-color: #ffffff;
   --ai-qr-header-subtitle-margin-top: 8px;
 
-  --ai-qr-main-gap: 64px;
-  --ai-qr-main-padding-y: 24px;
+  --ai-qr-main-gap: 0px;
+  --ai-qr-main-padding-y: 0px;
 
-  --ai-qr-card-max-width: 900px;
-  --ai-qr-card-min-height: 1000px;
+  --ai-qr-card-max-width: 800px;
+  --ai-qr-card-min-height: 720px;
   --ai-qr-card-bg-direction: to bottom;
   --ai-qr-card-bg-start: #880f4a;
   --ai-qr-card-bg-end: #07060c;
-  --ai-qr-card-gap: 24px;
+  --ai-qr-card-gap: 20px;
   --ai-qr-card-border-width: 6.5px;
   --ai-qr-card-border-color: #ff3898;
   --ai-qr-card-border-opacity: 0.75;
@@ -1237,19 +1250,19 @@ textarea {
   --ai-qr-card-glow-color: #ff3898;
   --ai-qr-card-glow-opacity: 0.45;
 
-  --ai-qr-scan-title-size: 44px;
+  --ai-qr-scan-title-size: 40px;
   --ai-qr-scan-title-color: #ffc7e2;
-  --ai-qr-scan-subtitle-size: 30px;
+  --ai-qr-scan-subtitle-size: 26px;
   --ai-qr-scan-subtitle-color: #ffc7e2;
   --ai-qr-scan-subtitle-width: 440px;
 
-  --ai-qr-code-size: 400px;
+  --ai-qr-code-size: 300px;
   --ai-qr-code-radius: 16px;
   --ai-qr-code-padding: 14px;
 
-  --ai-qr-timer-label-size: 28px;
+  --ai-qr-timer-label-size: 25px;
   --ai-qr-timer-label-color: #a7b0d0;
-  --ai-qr-timer-value-size: 90px;
+  --ai-qr-timer-value-size: 80px;
   --ai-qr-timer-value-color: #f23280;
   --ai-qr-timer-box-border-width: 6px;
   --ai-qr-timer-box-border-color: #5b0c35;
@@ -1260,20 +1273,20 @@ textarea {
   --ai-qr-timer-box-gap: 10px;
   --ai-qr-timer-box-bg: #200818;
 
-  --ai-qr-note-size: 32px;
+  --ai-qr-note-size: 28px;
   --ai-qr-note-color: #ffffff;
   --ai-qr-note-width: 440px;
 
-  --ai-qr-error-size: 20px;
+  --ai-qr-error-size: 22px;
   --ai-qr-error-color: #4d4d4d;
 
   --ai-qr-waiting-gap: 40px;
-  --ai-qr-waiting-size: 120px;
+  --ai-qr-waiting-size: 100px;
   --ai-qr-waiting-dot-size: 16px;
   --ai-qr-waiting-color: #22d3f5;
-  --ai-qr-waiting-font-size: 38px;
+  --ai-qr-waiting-font-size: 34px;
 
-  --ai-qr-footer-gap: 64px;
+  --ai-qr-footer-gap: 20px;
   --ai-qr-waiting-instructions-gap: 32px;
 
   --ai-qr-steps-max-width: 900px;
@@ -1293,18 +1306,18 @@ textarea {
   --ai-qr-steps-divider-color: #ffffff;
   --ai-qr-steps-divider-opacity: 0.1;
   --ai-qr-steps-divider-inset-y: 16px;
-  --ai-qr-steps-badge-size: 60px;
-  --ai-qr-steps-badge-font-size: 28px;
+  --ai-qr-steps-badge-size: 56px;
+  --ai-qr-steps-badge-font-size: 24px;
   --ai-qr-steps-badge-border-width: 4.5px;
   --ai-qr-steps-badge-border-color: #ffffff;
   --ai-qr-steps-badge-border-opacity: 0.35;
-  --ai-qr-steps-icon-size: 80px;
+  --ai-qr-steps-icon-size: 70px;
   --ai-qr-steps-icon-color: #ffffff;
-  --ai-qr-steps-text-size: 28px;
+  --ai-qr-steps-text-size: 24px;
   --ai-qr-steps-text-color: #ffffff;
-  --ai-qr-steps-item-gap: 22px;
+  --ai-qr-steps-item-gap: 6px;
 
-  --ai-qr-camera-link-size: 36px;
+  --ai-qr-camera-link-size: 34px;
   --ai-qr-camera-link-color: #22d3f5;
 
   /* AI style select screen ("/kiosk/ai", step "style") — tuned from AiThemePanel.tsx. */
@@ -2915,6 +2928,7 @@ textarea {
   align-items: center;
   gap: var(--ai-source-cards-gap);
   padding-block: var(--ai-source-cards-padding-y);
+  translate: var(--ai-source-cards-offset-x) var(--ai-source-cards-offset-y);
 }
 
 .ai-source-card {
@@ -2973,11 +2987,12 @@ textarea {
 .ai-source-card-title {
   flex-shrink: 0;
   font-size: var(--ai-source-card-title-size);
-  font-weight: 800;
-  line-height: 1.25;
-  letter-spacing: 0.05em;
+  font-weight: var(--ai-source-card-title-weight);
+  line-height: var(--ai-source-card-title-line-height);
+  letter-spacing: var(--ai-source-card-title-letter-spacing);
   text-transform: uppercase;
   text-align: center;
+  translate: var(--ai-source-card-title-offset-x) var(--ai-source-card-title-offset-y);
 }
 
 .ai-source-card--camera .ai-source-card-title {
@@ -3024,10 +3039,12 @@ textarea {
 .ai-source-card-subtitle {
   flex-shrink: 0;
   font-size: var(--ai-source-card-subtitle-size);
-  font-weight: 500;
-  line-height: 1.35;
+  font-weight: var(--ai-source-card-subtitle-weight);
+  line-height: var(--ai-source-card-subtitle-line-height);
+  letter-spacing: var(--ai-source-card-subtitle-letter-spacing);
   color: var(--ai-source-card-subtitle-color);
   text-align: center;
+  translate: var(--ai-source-card-subtitle-offset-x) var(--ai-source-card-subtitle-offset-y);
 }
 
 .ai-source-badge {

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import type { Order } from "@tshirt/shared-types";
+import { garmentHasSelectableBackSide, getOrderPrintSides, type GarmentSide, type Order } from "@tshirt/shared-types";
 import { updateOrderStatus } from "../../lib/pointServer.js";
-import { describeDtfPrintJob, sendOrderToDtfPrint } from "../../lib/printOrder.js";
+import { describeDtfPrintJobs, sendOrderToDtfPrint } from "../../lib/printOrder.js";
+import { GarmentMockup } from "../../editor/mockup/index.js";
 import { StatusBadge } from "./StatusBadge.js";
 import { OrderImage } from "./OrderImage.js";
 import {
@@ -9,6 +10,7 @@ import {
   GARMENT_SIDE_LABELS,
   GARMENT_TYPE_LABELS,
   formatOrderDate,
+  formatOrderSides,
   formatOrderTime,
   formatPrice,
   garmentColorLabel,
@@ -27,6 +29,7 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [printHint, setPrintHint] = useState<string | null>(null);
+  const [previewByOrderId, setPreviewByOrderId] = useState<Partial<Record<string, GarmentSide>>>({});
 
   if (!orderProp) {
     return (
@@ -40,6 +43,11 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
   // `orderProp` parameter) so TypeScript keeps it non-null inside the
   // `applyStatus` closure below.
   const order = orderProp;
+  const printSides = getOrderPrintSides(order);
+  const previewSide = previewByOrderId[order.id] ?? order.side;
+  const activePrint = printSides.find((item) => item.side === previewSide) ?? null;
+  const sideLabels = formatOrderSides(printSides.map((item) => item.side));
+  const canSelectBack = garmentHasSelectableBackSide(order.garment.type);
 
   const isNew = order.status === "new";
   const isInProgress = order.status === "accepted" || order.status === "printing";
@@ -59,12 +67,12 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
     setIsUpdating(true);
     try {
       if (status === "accepted") {
-        if (!order.designImageUrl) {
+        if (!printSides.some((item) => item.designImageUrl)) {
           throw new Error("no design");
         }
         // Prepare RIP-ready DTF PNG (mm @ 300 DPI, mirror) → hotfolder + Explorer.
         const prepared = await sendOrderToDtfPrint(order.id);
-        setPrintHint(describeDtfPrintJob(prepared.printJob));
+        setPrintHint(describeDtfPrintJobs(prepared.printJobs ?? [prepared.printJob]));
         onUpdated(prepared.order);
       }
       const updated = await updateOrderStatus(order.id, status);
@@ -103,21 +111,29 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
       >
         <div className="flex flex-col">
           <div className="mb-4 flex items-center justify-center gap-3">
-            {(["front", "back"] as const).map((side) => (
-              <span
-                key={side}
-                className="rounded-full font-bold uppercase tracking-wide"
-                style={{
-                  fontSize: "var(--operator-details-side-font-size)",
-                  padding: "var(--operator-details-side-padding-y) var(--operator-details-side-padding-x)",
-                  backgroundColor: side === order.side ? "var(--operator-accent)" : "var(--operator-card-bg)",
-                  color: side === order.side ? "#fff" : "var(--operator-text-muted)",
-                  border: "1px solid var(--operator-card-border)",
-                }}
-              >
-                {GARMENT_SIDE_LABELS[side]}
-              </span>
-            ))}
+            {(["front", "back"] as const).map((side) => {
+              const selectable = side === "front" || canSelectBack;
+              const active = previewSide === side;
+              return (
+                <button
+                  key={side}
+                  type="button"
+                  disabled={!selectable}
+                  onClick={() => setPreviewByOrderId((current) => ({ ...current, [order.id]: side }))}
+                  className="rounded-full font-bold uppercase tracking-wide disabled:cursor-default"
+                  style={{
+                    fontSize: "var(--operator-details-side-font-size)",
+                    padding: "var(--operator-details-side-padding-y) var(--operator-details-side-padding-x)",
+                    backgroundColor: active ? "var(--operator-accent)" : "var(--operator-card-bg)",
+                    color: active ? "#fff" : "var(--operator-text-muted)",
+                    border: "1px solid var(--operator-card-border)",
+                    opacity: selectable ? 1 : 0.45,
+                  }}
+                >
+                  {GARMENT_SIDE_LABELS[side]}
+                </button>
+              );
+            })}
           </div>
 
           <div
@@ -129,14 +145,28 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
               border: "1px solid var(--operator-card-border)",
             }}
           >
-            <OrderImage
-              src={order.mockupImageUrl}
-              alt={`Мокап заказа №${order.id}`}
-              className="max-w-full object-contain"
-              style={{ maxHeight: "var(--operator-details-preview-max-height)" }}
-              iconClassName="h-24 w-24"
-              iconStyle={{ color: "var(--operator-text-muted)" }}
-            />
+            {activePrint?.mockupImageUrl ? (
+              <OrderImage
+                src={activePrint.mockupImageUrl}
+                alt={`Мокап заказа №${order.id}`}
+                className="max-w-full object-contain"
+                style={{ maxHeight: "var(--operator-details-preview-max-height)" }}
+                iconClassName="h-24 w-24"
+                iconStyle={{ color: "var(--operator-text-muted)" }}
+              />
+            ) : (
+              <div
+                className="flex w-full items-center justify-center"
+                style={{ maxHeight: "var(--operator-details-preview-max-height)", height: "var(--operator-details-preview-max-height)" }}
+              >
+                <GarmentMockup
+                  garmentType={order.garment.type}
+                  side={previewSide}
+                  color={order.garment.color}
+                  className="h-full w-full"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -157,8 +187,8 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
             </h3>
             <DetailRow label="Изделие" value={`${GARMENT_TYPE_LABELS[order.garment.type]}, ${garmentColorLabel(order.garment.color)}`} />
             <DetailRow label="Размер" value={order.garment.size} />
-            <DetailRow label="Сторона печати" value={GARMENT_SIDE_LABELS[order.side]} />
-            <DetailRow label="Дизайнов" value="1" />
+            <DetailRow label="Сторона печати" value={sideLabels} />
+            <DetailRow label="Дизайнов" value={String(printSides.length)} />
             <DetailRow label="Материал" value={FABRIC_LABELS[order.garment.fabric] ?? order.garment.fabric} />
             <DetailRow label="Цена" value={formatPrice(order.price)} />
             <DetailRow label="Печатей" value={String(order.printCount)} />
@@ -181,9 +211,9 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
               >
                 Дизайн
               </h3>
-              {order.designImageUrl && (
+              {activePrint?.designImageUrl && (
                 <a
-                  href={order.designImageUrl}
+                  href={activePrint.designImageUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="font-semibold underline-offset-2 hover:underline"
@@ -193,34 +223,51 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
                 </a>
               )}
             </div>
-            <div className="mt-3 flex items-center gap-4">
-              <div
-                className="flex flex-shrink-0 items-center justify-center overflow-hidden"
-                style={{
-                  width: "var(--operator-details-design-thumb-size)",
-                  height: "var(--operator-details-design-thumb-size)",
-                  borderRadius: "var(--operator-details-design-thumb-radius)",
-                  backgroundColor: "var(--operator-page-bg)",
-                  border: "1px solid var(--operator-card-border)",
-                }}
-              >
-                {order.designImageUrl ? (
-                  <OrderImage
-                    src={order.designImageUrl}
-                    alt="Дизайн"
-                    className="h-full w-full object-contain"
-                    iconClassName="h-8 w-8"
-                    iconStyle={{ color: "var(--operator-text-muted)" }}
-                  />
-                ) : (
-                  <span className="text-xs" style={{ color: "var(--operator-text-muted)" }}>
-                    нет файла
+            <div className="mt-3 flex flex-col gap-3">
+              {printSides.map((item) => (
+                <button
+                  key={item.side}
+                  type="button"
+                  onClick={() => setPreviewByOrderId((current) => ({ ...current, [order.id]: item.side }))}
+                  className="flex items-center gap-4 text-left"
+                >
+                  <div
+                    className="flex flex-shrink-0 items-center justify-center overflow-hidden"
+                    style={{
+                      width: "var(--operator-details-design-thumb-size)",
+                      height: "var(--operator-details-design-thumb-size)",
+                      borderRadius: "var(--operator-details-design-thumb-radius)",
+                      backgroundColor: "var(--operator-page-bg)",
+                      border: `1px solid ${item.side === previewSide ? "var(--operator-accent)" : "var(--operator-card-border)"}`,
+                    }}
+                  >
+                    {item.designImageUrl ? (
+                      <OrderImage
+                        src={item.designImageUrl}
+                        alt={GARMENT_SIDE_LABELS[item.side]}
+                        className="h-full w-full object-contain"
+                        iconClassName="h-8 w-8"
+                        iconStyle={{ color: "var(--operator-text-muted)" }}
+                      />
+                    ) : (
+                      <span className="text-xs" style={{ color: "var(--operator-text-muted)" }}>
+                        нет файла
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: "var(--operator-details-meta-size)", color: "var(--operator-text-muted)" }}>
+                    {GARMENT_SIDE_LABELS[item.side]}
+                    {printSides.length === 1
+                      ? " — для Epson L1800 (DTF) готовится PNG 300 DPI под RIP (AcroRIP)"
+                      : ""}
                   </span>
-                )}
-              </div>
-              <span style={{ fontSize: "var(--operator-details-meta-size)", color: "var(--operator-text-muted)" }}>
-                Для Epson L1800 (DTF) готовится PNG 300 DPI под RIP (AcroRIP)
-              </span>
+                </button>
+              ))}
+              {printSides.length > 1 && (
+                <span style={{ fontSize: "var(--operator-details-meta-size)", color: "var(--operator-text-muted)" }}>
+                  Для Epson L1800 (DTF) готовится PNG 300 DPI под RIP (AcroRIP) на каждую сторону
+                </span>
+              )}
             </div>
           </div>
         </div>

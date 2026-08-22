@@ -11,11 +11,7 @@ import capWhiteBack from "../assets/cap-white-back.png";
 import shopperWhite from "../assets/shopper-white.png";
 import shopperWhiteBack from "../assets/shopper-white-back.png";
 import checkoutCashIllustration from "../assets/checkout/checkout-cash-illustration.png";
-import checkoutStepOpenApp from "../assets/checkout/checkout-step-openApp.png";
-import checkoutStepScanQr from "../assets/checkout/checkout-step-scanQr.png";
-import checkoutStepConfirmPayment from "../assets/checkout/checkout-step-confirmPayment.png";
-import checkoutStepOrderToPrint from "../assets/checkout/checkout-step-orderToPrint.png";
-import categoryMemes from "../assets/categories/memes.png";
+import categoryMisc from "../assets/categories/memes.png";
 import categoryAnimeMovies from "../assets/categories/anime_movies.png";
 import categoryGames from "../assets/categories/games.png";
 import categoryText from "../assets/categories/text.png";
@@ -39,7 +35,7 @@ export type PopularPrintId = string;
 export { PRINT_CATALOG, printImageKey, type PrintDefinition } from "./printCatalog.js";
 
 export const CATEGORY_IMAGE_IDS = [
-  "memes",
+  "misc",
   "anime_movies",
   "games",
   "text",
@@ -85,7 +81,7 @@ const GARMENT_MOCKUP_IMAGES: KioskImageDefinition[] = [
 ];
 
 const CATEGORY_DEFAULT_URLS: Record<CategoryImageId, string> = {
-  memes: categoryMemes,
+  misc: categoryMisc,
   anime_movies: categoryAnimeMovies,
   games: categoryGames,
   text: categoryText,
@@ -105,36 +101,12 @@ export const KIOSK_IMAGE_SECTIONS: KioskImageSection[] = [
   { title: "Категории", images: CATEGORY_IMAGES },
 ];
 
-const CHECKOUT_QR_STEP_IMAGES: KioskImageDefinition[] = [
-  {
-    key: "checkout-step-openApp",
-    label: "Шаг 1 — Откройте приложение банка",
-    defaultUrl: checkoutStepOpenApp,
-  },
-  {
-    key: "checkout-step-scanQr",
-    label: "Шаг 2 — Отсканируйте QR-код",
-    defaultUrl: checkoutStepScanQr,
-  },
-  {
-    key: "checkout-step-confirmPayment",
-    label: "Шаг 3 — Подтвердите оплату",
-    defaultUrl: checkoutStepConfirmPayment,
-  },
-  {
-    key: "checkout-step-orderToPrint",
-    label: "Шаг 4 — Заказ отправится в печать",
-    defaultUrl: checkoutStepOrderToPrint,
-  },
-];
-
 export const CHECKOUT_IMAGE_DEFINITIONS: KioskImageDefinition[] = [
   {
     key: "checkout-cash-illustration",
     label: "Карточка «Оплата в кассу» — картинка",
     defaultUrl: checkoutCashIllustration,
   },
-  ...CHECKOUT_QR_STEP_IMAGES,
 ];
 
 /** Keys that belong to checkout — home ThemePanel reset must not wipe these. */
@@ -225,7 +197,7 @@ export function resetAllKioskImages() {
 }
 
 /**
- * Reset only home/theme-panel image overrides. Checkout step + cash art are
+ * Reset only home/theme-panel image overrides. Checkout cash art is
  * left alone so a home-panel «Сбросить» never blanks the payment screen.
  */
 export function resetHomeKioskImages() {
@@ -313,16 +285,6 @@ export function categoryImageKey(category: CategoryImageId): string {
 
 export function checkoutCashIllustrationKey(): string {
   return "checkout-cash-illustration";
-}
-
-export type CheckoutQrStepId =
-  | "openApp"
-  | "scanQr"
-  | "confirmPayment"
-  | "orderToPrint";
-
-export function checkoutStepImageKey(step: CheckoutQrStepId): string {
-  return `checkout-step-${step}`;
 }
 
 export function popularPrintImageKey(id: PopularPrintId): string {

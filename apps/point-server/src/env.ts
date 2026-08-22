@@ -13,6 +13,10 @@ function resolveDataDir(): string {
   if (process.env.DATA_DIR?.trim()) {
     return resolve(process.env.DATA_DIR.trim());
   }
+  // Same folder the desktop app and cashiers already open.
+  if (process.platform === "win32" && process.env.LOCALAPPDATA) {
+    return resolve(process.env.LOCALAPPDATA, "TshirtPrinter", "data");
+  }
   return resolve("./data");
 }
 
@@ -57,7 +61,7 @@ export const env = {
   // When unset, `server.ts` looks for `../kiosk-operator-app/dist` or `./ui-dist`.
   UI_DIST_PATH: process.env.UI_DIST_PATH,
   /**
-   * Daily local backups of essentials only: SQLite + `orders/` PNGs.
+   * Daily local backups of essentials only: SQLite + `orders/` + `order-sources/` PNGs.
    * Default on — disable with BACKUP_ENABLED=0 for smoke tests / CI.
    */
   BACKUP_ENABLED: process.env.BACKUP_ENABLED !== "0" && process.env.BACKUP_ENABLED !== "false",

@@ -1,13 +1,17 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { eq, sql } from "drizzle-orm";
-import { createOrderSchema, updateOrderStatusSchema, type SyncOrderPushPayload } from "@tshirt/shared-types";
+import { createOrderSchema, updateOrderStatusSchema, type DtfPrinterConfig, type SyncOrderPushPayload } from "@tshirt/shared-types";
 import { db } from "../../db/client.js";
 import { orders } from "../../db/schema.js";
-import { dataPath } from "../../lib/dataDir.js";
 import { emitOrderEvent } from "../../realtime/socket.js";
-import { generateOrderImages } from "./mockup.js";
+import {
+  ensureOrderMockup,
+  generateOrderImages,
+  resolveOrderDesignAbsolutePath,
+} from "./mockup.js";
 import { getDtfPrinterConfig } from "../printer/config.js";
-import { prepareDtfPrint } from "../printer/dtfExport.js";
+import { copyOrderFileToHotfolder, prepareDtfPrint, type PrepareDtfPrintResult } from "../printer/dtfExport.js";
+import { dataPath } from "../../lib/dataDir.js";
 import { drainSyncQueue, enqueueOrderPush } from "../sync/queue.js";
 import { getSyncSocket } from "../sync/client.js";
 
@@ -54,13 +58,78 @@ function serializeOrder(row: OrderRow, request: FastifyRequest) {
     mockupImageUrl: row.mockupImagePath ? fileUrl(request, row.mockupImagePath) : null,
     designImageUrl: row.designImagePath ? fileUrl(request, row.designImagePath) : null,
     dtfPrintImageUrl: row.dtfPrintImagePath ? fileUrl(request, row.dtfPrintImagePath) : null,
+    otherSide: row.otherSide ?? null,
+    otherPrintSize: row.otherPrintSize ?? null,
+    otherMockupImageUrl: row.otherMockupImagePath ? fileUrl(request, row.otherMockupImagePath) : null,
+    otherDesignImageUrl: row.otherDesignImagePath ? fileUrl(request, row.otherDesignImagePath) : null,
+    otherDtfPrintImageUrl: row.otherDtfPrintImagePath ? fileUrl(request, row.otherDtfPrintImagePath) : null,
     createdAt: row.createdAt,
+  };
+}
+
+function serializePrintJob(request: FastifyRequest, job: PrepareDtfPrintResult, side: OrderRow["side"]) {
+  return {
+    side,
+    fileUrl: fileUrl(request, job.dtfPrintImagePath),
+    absolutePath: job.absolutePath,
+    hotfolderAbsolutePath: job.hotfolderAbsolutePath,
+    hotfolderDir: job.hotfolderDir,
+    widthMm: job.widthMm,
+    heightMm: job.heightMm,
+    widthPx: job.widthPx,
+    heightPx: job.heightPx,
+    dpi: job.dpi,
+    mirrored: job.mirrored,
+    mediaSize: job.mediaSize,
+    printerModel: job.printerModel,
   };
 }
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
   return Number.isInteger(id) ? id : null;
+}
+
+async function writeCashierSideFiles(input: {
+  orderId: string;
+  garmentType: OrderRow["garmentType"];
+  garmentColor: string;
+  side: OrderRow["side"];
+  designAbsolutePath: string;
+  nameSuffix?: string;
+  config: DtfPrinterConfig;
+}): Promise<{ mockupImagePath: string | null; dtf: PrepareDtfPrintResult }> {
+  let mockupImagePath: string | null = null;
+  try {
+    mockupImagePath = await ensureOrderMockup({
+      orderId: input.orderId,
+      garmentType: input.garmentType,
+      garmentColor: input.garmentColor,
+      side: input.side,
+      designAbsolutePath: input.designAbsolutePath,
+      nameSuffix: input.nameSuffix,
+    });
+  } catch {
+    // Cashier still needs the mirrored RIP file even if the mockup composite fails.
+  }
+  const dtf = await prepareDtfPrint({
+    orderId: input.orderId,
+    garmentType: input.garmentType,
+    side: input.side,
+    designAbsolutePath: input.designAbsolutePath,
+    config: input.config,
+    nameSuffix: input.nameSuffix,
+  });
+  if (mockupImagePath) {
+    await copyOrderFileToHotfolder({
+      orderId: input.orderId,
+      kind: "mockup",
+      sourceAbsolutePath: dataPath(...mockupImagePath.split("/").filter(Boolean)),
+      config: input.config,
+      nameSuffix: input.nameSuffix,
+    });
+  }
+  return { mockupImagePath, dtf };
 }
 
 export async function ordersRoutes(app: FastifyInstance) {
@@ -88,22 +157,100 @@ export async function ordersRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
 
-    const { designImageBase64, ...orderFields } = parsed.data;
-    const [row] = await db.insert(orders).values(orderFields).returning();
+    const { designImageBase64, extraSides, ...orderFields } = parsed.data;
+    const extraSide = extraSides?.[0];
+    const [row] = await db
+      .insert(orders)
+      .values({
+        ...orderFields,
+        otherSide: extraSide?.side ?? null,
+        otherPrintSize: extraSide?.printSize ?? null,
+      })
+      .returning();
     let finalRow = row!;
 
     if (designImageBase64) {
       try {
+        const dualSide = extraSide != null;
+        const primarySuffix = dualSide ? finalRow.side : undefined;
+        const orderId = String(finalRow.id);
+        const { config } = await getDtfPrinterConfig();
         const { designImagePath, mockupImagePath } = await generateOrderImages({
-          orderId: String(finalRow.id),
+          orderId,
           garmentType: finalRow.garmentType,
           garmentColor: finalRow.garmentColor,
           side: finalRow.side,
           designImageBase64,
+          nameSuffix: primarySuffix,
         });
+        const extraImages =
+          extraSide != null
+            ? await generateOrderImages({
+                orderId,
+                garmentType: finalRow.garmentType,
+                garmentColor: finalRow.garmentColor,
+                side: extraSide.side,
+                designImageBase64: extraSide.designImageBase64,
+                nameSuffix: extraSide.side,
+              }).catch((err) => {
+                app.log.error(err, "Failed to generate other-side order images");
+                return null;
+              })
+            : null;
+
+        const primaryAbs = resolveOrderDesignAbsolutePath({
+          orderId,
+          storedRelativePath: designImagePath,
+          nameSuffix: primarySuffix,
+          allowUnsuffixed: true,
+        });
+        const extraAbs =
+          extraImages && extraSide
+            ? resolveOrderDesignAbsolutePath({
+                orderId,
+                storedRelativePath: extraImages.designImagePath,
+                nameSuffix: extraSide.side,
+              })
+            : null;
+
+        const primaryPrint = primaryAbs
+          ? await writeCashierSideFiles({
+              orderId,
+              garmentType: finalRow.garmentType,
+              garmentColor: finalRow.garmentColor,
+              side: finalRow.side,
+              designAbsolutePath: primaryAbs,
+              nameSuffix: primarySuffix,
+              config,
+            })
+          : null;
+        const extraPrint =
+          extraAbs && extraSide
+            ? await writeCashierSideFiles({
+                orderId,
+                garmentType: finalRow.garmentType,
+                garmentColor: finalRow.garmentColor,
+                side: extraSide.side,
+                designAbsolutePath: extraAbs,
+                nameSuffix: extraSide.side,
+                config,
+              })
+            : null;
+
         const [updated] = await db
           .update(orders)
-          .set({ designImagePath, mockupImagePath })
+          .set({
+            designImagePath,
+            mockupImagePath: primaryPrint?.mockupImagePath ?? mockupImagePath,
+            dtfPrintImagePath: primaryPrint?.dtf.dtfPrintImagePath ?? null,
+            ...(extraImages
+              ? {
+                  otherDesignImagePath: extraImages.designImagePath,
+                  otherMockupImagePath: extraPrint?.mockupImagePath ?? extraImages.mockupImagePath,
+                  otherDtfPrintImagePath: extraPrint?.dtf.dtfPrintImagePath ?? null,
+                }
+              : {}),
+          })
           .where(eq(orders.id, finalRow.id))
           .returning();
         finalRow = updated!;
@@ -134,46 +281,77 @@ export async function ordersRoutes(app: FastifyInstance) {
     if (!row) {
       return reply.status(404).send({ error: "Order not found" });
     }
-    if (!row.designImagePath) {
+    const orderId = String(row.id);
+    const extraDesignAbs = row.otherSide
+      ? resolveOrderDesignAbsolutePath({
+          orderId,
+          storedRelativePath: row.otherDesignImagePath,
+          nameSuffix: row.otherSide,
+        })
+      : null;
+    const dualSide = Boolean(row.otherSide && extraDesignAbs);
+    const primarySuffix = dualSide ? row.side : undefined;
+    const primaryDesignAbs = resolveOrderDesignAbsolutePath({
+      orderId,
+      storedRelativePath: row.designImagePath,
+      nameSuffix: primarySuffix,
+      allowUnsuffixed: true,
+    });
+    if (!primaryDesignAbs) {
       return reply.status(400).send({ error: "Order has no design image" });
     }
 
     try {
       const { config } = await getDtfPrinterConfig();
-      const designAbsolutePath = dataPath(row.designImagePath);
-      const job = await prepareDtfPrint({
-        orderId: String(row.id),
+      const primaryPrint = await writeCashierSideFiles({
+        orderId,
         garmentType: row.garmentType,
+        garmentColor: row.garmentColor,
         side: row.side,
-        designAbsolutePath,
+        designAbsolutePath: primaryDesignAbs,
+        nameSuffix: primarySuffix,
         config,
       });
 
+      let extraMockupImagePath: string | null = row.otherMockupImagePath;
+      let extraJob: PrepareDtfPrintResult | null = null;
+      if (dualSide && row.otherSide && extraDesignAbs) {
+        const extraPrint = await writeCashierSideFiles({
+          orderId,
+          garmentType: row.garmentType,
+          garmentColor: row.garmentColor,
+          side: row.otherSide,
+          designAbsolutePath: extraDesignAbs,
+          nameSuffix: row.otherSide,
+          config,
+        });
+        extraMockupImagePath = extraPrint.mockupImagePath;
+        extraJob = extraPrint.dtf;
+      }
+
       const [updated] = await db
         .update(orders)
-        .set({ dtfPrintImagePath: job.dtfPrintImagePath })
+        .set({
+          mockupImagePath: primaryPrint.mockupImagePath ?? row.mockupImagePath,
+          dtfPrintImagePath: primaryPrint.dtf.dtfPrintImagePath,
+          otherMockupImagePath: extraMockupImagePath,
+          otherDtfPrintImagePath: extraJob?.dtfPrintImagePath ?? row.otherDtfPrintImagePath,
+        })
         .where(eq(orders.id, id))
         .returning();
 
       const serialized = serializeOrder(updated!, request);
       emitOrderEvent("updated", serialized);
 
+      const printJob = serializePrintJob(request, primaryPrint.dtf, row.side);
+      const printJobs = extraJob && row.otherSide
+        ? [printJob, serializePrintJob(request, extraJob, row.otherSide)]
+        : [printJob];
+
       return {
         order: serialized,
-        printJob: {
-          fileUrl: fileUrl(request, job.dtfPrintImagePath),
-          absolutePath: job.absolutePath,
-          hotfolderAbsolutePath: job.hotfolderAbsolutePath,
-          hotfolderDir: job.hotfolderDir,
-          widthMm: job.widthMm,
-          heightMm: job.heightMm,
-          widthPx: job.widthPx,
-          heightPx: job.heightPx,
-          dpi: job.dpi,
-          mirrored: job.mirrored,
-          mediaSize: job.mediaSize,
-          printerModel: job.printerModel,
-        },
+        printJob,
+        printJobs,
       };
     } catch (err) {
       app.log.error(err, "Failed to prepare DTF print");

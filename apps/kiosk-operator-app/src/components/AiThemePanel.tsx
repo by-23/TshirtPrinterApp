@@ -15,6 +15,7 @@ import { useDesignPanelPick } from "../lib/useDesignPanelPick.js";
 import {
   clearThemeOverrideStorage,
   createThemeCssSaver,
+  overlayThemeRuntimeOverrides,
   themeSaveStatusLabel,
   type ThemeSaveState,
 } from "../lib/themeCssSave.js";
@@ -55,7 +56,7 @@ interface Section {
 const PADDING_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
   type: "range",
   min: 0,
-  max: 80,
+  max: 480,
   step: 1,
   unit: "px",
 };
@@ -63,7 +64,7 @@ const PADDING_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> 
 const GAP_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
   type: "range",
   min: 0,
-  max: 64,
+  max: 384,
   step: 1,
   unit: "px",
 };
@@ -74,6 +75,52 @@ const FONT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
   max: 60,
   step: 1,
   unit: "px",
+};
+
+const CARD_FONT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 8,
+  max: 80,
+  step: 1,
+  unit: "px",
+};
+
+const OFFSET_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: -400,
+  max: 400,
+  step: 1,
+  unit: "px",
+};
+
+const TEXT_OFFSET_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: -120,
+  max: 120,
+  step: 1,
+  unit: "px",
+};
+
+const FONT_WEIGHT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step"> = {
+  type: "range",
+  min: 400,
+  max: 900,
+  step: 100,
+};
+
+const LETTER_SPACING_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
+  type: "range",
+  min: 0,
+  max: 0.2,
+  step: 0.01,
+  unit: "em",
+};
+
+const LINE_HEIGHT_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step"> = {
+  type: "range",
+  min: 0.8,
+  max: 2,
+  step: 0.05,
 };
 
 const SIZE_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
@@ -111,7 +158,7 @@ const NUMBERS_SPACING_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | 
 const WAITING_INSTRUCTIONS_GAP_RANGE: Pick<RangeToken, "type" | "min" | "max" | "step" | "unit"> = {
   type: "range",
   min: 0,
-  max: 120,
+  max: 720,
   step: 1,
   unit: "px",
 };
@@ -353,20 +400,45 @@ const SECTIONS: Section[] = [
   {
     title: "Сетка карточек",
     tokens: [
-      { key: "--ai-source-cards-gap", label: "Зазор между карточками", defaultValue: 20, ...GAP_RANGE },
+      { key: "--ai-source-cards-gap", label: "Зазор между карточками", defaultValue: 64, ...GAP_RANGE },
       { key: "--ai-source-cards-padding-y", label: "Отступы сверху/снизу", defaultValue: 24, ...PADDING_RANGE },
-      { key: "--ai-source-card-width", label: "Ширина карточки", defaultValue: 1040, ...CARD_WIDTH_RANGE },
-      { key: "--ai-source-card-height", label: "Высота карточки", defaultValue: 420, ...CARD_HEIGHT_RANGE },
-      { key: "--ai-source-card-gap", label: "Зазор внутри карточки", defaultValue: 14, ...GAP_RANGE },
+      { key: "--ai-source-cards-offset-x", label: "Смещение сетки X", defaultValue: 0, ...OFFSET_RANGE },
+      { key: "--ai-source-cards-offset-y", label: "Смещение сетки Y", defaultValue: 0, ...OFFSET_RANGE },
+      { key: "--ai-source-card-title-size", label: "Заголовок — размер", defaultValue: 44, ...CARD_FONT_RANGE },
+      { key: "--ai-source-card-title-weight", label: "Заголовок — жирность", defaultValue: 800, ...FONT_WEIGHT_RANGE },
+      { key: "--ai-source-card-title-offset-x", label: "Заголовок — смещение X", defaultValue: 0, ...TEXT_OFFSET_RANGE },
+      { key: "--ai-source-card-title-offset-y", label: "Заголовок — смещение Y", defaultValue: 0, ...TEXT_OFFSET_RANGE },
+      { key: "--ai-source-card-subtitle-size", label: "Подпись — размер", defaultValue: 38, ...CARD_FONT_RANGE },
+      { key: "--ai-source-card-subtitle-color", label: "Подпись — цвет", type: "color", defaultValue: "#a7b0d0" },
+      { key: "--ai-source-card-subtitle-offset-x", label: "Подпись — смещение X", defaultValue: 0, ...TEXT_OFFSET_RANGE },
+      { key: "--ai-source-card-subtitle-offset-y", label: "Подпись — смещение Y", defaultValue: 0, ...TEXT_OFFSET_RANGE },
+      { key: "--ai-source-card-width", label: "Ширина карточки", defaultValue: 900, ...CARD_WIDTH_RANGE },
+      { key: "--ai-source-card-height", label: "Высота карточки", defaultValue: 700, ...CARD_HEIGHT_RANGE },
+      { key: "--ai-source-card-gap", label: "Зазор внутри карточки", defaultValue: 10, ...GAP_RANGE },
       { key: "--ai-source-card-padding-x", label: "Внутр. отступ — горизонт.", defaultValue: 28, ...PADDING_RANGE },
-      { key: "--ai-source-card-padding-top", label: "Внутр. отступ — сверху", defaultValue: 24, ...PADDING_RANGE },
-      { key: "--ai-source-card-padding-bottom", label: "Внутр. отступ — снизу", defaultValue: 20, ...PADDING_RANGE },
-      { key: "--ai-source-card-radius", label: "Скругление", defaultValue: 24, ...RADIUS_RANGE },
-      { key: "--ai-source-card-border-width", label: "Рамка — толщина", defaultValue: 2, ...BORDER_WIDTH_RANGE },
+      { key: "--ai-source-card-padding-top", label: "Внутр. отступ — сверху", defaultValue: 80, ...PADDING_RANGE },
+      { key: "--ai-source-card-padding-bottom", label: "Внутр. отступ — снизу", defaultValue: 80, ...PADDING_RANGE },
+      { key: "--ai-source-card-radius", label: "Скругление", defaultValue: 48, ...RADIUS_RANGE },
+      { key: "--ai-source-card-border-width", label: "Рамка — толщина", defaultValue: 5, ...BORDER_WIDTH_RANGE },
       { key: "--ai-source-card-active-scale", label: "Сжатие при нажатии", defaultValue: 0.98, ...SCALE_RANGE },
-      { key: "--ai-source-card-title-size", label: "Заголовок карточки — размер", defaultValue: 16, ...FONT_RANGE },
-      { key: "--ai-source-card-subtitle-size", label: "Подпись карточки — размер", defaultValue: 13, ...FONT_RANGE },
-      { key: "--ai-source-card-subtitle-color", label: "Подпись карточки — цвет", type: "color", defaultValue: "#a7b0d0" },
+    ],
+  },
+  {
+    title: "Текст карточек",
+    tokens: [
+      { key: "--ai-source-card-title-size", label: "Заголовок — размер", defaultValue: 44, ...CARD_FONT_RANGE },
+      { key: "--ai-source-card-title-weight", label: "Заголовок — жирность", defaultValue: 800, ...FONT_WEIGHT_RANGE },
+      { key: "--ai-source-card-title-letter-spacing", label: "Заголовок — трекинг", defaultValue: 0.05, ...LETTER_SPACING_RANGE },
+      { key: "--ai-source-card-title-line-height", label: "Заголовок — межстрочный", defaultValue: 1.25, ...LINE_HEIGHT_RANGE },
+      { key: "--ai-source-card-title-offset-x", label: "Заголовок — смещение X", defaultValue: 0, ...TEXT_OFFSET_RANGE },
+      { key: "--ai-source-card-title-offset-y", label: "Заголовок — смещение Y", defaultValue: 0, ...TEXT_OFFSET_RANGE },
+      { key: "--ai-source-card-subtitle-size", label: "Подпись — размер", defaultValue: 38, ...CARD_FONT_RANGE },
+      { key: "--ai-source-card-subtitle-weight", label: "Подпись — жирность", defaultValue: 500, ...FONT_WEIGHT_RANGE },
+      { key: "--ai-source-card-subtitle-letter-spacing", label: "Подпись — трекинг", defaultValue: 0, ...LETTER_SPACING_RANGE },
+      { key: "--ai-source-card-subtitle-line-height", label: "Подпись — межстрочный", defaultValue: 1.35, ...LINE_HEIGHT_RANGE },
+      { key: "--ai-source-card-subtitle-color", label: "Подпись — цвет", type: "color", defaultValue: "#a7b0d0" },
+      { key: "--ai-source-card-subtitle-offset-x", label: "Подпись — смещение X", defaultValue: 0, ...TEXT_OFFSET_RANGE },
+      { key: "--ai-source-card-subtitle-offset-y", label: "Подпись — смещение Y", defaultValue: 0, ...TEXT_OFFSET_RANGE },
     ],
   },
   {
@@ -959,6 +1031,7 @@ function isSectionVisible(title: string, step: AiFlowStep): boolean {
   if (
     title === "Заголовок экрана" ||
     title === "Сетка карточек" ||
+    title === "Текст карточек" ||
     title.startsWith("Карточка «") ||
     title === "Иконки карточек" ||
     title === "Бейдж AI" ||
@@ -974,6 +1047,7 @@ const AI_COMMON_TITLES = ["Шапка", "Кнопка «Назад»"] as const;
 const AI_SOURCE_TITLES = [
   "Заголовок экрана",
   "Сетка карточек",
+  "Текст карточек",
   "Карточка «Камера» — фон и рамка",
   "Карточка «Камера» — акценты",
   "Карточка «Телефон» — фон и рамка",
@@ -1058,8 +1132,8 @@ function getBaselineValues(): Record<string, string> {
   for (const token of ALL_TOKENS) {
     values[token.key] = String(token.defaultValue);
   }
-  if (typeof document === "undefined") return values;
-  return readAllDefaults();
+  if (typeof document === "undefined") return overlayThemeRuntimeOverrides(values, ALL_TOKENS);
+  return overlayThemeRuntimeOverrides(readAllDefaults(), ALL_TOKENS);
 }
 
 
@@ -1163,6 +1237,7 @@ export function AiThemePanel() {
 
   function handleReset() {
     const defaults = hardcodedDefaults();
+    saverRef.current.forget(ALL_TOKENS.map((token) => token.key));
     for (const token of ALL_TOKENS) {
       clearToken(token.key);
       applyValue(token.key, defaults[token.key]!);
@@ -1309,13 +1384,15 @@ export function AiThemePanel() {
               <SettingsPanelGroup key={group.label} label={group.label}>
                 {sections.map((section) => {
                   const id = settingsSectionId(section.title);
+                  const defaultOpen =
+                    section.title === "Сетка карточек" || section.title === "Текст карточек";
                   return (
                     <SettingsPanelSection
                       key={section.title}
                       id={id}
                       title={section.title}
-                      open={isSectionOpen(id)}
-                      onToggle={() => toggleSection(id)}
+                      open={isSectionOpen(id, defaultOpen)}
+                      onToggle={() => toggleSection(id, defaultOpen)}
                       highlighted={activeSectionId === id}
                     >
                       {section.tokens.map((token) => renderToken(token))}

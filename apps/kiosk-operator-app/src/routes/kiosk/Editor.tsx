@@ -3,12 +3,9 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
 import {
-  designCategorySchema,
-  DEFAULT_DTF_PRINTER_CONFIG,
   GARMENT_COLORS,
   GARMENT_FABRICS,
   GARMENT_SIZES,
-  getPrintSizeMm,
   garmentTypeSchema,
   garmentUsesSizeFabric,
   isGarmentColorEnabled,
@@ -35,11 +32,7 @@ import { useEditorStore } from "../../editor/store.js";
 import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
-import { computePrintSize } from "../../editor/printSize.js";
-import {
-  computeDtfExportMultiplier,
-  exportPrintAreaDataURL,
-} from "../../editor/selectionControlOverscan.js";
+import { exportDesignedSides } from "../../editor/exportOrderDesigns.js";
 import { FabricCanvas } from "../../editor/FabricCanvas.js";
 import { GarmentPicker } from "../../editor/GarmentPicker.js";
 import { GarmentTypeToggle } from "../../editor/GarmentTypeToggle.js";
@@ -52,7 +45,7 @@ import { PopularElementsStrip } from "../../editor/toolbar/PopularElementsStrip.
 import { TipsBar } from "../../editor/toolbar/TipsBar.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { ArrowLeft } from "../../components/icons.js";
-import { CATEGORY_LABEL_KEYS, getEditorBackRoute } from "../../lib/categoryLabels.js";
+import { CATEGORY_LABEL_KEYS, getEditorBackRoute, parseDesignCategoryParam } from "../../lib/categoryLabels.js";
 import { blockBorderStyle, dividerStyle } from "../../editor/borderStyle.js";
 import {
   GarmentMockup,
@@ -133,8 +126,7 @@ export function Editor() {
     setFabricName,
   ]);
 
-  const categoryParam = designCategorySchema.safeParse(searchParams.get("category"));
-  const category = categoryParam.success ? categoryParam.data : null;
+  const category = parseDesignCategoryParam(searchParams.get("category"));
   const categoryLabel = category ? t(CATEGORY_LABEL_KEYS[category]) : null;
   const backRoute = getEditorBackRoute(category);
   const designId = searchParams.get("designId");
@@ -213,18 +205,12 @@ export function Editor() {
     setIsCreatingOrder(true);
 
     try {
-      const printSize = computePrintSize(canvas);
-      const canvasSnapshot = JSON.stringify(canvas.toJSON());
-      // High-res transparent PNG of the print area for DTF (Epson L1800 / RIP).
-      // Multiplier targets ~300 DPI at the configured physical width; point-server
-      // later resizes exactly and may mirror for film.
-      const dtfSizeMm = getPrintSizeMm(DEFAULT_DTF_PRINTER_CONFIG, garmentType, side);
-      const exportMultiplier = computeDtfExportMultiplier(
-        canvas,
-        dtfSizeMm.widthMm,
-        DEFAULT_DTF_PRINTER_CONFIG.dpi,
-      );
-      const designImageBase64 = exportPrintAreaDataURL(canvas, { multiplier: exportMultiplier });
+      const designedSides = await exportDesignedSides(canvas, side, garmentType);
+      const primary = designedSides[0];
+      if (!primary) {
+        throw new Error("no design");
+      }
+      const extra = designedSides[1];
       const aiProvider =
         category === "ai_style" ? useAiFlowStore.getState().aiProvider : ("standard" as const);
       const priceBreakdown = getPriceBreakdown(
@@ -232,28 +218,42 @@ export function Editor() {
           garmentType,
           fabric: fabricName as GarmentFabric,
           size,
-          printSize,
+          printSize: primary.printSize,
           aiProvider,
         },
         priceConfig,
       );
       const price = priceBreakdown.reduce((sum, line) => sum + line.amountTenge, 0);
 
-      useEditorStore.getState().setPrintSize(side, printSize);
-      useEditorStore.getState().setCanvasSnapshot(side, canvasSnapshot);
-
       const order = await createOrder({
         garmentType,
         garmentColor: color,
         garmentSize: size,
         garmentFabric: fabricName,
-        side,
-        printSize,
+        side: primary.side,
+        printSize: primary.printSize,
         price,
-        designImageBase64,
+        designImageBase64: primary.designImageBase64,
+        extraSides: extra
+          ? [
+              {
+                side: extra.side,
+                printSize: extra.printSize,
+                designImageBase64: extra.designImageBase64,
+              },
+            ]
+          : undefined,
       });
       useCheckoutStore.getState().setDraft(
-        { type: garmentType, color, size, fabricName, side, canvasSnapshot },
+        {
+          type: garmentType,
+          color,
+          size,
+          fabricName,
+          side: primary.side,
+          canvasSnapshot: primary.canvasSnapshot,
+          designedSides: designedSides.map((item) => item.side),
+        },
         priceBreakdown,
       );
       useCheckoutStore.getState().setOrder(order);

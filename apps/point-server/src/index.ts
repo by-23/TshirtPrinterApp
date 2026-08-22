@@ -15,6 +15,7 @@ import { repairOrderImagePaths } from "./modules/orders/repairImagePaths.js";
 import { startDailyBackupScheduler } from "./modules/backup/daily.js";
 import { ensureLocalBuiltinFonts } from "./modules/fonts/service.js";
 import { backfillCatalogThumbs } from "./modules/catalog-scraper/thumbs.js";
+import { migrateMemesCatalogDir } from "./modules/catalog-scraper/storage.js";
 
 /** Safety-net interval for `sync_queue` retries — connect/order-create already nudge a drain, this just catches anything left behind after a failed attempt. */
 const SYNC_QUEUE_DRAIN_INTERVAL_MS = 30_000;
@@ -27,6 +28,7 @@ ensureDataDir();
 // see docs/PLAN.md Этап 3 discussion. Safe on every boot: drizzle no-ops
 // once a migration is already recorded as applied.
 runMigrations();
+await migrateMemesCatalogDir();
 void ensureLocalBuiltinFonts();
 
 const app = await buildServer();

@@ -8,7 +8,8 @@
   "home": {
     "chooseLanguage": "Выберите язык",
     "categories": {
-      "memes": "Мемы",
+      "misc": "Разное",
+      "memes": "Разное",
       "animeMovies": "Аниме",
       "games": "Игры",
       "text": "Надписи",

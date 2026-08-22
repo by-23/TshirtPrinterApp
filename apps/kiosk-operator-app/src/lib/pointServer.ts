@@ -41,6 +41,7 @@ import {
   type UpdateGarmentAvailabilityConfigInput,
   type UpdateDtfPrinterConfigInput,
   type DtfPrinterConfig,
+  type GarmentSide,
   type ManagedFont,
   orderEventSchema,
 } from "@tshirt/shared-types";
@@ -340,22 +341,26 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
   return res.json();
 }
 
+export interface PreparedPrintJob {
+  side?: GarmentSide;
+  fileUrl: string;
+  absolutePath: string;
+  hotfolderAbsolutePath: string;
+  hotfolderDir: string;
+  widthMm: number;
+  heightMm: number;
+  widthPx: number;
+  heightPx: number;
+  dpi: number;
+  mirrored: boolean;
+  mediaSize: "A3" | "A3+";
+  printerModel: string;
+}
+
 export interface PrepareOrderPrintResult {
   order: Order;
-  printJob: {
-    fileUrl: string;
-    absolutePath: string;
-    hotfolderAbsolutePath: string;
-    hotfolderDir: string;
-    widthMm: number;
-    heightMm: number;
-    widthPx: number;
-    heightPx: number;
-    dpi: number;
-    mirrored: boolean;
-    mediaSize: "A3" | "A3+";
-    printerModel: string;
-  };
+  printJob: PreparedPrintJob;
+  printJobs?: PreparedPrintJob[];
 }
 
 /** Builds RIP-ready DTF PNG (physical mm @ DPI, mirror) and copies to hotfolder. */

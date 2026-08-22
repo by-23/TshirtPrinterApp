@@ -7,6 +7,7 @@ import { RAIL_ICON_CLASS, TshirtIcon } from "../../../components/icons.js";
 import { useEditorStore } from "../../../editor/store.js";
 import type { CheckoutGarment } from "../../../lib/checkoutStore.js";
 import { initPrintAreaConfig, usePrintAreaStore } from "../../../lib/printAreaStore.js";
+import { fabricJsonHasDesign } from "../../../editor/selectionControlOverscan.js";
 import {
   GarmentMockup,
   MOCKUP_DISPLAY_SCALE,
@@ -148,7 +149,7 @@ export function CheckoutPreview({ garment }: CheckoutPreviewProps) {
       <div className="flex shrink-0 justify-center" style={{ gap: "var(--checkout-preview-toggle-gap)" }}>
         {garmentSideSchema.options.map((sideOption) => {
           const active = previewSide === sideOption;
-          const hasContent = Boolean(snapshotBySide[sideOption]);
+          const hasContent = fabricJsonHasDesign(snapshotBySide[sideOption]);
           return (
             <PillButton
               key={sideOption}

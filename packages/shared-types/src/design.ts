@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const designCategorySchema = z.enum([
-  "memes",
+  "misc",
   "anime_movies",
   "games",
   "text",
@@ -11,8 +11,19 @@ export const designCategorySchema = z.enum([
 export type DesignCategory = z.infer<typeof designCategorySchema>;
 
 /** Categories the Pinterest catalog scraper (Этап 3) fills in — the ones with a gallery page. */
-export const galleryCategorySchema = z.enum(["memes", "anime_movies", "games"]);
+export const galleryCategorySchema = z.enum(["misc", "anime_movies", "games"]);
 export type GalleryCategory = z.infer<typeof galleryCategorySchema>;
+
+/** Old kiosk builds used `memes`; that gallery is now `misc`. */
+export function normalizeDesignCategory(value: unknown): DesignCategory | undefined {
+  const parsed = designCategorySchema.safeParse(value === "memes" ? "misc" : value);
+  return parsed.success ? parsed.data : undefined;
+}
+
+export function normalizeGalleryCategory(value: unknown): GalleryCategory | undefined {
+  const parsed = galleryCategorySchema.safeParse(value === "memes" ? "misc" : value);
+  return parsed.success ? parsed.data : undefined;
+}
 
 /** Which scraper source found a given design — `null` for manually-added ones (admin/seed). */
 export const scraperSourceIdSchema = z.enum(["pinterest", "giphy", "cleanpng"]);

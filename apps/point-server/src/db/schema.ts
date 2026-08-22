@@ -36,7 +36,7 @@ export const operators = sqliteTable("operators", {
 export const designs = sqliteTable("designs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   category: text("category", {
-    enum: ["memes", "anime_movies", "games", "text", "custom", "ai_style"],
+    enum: ["misc", "anime_movies", "games", "text", "custom", "ai_style"],
   }).notNull(),
   title: text("title").notNull(),
   imageUrl: text("image_url").notNull().default(""),
@@ -126,7 +126,7 @@ export const catalogScrapeConfig = sqliteTable("catalog_scrape_config", {
  * `queryVariants.ts` defaults on first read.
  */
 export const catalogScrapeQueryTags = sqliteTable("catalog_scrape_query_tags", {
-  category: text("category", { enum: ["memes", "anime_movies", "games"] }).primaryKey(),
+  category: text("category", { enum: ["misc", "anime_movies", "games"] }).primaryKey(),
   tagsJson: text("tags_json").notNull(),
   updatedAt: text("updated_at")
     .notNull()
@@ -135,7 +135,7 @@ export const catalogScrapeQueryTags = sqliteTable("catalog_scrape_query_tags", {
 
 /** One row per gallery category — tracks scraper progress/health (Этап 3). */
 export const catalogScrapeState = sqliteTable("catalog_scrape_state", {
-  category: text("category", { enum: ["memes", "anime_movies", "games"] }).primaryKey(),
+  category: text("category", { enum: ["misc", "anime_movies", "games"] }).primaryKey(),
   queryVariantIndex: integer("query_variant_index").notNull().default(0),
   status: text("status", { enum: ["idle", "running", "success", "error"] })
     .notNull()
@@ -163,9 +163,16 @@ export const orders = sqliteTable("orders", {
   // cash-register audit (orders vs physical prints).
   printCount: integer("print_count").notNull().default(0),
   mockupImagePath: text("mockup_image_path"),
+  /** Original print-area (`order-sources/{id}.png`); not stored in the cashier-facing order folder. */
   designImagePath: text("design_image_path"),
   /** Relative path to DTF RIP file (`orders/{id}/dtf-print.png`), prepared on demand. */
   dtfPrintImagePath: text("dtf_print_image_path"),
+  /** Second designed side when the customer printed both front and back. */
+  otherSide: text("other_side", { enum: ["front", "back"] }),
+  otherPrintSize: text("other_print_size", { enum: ["small", "medium", "large"] }),
+  otherMockupImagePath: text("other_mockup_image_path"),
+  otherDesignImagePath: text("other_design_image_path"),
+  otherDtfPrintImagePath: text("other_dtf_print_image_path"),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),

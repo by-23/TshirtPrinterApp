@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("pointDesktop", {
   getModulesStatus: () => ipcRenderer.invoke("modules-update:getStatus"),
   checkModuleUpdates: () => ipcRenderer.invoke("modules-update:check"),
   applyModuleUpdate: (zone) => ipcRenderer.invoke("modules-update:apply", zone),
+  applyModulePipeline: (zones) => ipcRenderer.invoke("modules-update:applyPipeline", zones),
   onModulesStatus: (callback) => {
     if (typeof callback !== "function") return () => undefined;
     const handler = (_event, status) => callback(status);

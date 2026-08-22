@@ -61,7 +61,9 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
     },
     side: {
       label: t("editor.printSide"),
-      detail: t(`editor.sides.${garment.side}`),
+      detail: (garment.designedSides ?? [garment.side])
+        .map((sideOption) => t(`editor.sides.${sideOption}`))
+        .join(" + "),
     },
     ai: {
       label: t("checkout.summary.aiLabel"),

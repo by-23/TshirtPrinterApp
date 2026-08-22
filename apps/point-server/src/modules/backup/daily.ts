@@ -6,7 +6,7 @@ import { env } from "../../env.js";
 import { getDataDir } from "../../lib/dataDir.js";
 
 /** Irreplaceable: order PNGs. Catalog/ads/stickers/AI are regenerable or non-critical. */
-const INCLUDE_DIRS = ["orders"] as const;
+const INCLUDE_DIRS = ["orders", "order-sources"] as const;
 
 /** Regenerable / scratch — skipped to keep backups smaller and safer. */
 const SKIP_DIRS = new Set([

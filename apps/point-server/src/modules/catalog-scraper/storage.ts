@@ -151,3 +151,58 @@ export async function cleanupTempDir(tempDir: string): Promise<void> {
     // into a reported failure.
   }
 }
+
+/**
+ * One-shot: gallery category `memes` was renamed to `misc`. Moves the on-disk
+ * catalog folder so existing PNGs keep working after the DB `image_url` rewrite.
+ */
+export async function migrateMemesCatalogDir(): Promise<void> {
+  const oldDir = path.join(CATALOG_DIR, "memes");
+  const newDir = path.join(CATALOG_DIR, "misc");
+  try {
+    await stat(oldDir);
+  } catch {
+    return;
+  }
+
+  try {
+    let destExists = false;
+    try {
+      await stat(newDir);
+      destExists = true;
+    } catch {
+      destExists = false;
+    }
+
+    if (!destExists) {
+      await mkdir(CATALOG_DIR, { recursive: true });
+      await rename(oldDir, newDir);
+      return;
+    }
+
+    await moveDirContents(oldDir, newDir);
+    await rm(oldDir, { recursive: true, force: true });
+  } catch {
+    // Fail-open: a locked Windows file handle must not keep point-server down.
+    // Images stay reachable under the old folder until the next successful boot.
+  }
+}
+
+async function moveDirContents(fromDir: string, toDir: string): Promise<void> {
+  await mkdir(toDir, { recursive: true });
+  const entries = await readdir(fromDir);
+  for (const entry of entries) {
+    const from = path.join(fromDir, entry);
+    const to = path.join(toDir, entry);
+    const info = await stat(from);
+    if (info.isDirectory()) {
+      await moveDirContents(from, to);
+      continue;
+    }
+    try {
+      await stat(to);
+    } catch {
+      await rename(from, to);
+    }
+  }
+}

@@ -13,6 +13,7 @@ import { OPERATOR_SCROLL_CSS_VARS, syncAllOperatorScrollElements } from "../lib/
 import {
   clearThemeOverrideStorage,
   createThemeCssSaver,
+  overlayThemeRuntimeOverrides,
   themeSaveStatusLabel,
   type ThemeSaveState,
 } from "../lib/themeCssSave.js";
@@ -387,8 +388,8 @@ function getBaselineValues(): Record<string, string> {
   for (const token of ALL_TOKENS) {
     values[token.key] = String(token.defaultValue);
   }
-  if (typeof document === "undefined") return values;
-  return readAllDefaults();
+  if (typeof document === "undefined") return overlayThemeRuntimeOverrides(values, ALL_TOKENS);
+  return overlayThemeRuntimeOverrides(readAllDefaults(), ALL_TOKENS);
 }
 
 

@@ -3,7 +3,7 @@ import { supportedLanguages, type SupportedLanguage } from "@tshirt/i18n";
 import { i18next } from "./i18n.js";
 
 const CATEGORY_I18N_KEY: Record<DesignCategory, string> = {
-  memes: "home.categories.memes",
+  misc: "home.categories.misc",
   anime_movies: "home.categories.animeMovies",
   games: "home.categories.games",
   text: "home.categories.text",
@@ -36,7 +36,10 @@ export function getCategoryHomeLabel(
   category: DesignCategory,
   lng: string,
 ): { main: string; sub: string } {
-  return buildMainSubLabels(CATEGORY_I18N_KEY[category], normalizeLanguage(lng));
+  return buildMainSubLabels(
+    CATEGORY_I18N_KEY[category] ?? "home.categories.misc",
+    normalizeLanguage(lng),
+  );
 }
 
 export function getCategorySelectLabel(lng: string): { main: string; sub: string } {

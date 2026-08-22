@@ -6,7 +6,7 @@ import {
   type DesktopUpdateStatus,
 } from "../../lib/desktopUpdate.js";
 import {
-  applyModuleUpdate,
+  applyModulePipeline,
   checkModuleUpdates,
   subscribeModuleUpdates,
   type ModuleZoneStatus,
@@ -172,9 +172,9 @@ export function DesktopUpdateButton() {
         if (shellRes.status) setShell(shellRes.status);
       }
 
-      const zones = nextModules?.zones ?? modules?.zones ?? [];
-      const ui = zones.find((z) => z.id === "ui");
-      const server = zones.find((z) => z.id === "server");
+      const zoneList = nextModules?.zones ?? modules?.zones ?? [];
+      const ui = zoneList.find((z) => z.id === "ui");
+      const server = zoneList.find((z) => z.id === "server");
       const needUi = ui?.state === "ready" || uiReady;
       const needServer = server?.state === "ready" || serverReady;
       const needShell = nextShell?.state === "ready" || shell?.state === "ready" || shellReady;
@@ -184,20 +184,28 @@ export function DesktopUpdateButton() {
         return;
       }
 
-      if (needUi) {
-        setPhaseLabel("Установка интерфейса…");
-        const res = await withTimeout(applyModuleUpdate("ui"), 10 * 60_000, "Установка интерфейса");
-        if (!res.ok) throw new Error(res.error || "не удалось установить интерфейс");
-      }
-      if (needServer) {
-        setPhaseLabel("Установка сервера…");
-        const res = await withTimeout(applyModuleUpdate("server"), 20 * 60_000, "Установка сервера");
-        if (!res.ok) throw new Error(res.error || "не удалось установить сервер");
-      }
+      // Shell first: module apply used to hang on server swap and block the shell forever.
       if (needShell) {
         setPhaseLabel("Перезапуск для установки оболочки…");
         const res = await installDesktopUpdate();
         if (!res.ok) throw new Error(res.error || "не удалось установить оболочку");
+        return;
+      }
+
+      const toApply: Array<"ui" | "server"> = [];
+      if (needUi) toApply.push("ui");
+      if (needServer) toApply.push("server");
+      if (toApply.length) {
+        setPhaseLabel(
+          toApply.length === 2
+            ? "Установка модулей…"
+            : toApply[0] === "ui"
+              ? "Установка интерфейса…"
+              : "Установка сервера…",
+        );
+        const res = await withTimeout(applyModulePipeline(toApply), 25 * 60_000, "Установка модулей");
+        if (!res.ok) throw new Error(res.error || "не удалось установить модули");
+        if (res.status) setModules(res.status);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

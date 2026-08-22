@@ -5,7 +5,7 @@ import { getEmptyStreak, noteFillResult } from "./rateLimit.js";
 import { topUpCategory, topUpCategoryBy } from "./scrapeService.js";
 import { getCategoryStorageStats } from "./storage.js";
 
-export const GALLERY_CATEGORIES: readonly GalleryCategory[] = ["memes", "anime_movies", "games"];
+export const GALLERY_CATEGORIES: readonly GalleryCategory[] = ["misc", "anime_movies", "games"];
 const BYTES_PER_MB = 1024 * 1024;
 
 // In-process guard so overlapping calls in the same server instance don't

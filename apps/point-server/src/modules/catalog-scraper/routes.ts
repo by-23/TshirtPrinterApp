@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import {
-  galleryCategorySchema,
+  normalizeGalleryCategory,
   testGiphyApiKeyInputSchema,
   updateCatalogScrapeConfigSchema,
   updateCategoryQueryTagsSchema,
@@ -59,8 +59,8 @@ export async function catalogScrapeRoutes(app: FastifyInstance) {
   });
 
   app.patch<{ Params: { category: string } }>("/catalog/query-tags/:category", async (request, reply) => {
-    const parsedCategory = galleryCategorySchema.safeParse(request.params.category);
-    if (!parsedCategory.success) {
+    const parsedCategory = normalizeGalleryCategory(request.params.category);
+    if (!parsedCategory) {
       return reply.status(400).send({ error: "Invalid category" });
     }
     const parsedBody = updateCategoryQueryTagsSchema.safeParse(request.body);
@@ -68,18 +68,18 @@ export async function catalogScrapeRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: parsedBody.error.flatten() });
     }
     try {
-      return await setQueryTags(parsedCategory.data, parsedBody.data.tags);
+      return await setQueryTags(parsedCategory, parsedBody.data.tags);
     } catch (error) {
       return reply.status(400).send({ error: error instanceof Error ? error.message : String(error) });
     }
   });
 
   app.post<{ Params: { category: string } }>("/catalog/scrape/:category/run", async (request, reply) => {
-    const parsedCategory = galleryCategorySchema.safeParse(request.params.category);
-    if (!parsedCategory.success) {
+    const parsedCategory = normalizeGalleryCategory(request.params.category);
+    if (!parsedCategory) {
       return reply.status(400).send({ error: "Invalid category" });
     }
-    triggerManualRun(parsedCategory.data, request.log);
+    triggerManualRun(parsedCategory, request.log);
     return reply.status(202).send({ triggered: true });
   });
 }

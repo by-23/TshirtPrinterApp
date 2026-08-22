@@ -33,11 +33,13 @@ const MODULES_TAG = "modules";
  *   BrowserWindow: typeof import("electron").BrowserWindow,
  *   ipcMain: typeof import("electron").ipcMain,
  *   beforeApply?: (zone: string) => Promise<void> | void,
- *   onApplied?: (zone: string) => Promise<void> | void,
+ *   onApplied?: (zone: string, meta?: { batch?: boolean }) => Promise<void> | void,
  * }} opts
  */
 function setupModuleUpdater(opts) {
   const { log, BrowserWindow, ipcMain, beforeApply, onApplied } = opts;
+  /** @type {Promise<unknown> | null} */
+  let applyLock = null;
 
   /** @type {{ zones: Array<Record<string, unknown>>, error?: string }} */
   let snapshot = { zones: listLocalZones() };
@@ -310,6 +312,48 @@ function setupModuleUpdater(opts) {
     return new Promise((r) => setTimeout(r, ms));
   }
 
+  function withTimeout(promise, ms, label) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`${label}: timeout ${Math.round(ms / 1000)}s`)), ms);
+      promise.then(
+        (v) => {
+          clearTimeout(timer);
+          resolve(v);
+        },
+        (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
+      );
+    });
+  }
+
+  async function renameWithRetry(from, to, zone) {
+    let lastErr;
+    for (let i = 0; i < 10; i++) {
+      try {
+        fs.renameSync(from, to);
+        return;
+      } catch (err) {
+        lastErr = err;
+        const code = err && err.code;
+        if (code !== "EPERM" && code !== "EBUSY" && code !== "EACCES" && code !== "ENOTEMPTY") {
+          throw err;
+        }
+        log(`module ${zone}: rename retry ${i + 1}/10: ${err && err.message ? err.message : err}`);
+        if (beforeApply) {
+          try {
+            await beforeApply(zone);
+          } catch {
+            // ignore
+          }
+        }
+        await sleep(700 + i * 400);
+      }
+    }
+    throw lastErr || new Error(`rename failed: ${from} -> ${to}`);
+  }
+
   /**
    * Finish a previous crash mid-swap (e.g. server.next left behind because
    * point-server still held file locks on modules/server).
@@ -339,158 +383,206 @@ function setupModuleUpdater(opts) {
     return true;
   }
 
-  async function applyZone(zone) {
-    const current = snapshot.zones.find((z) => z.id === zone);
-    const nextPath = `${zoneDir(zone)}.next`;
-    const stuckMarker =
-      zone === "ui"
-        ? path.join(nextPath, "index.html")
-        : zone === "server"
-          ? path.join(nextPath, "dist", "index.js")
-          : path.join(nextPath, "node.exe");
-    const hasStuckNext = fs.existsSync(stuckMarker);
-    const isReady = Boolean(current && current.state === "ready" && current.path && current.remoteVersion);
+  /**
+   * @param {string} zone
+   * @param {{ skipOnApplied?: boolean }} [opts]
+   */
+  async function applyZone(zone, opts = {}) {
+    const skipOnApplied = opts.skipOnApplied === true;
+    const run = async () => {
+      const current = snapshot.zones.find((z) => z.id === zone);
+      const nextPath = `${zoneDir(zone)}.next`;
+      const stuckMarker =
+        zone === "ui"
+          ? path.join(nextPath, "index.html")
+          : zone === "server"
+            ? path.join(nextPath, "dist", "index.js")
+            : path.join(nextPath, "node.exe");
+      const hasStuckNext = fs.existsSync(stuckMarker);
+      const isReady = Boolean(current && current.state === "ready" && current.path && current.remoteVersion);
 
-    if (!isReady && !hasStuckNext) {
-      return { ok: false, error: "update not ready" };
-    }
-
-    const fileName = current && current.path;
-    const remoteVersion = (current && current.remoteVersion) || readZoneVersion(zone);
-    const expectedSha = current && current.sha512;
-
-    updateZone(zone, {
-      state: "applying",
-      percent: 0,
-      error: undefined,
-      remoteVersion: remoteVersion || undefined,
-      phase: "prepare",
-    });
-
-    try {
-      // MUST stop point-server before renaming modules/server (Windows file locks).
-      if (beforeApply) {
-        updateZone(zone, { state: "applying", percent: 5, phase: "stopping-server" });
-        await beforeApply(zone);
-        await sleep(600);
-      }
-
-      if (recoverStuckSwap(zone)) {
-        const ver = readZoneVersion(zone) || remoteVersion;
-        if (ver) setZoneVersion(zone, ver);
-        updateZone(zone, {
-          id: zone,
-          localVersion: ver || undefined,
-          remoteVersion: ver || undefined,
-          state: "idle",
-          percent: 100,
-          phase: "done",
-          error: undefined,
-        });
-        log(`module ${zone} recovered stuck swap v${ver}`);
-        if (onApplied) await onApplied(zone);
-        updateZone(zone, {
-          id: zone,
-          localVersion: ver || undefined,
-          remoteVersion: ver || undefined,
-          state: "idle",
-          percent: 100,
-          phase: "done",
-          error: undefined,
-        });
-        return { ok: true, recovered: true };
-      }
-
-      if (!isReady) {
+      if (!isReady && !hasStuckNext) {
         return { ok: false, error: "update not ready" };
       }
 
-      updateZone(zone, { state: "downloading", percent: 0, phase: "download", remoteVersion });
-      const tmpRoot = path.join(modulesRoot(), "_tmp");
-      fs.mkdirSync(tmpRoot, { recursive: true });
-      const zipPath = path.join(tmpRoot, `${zone}-${remoteVersion}.zip`);
-      const extractPath = path.join(tmpRoot, `${zone}-${remoteVersion}-out`);
-
-      await downloadFile(downloadUrl(fileName), zipPath, (percent) => {
-        updateZone(zone, { state: "downloading", percent, remoteVersion, phase: "download" });
-      });
-
-      if (expectedSha) {
-        updateZone(zone, { state: "applying", percent: 92, phase: "verify", remoteVersion });
-        const actual = await sha512File(zipPath);
-        if (actual !== expectedSha) {
-          throw new Error(`sha512 mismatch for ${fileName}`);
-        }
-      }
-
-      updateZone(zone, { state: "applying", percent: 94, phase: "extract", remoteVersion });
-      if (fs.existsSync(extractPath)) fs.rmSync(extractPath, { recursive: true, force: true });
-      await extractZip(zipPath, extractPath);
-      const contentRoot = normalizeExtracted(zone, extractPath);
-
-      const target = zoneDir(zone);
-      const next = `${target}.next`;
-      const prev = `${target}.prev`;
-      updateZone(zone, { state: "applying", percent: 97, phase: "swap", remoteVersion });
-      if (fs.existsSync(next)) fs.rmSync(next, { recursive: true, force: true });
-      // Same-volume rename is instant vs copying 100MB+ node_modules trees.
-      fs.renameSync(contentRoot, next);
-
-      if (fs.existsSync(prev)) fs.rmSync(prev, { recursive: true, force: true });
-      if (fs.existsSync(target)) fs.renameSync(target, prev);
-      fs.renameSync(next, target);
-      if (fs.existsSync(prev)) {
-        try {
-          fs.rmSync(prev, { recursive: true, force: true });
-        } catch (err) {
-          log(`module ${zone}: prev cleanup deferred: ${err && err.message ? err.message : err}`);
-        }
-      }
-
-      setZoneVersion(zone, remoteVersion);
-      log(`module ${zone} applied v${remoteVersion}`);
-
-      try {
-        if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
-      } catch {
-        // ignore
-      }
-      try {
-        if (fs.existsSync(extractPath)) fs.rmSync(extractPath, { recursive: true, force: true });
-      } catch {
-        // ignore
-      }
-      cleanupTmp();
-
-      if (onApplied) {
-        updateZone(zone, { state: "applying", percent: 100, phase: "restart", remoteVersion });
-        await onApplied(zone);
-      }
+      const fileName = current && current.path;
+      const remoteVersion = (current && current.remoteVersion) || readZoneVersion(zone);
+      const expectedSha = current && current.sha512;
 
       updateZone(zone, {
+        state: "applying",
+        percent: 0,
+        error: undefined,
+        remoteVersion: remoteVersion || undefined,
+        phase: "prepare",
+      });
+
+      try {
+        // MUST stop point-server before renaming modules/server (Windows file locks).
+        if (beforeApply) {
+          updateZone(zone, { state: "applying", percent: 5, phase: "stopping-server" });
+          await beforeApply(zone);
+          await sleep(1200);
+        }
+
+        if (recoverStuckSwap(zone)) {
+          const ver = readZoneVersion(zone) || remoteVersion;
+          if (ver) setZoneVersion(zone, ver);
+          updateZone(zone, {
+            id: zone,
+            localVersion: ver || undefined,
+            remoteVersion: ver || undefined,
+            state: "idle",
+            percent: 100,
+            phase: "done",
+            error: undefined,
+          });
+          log(`module ${zone} recovered stuck swap v${ver}`);
+          if (onApplied && !skipOnApplied) await onApplied(zone, { batch: false });
+          return { ok: true, recovered: true };
+        }
+
+        if (!isReady) {
+          return { ok: false, error: "update not ready" };
+        }
+
+        updateZone(zone, { state: "downloading", percent: 0, phase: "download", remoteVersion });
+        const tmpRoot = path.join(modulesRoot(), "_tmp");
+        fs.mkdirSync(tmpRoot, { recursive: true });
+        const zipPath = path.join(tmpRoot, `${zone}-${remoteVersion}.zip`);
+        const extractPath = path.join(tmpRoot, `${zone}-${remoteVersion}-out`);
+
+        await downloadFile(downloadUrl(fileName), zipPath, (percent) => {
+          updateZone(zone, { state: "downloading", percent, remoteVersion, phase: "download" });
+        });
+
+        if (expectedSha) {
+          updateZone(zone, { state: "applying", percent: 92, phase: "verify", remoteVersion });
+          const actual = await sha512File(zipPath);
+          if (actual !== expectedSha) {
+            throw new Error(`sha512 mismatch for ${fileName}`);
+          }
+        }
+
+        updateZone(zone, { state: "applying", percent: 94, phase: "extract", remoteVersion });
+        if (fs.existsSync(extractPath)) fs.rmSync(extractPath, { recursive: true, force: true });
+        await withTimeout(extractZip(zipPath, extractPath), 15 * 60_000, `extract ${zone}`);
+        const contentRoot = normalizeExtracted(zone, extractPath);
+
+        const target = zoneDir(zone);
+        const next = `${target}.next`;
+        const prev = `${target}.prev`;
+        updateZone(zone, { state: "applying", percent: 97, phase: "swap", remoteVersion });
+        if (fs.existsSync(next)) fs.rmSync(next, { recursive: true, force: true });
+        // Same-volume rename is instant vs copying 100MB+ node_modules trees.
+        // Retries: Windows often still holds locks briefly after taskkill.
+        await renameWithRetry(contentRoot, next, zone);
+        if (fs.existsSync(prev)) fs.rmSync(prev, { recursive: true, force: true });
+        if (fs.existsSync(target)) await renameWithRetry(target, prev, zone);
+        await renameWithRetry(next, target, zone);
+        if (fs.existsSync(prev)) {
+          try {
+            fs.rmSync(prev, { recursive: true, force: true });
+          } catch (err) {
+            log(`module ${zone}: prev cleanup deferred: ${err && err.message ? err.message : err}`);
+          }
+        }
+
+        setZoneVersion(zone, remoteVersion);
+        log(`module ${zone} applied v${remoteVersion}`);
+
+        try {
+          if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+        } catch {
+          // ignore
+        }
+        try {
+          if (fs.existsSync(extractPath)) fs.rmSync(extractPath, { recursive: true, force: true });
+        } catch {
+          // ignore
+        }
+        cleanupTmp();
+
+        if (onApplied && !skipOnApplied) {
+          updateZone(zone, { state: "applying", percent: 100, phase: "restart", remoteVersion });
+          await onApplied(zone, { batch: false });
+        }
+
+        updateZone(zone, {
+          id: zone,
+          localVersion: remoteVersion,
+          remoteVersion,
+          state: "idle",
+          percent: 100,
+          phase: "done",
+          error: undefined,
+        });
+        return { ok: true };
+      } catch (err) {
+        const message = err && err.message ? String(err.message) : String(err);
+        log(`module apply ${zone} failed: ${message}`);
+        updateZone(zone, { state: "error", error: message, remoteVersion, phase: "error" });
+        // Best-effort: bring server back so Operator UI is not dead after a failed swap.
+        if (onApplied) {
+          try {
+            await onApplied(zone, { batch: false });
+          } catch {
+            // ignore
+          }
+        }
+        return { ok: false, error: message };
+      }
+    };
+
+    // Serialize applies — overlapping ui+server swaps deadlock on Windows locks.
+    const prev = applyLock || Promise.resolve();
+    let release;
+    applyLock = new Promise((r) => {
+      release = r;
+    });
+    await prev.catch(() => undefined);
+    try {
+      return await run();
+    } finally {
+      release();
+    }
+  }
+
+  /** Apply ui then server with a single restart/reload at the end. */
+  async function applyPipeline(zones) {
+    const list = (Array.isArray(zones) ? zones : []).filter((z) => ZONE_IDS.includes(z));
+    if (!list.length) return { ok: false, error: "no zones" };
+    const results = [];
+    for (const zone of list) {
+      const res = await applyZone(zone, { skipOnApplied: true });
+      results.push({ zone, ...res });
+      if (!res.ok) {
+        if (onApplied) {
+          try {
+            await onApplied(zone, { batch: true });
+          } catch {
+            // ignore
+          }
+        }
+        return { ok: false, error: res.error || `${zone} failed`, results, status: snapshot };
+      }
+    }
+    if (onApplied) {
+      updateZone(list[list.length - 1], { state: "applying", percent: 100, phase: "restart" });
+      await onApplied(list[list.length - 1], { batch: true });
+    }
+    for (const zone of list) {
+      const z = snapshot.zones.find((x) => x.id === zone);
+      updateZone(zone, {
         id: zone,
-        localVersion: remoteVersion,
-        remoteVersion,
+        localVersion: (z && z.localVersion) || readZoneVersion(zone) || undefined,
         state: "idle",
         percent: 100,
         phase: "done",
         error: undefined,
       });
-      return { ok: true };
-    } catch (err) {
-      const message = err && err.message ? String(err.message) : String(err);
-      log(`module apply ${zone} failed: ${message}`);
-      updateZone(zone, { state: "error", error: message, remoteVersion, phase: "error" });
-      // Best-effort: bring server back so Operator UI is not dead after a failed swap.
-      if (onApplied) {
-        try {
-          await onApplied(zone);
-        } catch {
-          // ignore
-        }
-      }
-      return { ok: false, error: message };
     }
+    return { ok: true, results, status: snapshot };
   }
 
   ipcMain.handle("modules-update:getStatus", () => snapshot);
@@ -507,6 +599,9 @@ function setupModuleUpdater(opts) {
   ipcMain.handle("modules-update:apply", async (_event, zone) => {
     if (!ZONE_IDS.includes(zone)) return { ok: false, error: "unknown zone" };
     return applyZone(zone);
+  });
+  ipcMain.handle("modules-update:applyPipeline", async (_event, zones) => {
+    return applyPipeline(zones);
   });
 
   function start() {

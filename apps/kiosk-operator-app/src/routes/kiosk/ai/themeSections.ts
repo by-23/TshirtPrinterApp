@@ -6,6 +6,7 @@ export const AI_THEME_SECTIONS = {
   back: settingsSectionId("Кнопка «Назад»"),
   sourceTitle: settingsSectionId("Заголовок экрана"),
   sourceGrid: settingsSectionId("Сетка карточек"),
+  cardText: settingsSectionId("Текст карточек"),
   cameraCard: settingsSectionId("Карточка «Камера» — фон и рамка"),
   phoneCard: settingsSectionId("Карточка «Телефон» — фон и рамка"),
   qrScreen: settingsSectionId("QR — экран"),
