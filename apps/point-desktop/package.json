@@ -8,7 +8,9 @@
     "dev": "electron .",
     "pack": "electron-builder --win --dir",
     "dist": "electron-builder --win",
-    "publish": "electron-builder --win --publish always"
+    "publish": "electron-builder --win --publish always",
+    "test": "node --test ./moduleIntegrity.test.mjs ./waitForHealth.test.mjs ./moduleApply.test.mjs",
+    "test:e2e": "node ../../scripts/e2e-installed-desktop.mjs"
   },
   "build": {
     "appId": "com.tshirtprinter.operator",
@@ -24,6 +26,9 @@
       "updater.cjs",
       "modules.cjs",
       "moduleUpdater.cjs",
+      "moduleIntegrity.cjs",
+      "waitForHealth.cjs",
+      "zipTree.cjs",
       "package.json"
     ],
     "publish": [

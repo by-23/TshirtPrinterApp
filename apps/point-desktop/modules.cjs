@@ -10,6 +10,7 @@
 const fs = require("fs");
 const path = require("path");
 const { app } = require("electron");
+const { inspectZone } = require("./moduleIntegrity.cjs");
 
 const ZONE_IDS = ["ui", "server", "runtime"];
 
@@ -174,6 +175,31 @@ function ensureModulesSeeded(opts) {
   }
 }
 
+/**
+ * A bad module zip can leave modules/server with an empty @tshirt folder.
+ * Wipe it so ensureModulesSeeded copies the known-good bundled tree.
+ */
+function reseedServerIfBroken(opts) {
+  const { resourcesRoot, log } = opts;
+  const serverTarget = zoneDir("server");
+  if (!dirHasFile(path.join(serverTarget, "dist"), "index.js")) return false;
+  const check = inspectZone("server", serverTarget, { allowSymlinks: true });
+  if (check.ok) return false;
+  log(`modules/server failed integrity: ${check.error} — reseeding from bundle`);
+  try {
+    fs.rmSync(serverTarget, { recursive: true, force: true });
+  } catch (err) {
+    log(`modules/server wipe failed: ${err && err.message ? err.message : err}`);
+    return false;
+  }
+  ensureModulesSeeded({ resourcesRoot, log });
+  const again = inspectZone("server", serverTarget, { allowSymlinks: true });
+  if (!again.ok) {
+    throw new Error(`bundled server also failed integrity: ${again.error}`);
+  }
+  return true;
+}
+
 function resolveUiDistPath(resourcesRoot) {
   const moduleUi = zoneDir("ui");
   if (dirHasFile(moduleUi, "index.html")) return moduleUi;
@@ -216,6 +242,7 @@ module.exports = {
   setZoneVersion,
   ensureModulesSeeded,
   resetModulesIfShellChanged,
+  reseedServerIfBroken,
   resolveUiDistPath,
   resolveServerRoot,
   resolveNodeBinary,

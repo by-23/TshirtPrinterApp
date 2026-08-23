@@ -8,8 +8,12 @@ import http from "node:http";
 import https from "node:https";
 import os from "node:os";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { pipeline } from "node:stream/promises";
 import { execFileSync } from "node:child_process";
+
+const require = createRequire(import.meta.url);
+const { inspectZone } = require("../apps/point-desktop/moduleIntegrity.cjs");
 
 const OWNER = "by-23";
 const REPO = "TshirtPrinterApp";
@@ -215,6 +219,10 @@ async function verifyZone(zone) {
   const marker =
     zone === "ui" ? path.join(outDir, "index.html") : path.join(outDir, "dist", "index.js");
   if (!fs.existsSync(marker)) throw new Error(`missing marker ${marker}`);
+  if (zone === "server") {
+    const gate = inspectZone("server", outDir);
+    if (!gate.ok) throw new Error(gate.error);
+  }
   console.log(`OK ${zone} v${yml.version}`);
   try {
     fs.rmSync(zipPath, { force: true });

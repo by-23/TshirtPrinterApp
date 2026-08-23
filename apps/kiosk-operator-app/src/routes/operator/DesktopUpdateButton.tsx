@@ -115,7 +115,10 @@ export function DesktopUpdateButton() {
 
   let label = "Обновления";
   let bg = "#1e3a5f";
-  if (busy || downloading) {
+  if ((busy || downloading) && lastError) {
+    label = "Ошибка обновления";
+    bg = "#7f1d1d";
+  } else if (busy || downloading) {
     const zoneName = active ? ZONE_LABEL[active.id] || active.id : null;
     const pct =
       active?.percent != null
@@ -224,6 +227,7 @@ export function DesktopUpdateButton() {
       title={title || "Проверить и установить обновления"}
       style={{ ...btnBase, backgroundColor: bg }}
       className="flex items-center gap-2 rounded-full font-bold transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-80"
+      data-testid="desktop-update-button"
     >
       {label}
     </button>

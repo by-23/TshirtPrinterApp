@@ -365,6 +365,11 @@ Remove-Item -LiteralPath ${JSON.stringify(helper)} -Force -ErrorAction SilentlyC
   });
 
   function start() {
+    if (process.env.TSHIRT_DISABLE_AUTO_UPDATER === "1") {
+      log("updater: disabled by TSHIRT_DISABLE_AUTO_UPDATER");
+      setStatus({ state: "idle", version: app.getVersion() });
+      return;
+    }
     if (!app.isPackaged) {
       log("updater: skipped (not packaged)");
       setStatus({ state: "idle", version: app.getVersion() });

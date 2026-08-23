@@ -7,6 +7,10 @@ if (app.isPackaged) {
   app.disableHardwareAcceleration();
   app.commandLine.appendSwitch("disable-gpu-sandbox");
 }
+if (process.env.TSHIRT_CDP_PORT) {
+  app.commandLine.appendSwitch("remote-debugging-port", String(process.env.TSHIRT_CDP_PORT));
+  app.commandLine.appendSwitch("remote-allow-origins", "*");
+}
 
 const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
@@ -17,11 +21,13 @@ const { setupAutoUpdater } = require("./updater.cjs");
 const {
   ensureModulesSeeded,
   resetModulesIfShellChanged,
+  reseedServerIfBroken,
   resolveUiDistPath: resolveModuleUiDist,
   resolveServerRoot: resolveModuleServerRoot,
   resolveNodeBinary: resolveModuleNodeBinary,
 } = require("./modules.cjs");
 const { setupModuleUpdater } = require("./moduleUpdater.cjs");
+const { waitForHealth } = require("./waitForHealth.cjs");
 
 // Never inherit a random PORT from the parent shell (breaks packaged launches).
 const POINT_PORT = Number(process.env.TSHIRT_POINT_PORT || 4000);
@@ -545,32 +551,11 @@ function openUiWindows(config = readDisplayConfig()) {
   closeSplash();
 }
 
-function waitForHealth(timeoutMs = 60_000) {
-  const started = Date.now();
-  return new Promise((resolve, reject) => {
-    const tick = () => {
-      const req = http.get(`${POINT_ORIGIN}/health`, (res) => {
-        res.resume();
-        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 500) {
-          resolve();
-          return;
-        }
-        retry();
-      });
-      req.on("error", retry);
-      req.setTimeout(2000, () => {
-        req.destroy();
-        retry();
-      });
-    };
-    const retry = () => {
-      if (Date.now() - started > timeoutMs) {
-        reject(new Error(`point-server did not become ready at ${POINT_ORIGIN}/health`));
-        return;
-      }
-      setTimeout(tick, 400);
-    };
-    tick();
+function waitForPointHealth(timeoutMs, child) {
+  return waitForHealth({
+    origin: POINT_ORIGIN,
+    timeoutMs: timeoutMs == null ? 60_000 : timeoutMs,
+    child: child || null,
   });
 }
 
@@ -663,7 +648,7 @@ async function ensurePointServer() {
   // then look "updated" while serving the wrong binary.
   if (pointProcess && !pointProcess.killed) {
     try {
-      await waitForHealth(1500);
+      await waitForPointHealth(1500, pointProcess);
       log("point-server already healthy");
       return;
     } catch {
@@ -679,6 +664,7 @@ async function ensurePointServer() {
   log("ensurePointServer: seeding modules from resources (first run may take a while)");
   resetModulesIfShellChanged({ shellVersion: app.getVersion(), log });
   ensureModulesSeeded({ resourcesRoot: resourcesRoot(), log });
+  reseedServerIfBroken({ resourcesRoot: resourcesRoot(), log });
 
   const pointRoot = resolvePointServerRoot();
   if (!pointRoot) {
@@ -739,7 +725,7 @@ async function ensurePointServer() {
     pointProcess = null;
   });
 
-  await waitForHealth();
+  await waitForPointHealth(60_000, pointProcess);
   if (!pointProcess || pointProcess.killed) {
     throw new Error(
       `point-server exited before becoming ready (port ${POINT_PORT} may be taken by another process)`,

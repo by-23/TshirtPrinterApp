@@ -72,69 +72,22 @@ if (Test-Path $resources) {
 New-Item -ItemType Directory -Force -Path $pointPack | Out-Null
 New-Item -ItemType Directory -Force -Path $nodePack | Out-Null
 
-Write-Step "Assemble point-server pack (npm nested - real files, no pnpm symlinks)"
-# electron-builder does not reliably copy Windows SYMLINKD from pnpm deploy.
-Copy-Item -Recurse -Force (Join-Path $pointSrc "dist") (Join-Path $pointPack "dist")
-Copy-Item -Recurse -Force (Join-Path $pointSrc "drizzle") (Join-Path $pointPack "drizzle")
-Copy-Item -Recurse -Force $uiDistSrc (Join-Path $pointPack "ui-dist")
-
-$vendorTypes = Join-Path $pointPack "vendor\shared-types"
-New-Item -ItemType Directory -Force -Path (Join-Path $vendorTypes "dist") | Out-Null
-Copy-Item -Recurse -Force (Join-Path $Root "packages\shared-types\dist\*") (Join-Path $vendorTypes "dist")
-@(
-  '{'
-  '  "name": "@tshirt/shared-types",'
-  '  "version": "0.0.0",'
-  '  "type": "module",'
-  '  "main": "./dist/index.js",'
-  '  "types": "./dist/index.d.ts",'
-  '  "dependencies": {'
-  '    "zod": "^3.24.1"'
-  '  }'
-  '}'
-) | Set-Content -Path (Join-Path $vendorTypes "package.json") -Encoding ASCII
-
-$pkgText = Get-Content -Path (Join-Path $pointSrc "package.json") -Raw -Encoding UTF8
-$pkgText = $pkgText -replace '"@tshirt/shared-types"\s*:\s*"workspace:\*"', '"@tshirt/shared-types": "file:./vendor/shared-types"'
-# Drop scripts that need tsx/dev tools in the packaged app.
-Set-Content -Path (Join-Path $pointPack "package.json") -Value $pkgText -Encoding UTF8
-
-$env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-Push-Location $pointPack
-try {
-  # nested = classic node_modules tree without symlinks/junctions (safe for electron-builder copy)
-  npm install --omit=dev --install-strategy=nested --no-fund --no-audit
-  if ($LASTEXITCODE -ne 0) { throw "npm install --omit=dev failed for point-server pack" }
-} finally {
-  Pop-Location
-}
-
-if (-not (Test-Path (Join-Path $pointPack "node_modules\drizzle-orm\package.json"))) {
-  throw "Packaged node_modules incomplete (drizzle-orm missing)"
-}
-if (-not (Test-Path (Join-Path $pointPack "node_modules\better-sqlite3\package.json"))) {
-  throw "Packaged node_modules incomplete (better-sqlite3 missing)"
-}
+Write-Step "Assemble point-server pack (dereferenced real files, no junctions)"
+node (Join-Path $Root "scripts\pack-point-server.cjs") --out $pointPack --include-ui --skip-build
+if ($LASTEXITCODE -ne 0) { throw "pack-point-server failed" }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $pointPack "data") | Out-Null
 
-# Pack sync credentials so packaged Electron uses the cloud relay (api.kyoma.uk).
 $pointEnvSrc = Join-Path $pointSrc ".env"
-if (Test-Path $pointEnvSrc) {
+if (Test-Path (Join-Path $pointPack ".env")) {
+  Write-Host "Packed point-server .env (CENTRAL_RELAY_URL / POINT_SYNC_*)"
+} elseif (Test-Path $pointEnvSrc) {
   Copy-Item -Force $pointEnvSrc (Join-Path $pointPack ".env")
-  Write-Host "Copied point-server .env (CENTRAL_RELAY_URL / POINT_SYNC_*) into pack"
+  Write-Host "Copied point-server .env into pack"
 } else {
   Write-Host "WARNING: apps/point-server/.env missing - packaged app will run without cloud sync" -ForegroundColor Yellow
 }
 
-# Bundled assets (garment templates for mockup rendering) - read from cwd/assets.
-$assetsSrc = Join-Path $pointSrc "assets"
-if (Test-Path $assetsSrc) {
-  Copy-Item -Recurse -Force $assetsSrc (Join-Path $pointPack "assets")
-}
-
-# Do NOT ship catalog/orders/data — points + admin sync own that.
-# Guard: fail the build if top-level deps are still symlinks (would vanish in the exe).
 $symlinkHit = cmd /c "dir /AL `"$pointPack\node_modules`" 2>nul"
 if ($symlinkHit -match "SYMLINK") {
   Write-Host $symlinkHit

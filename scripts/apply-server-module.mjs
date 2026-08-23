@@ -3,8 +3,12 @@ import fs from "node:fs";
 import https from "node:https";
 import http from "node:http";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { pipeline } from "node:stream/promises";
 import { execFileSync } from "node:child_process";
+
+const require = createRequire(import.meta.url);
+const { materializeNodeModules, inspectZone } = require("../apps/point-desktop/moduleIntegrity.cjs");
 
 const root = path.join(process.env.LOCALAPPDATA, "TshirtPrinter", "modules");
 
@@ -130,9 +134,7 @@ if (fs.existsSync(prev)) {
   }
 }
 
-const link = path.join(target, "node_modules", "@tshirt", "shared-types");
-const vendor = path.join(target, "vendor", "shared-types");
-fs.mkdirSync(path.dirname(link), { recursive: true });
-if (fs.existsSync(link)) fs.rmSync(link, { recursive: true, force: true });
-if (fs.existsSync(vendor)) fs.cpSync(vendor, link, { recursive: true });
-console.log("server applied", yml.version, "shared-types", fs.existsSync(path.join(link, "package.json")));
+materializeNodeModules(target);
+const gate = inspectZone("server", target);
+if (!gate.ok) throw new Error(gate.error);
+console.log("server applied", yml.version);
