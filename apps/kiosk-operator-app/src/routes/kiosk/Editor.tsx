@@ -101,25 +101,29 @@ export function Editor() {
   useEffect(() => {
     if (!availabilityLoaded) return;
 
-    if (!isGarmentTypeEnabled(availability, garmentType)) {
-      const nextType = garmentTypeSchema.options.find((type) => isGarmentTypeEnabled(availability, type));
+    if (!isGarmentTypeEnabled(availability, garmentType, catalog)) {
+      const nextType = garmentTypeSchema.options.find((type) =>
+        isGarmentTypeEnabled(availability, type, catalog),
+      );
       if (nextType) setGarmentType(nextType);
     }
 
     const colors = resolvedGarmentColors(catalog);
     const activeColor = findGarmentColorByHex(catalog, color);
-    if (!activeColor || !isGarmentColorEnabled(availability, activeColor.id)) {
-      const nextColor = colors.find((option) => isGarmentColorEnabled(availability, option.id));
+    if (!activeColor || !isGarmentColorEnabled(availability, activeColor.id, catalog)) {
+      const nextColor = colors.find((option) => isGarmentColorEnabled(availability, option.id, catalog));
       if (nextColor) setColor(nextColor.hex);
     }
 
     if (garmentUsesSizeFabric(garmentType)) {
-      if (!isGarmentSizeEnabled(availability, size)) {
-        const nextSize = GARMENT_SIZES.find((option) => isGarmentSizeEnabled(availability, option));
+      if (!isGarmentSizeEnabled(availability, size, catalog)) {
+        const nextSize = GARMENT_SIZES.find((option) => isGarmentSizeEnabled(availability, option, catalog));
         if (nextSize) setSize(nextSize);
       }
-      if (!isGarmentFabricEnabled(availability, fabricName)) {
-        const nextFabric = GARMENT_FABRICS.find((option) => isGarmentFabricEnabled(availability, option));
+      if (!isGarmentFabricEnabled(availability, fabricName, catalog)) {
+        const nextFabric = GARMENT_FABRICS.find((option) =>
+          isGarmentFabricEnabled(availability, option, catalog),
+        );
         if (nextFabric) setFabricName(nextFabric);
       }
     }

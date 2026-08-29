@@ -78,14 +78,17 @@ export const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 export const garmentCatalogColorSchema = z.object({
   label: z.string().trim().min(1).max(CATALOG_LABEL_MAX_LENGTH),
   hex: z.string().regex(HEX_COLOR_PATTERN),
+  enabled: z.boolean().optional().default(true),
 });
 
 export const garmentCatalogLabelSchema = z.object({
   label: z.string().trim().min(1).max(CATALOG_LABEL_MAX_LENGTH),
+  enabled: z.boolean().optional().default(true),
 });
 
 export const garmentCatalogSizeSchema = z.object({
   label: z.string().trim().min(1).max(SIZE_LABEL_MAX_LENGTH),
+  enabled: z.boolean().optional().default(true),
 });
 
 /** Admin-edited names and color swatches. Internal ids stay stable for orders and pricing. */
@@ -112,21 +115,21 @@ const DEFAULT_COLOR_LABELS: Record<string, string> = {
 
 export const DEFAULT_GARMENT_CATALOG: GarmentCatalogConfig = {
   types: {
-    tshirt: { label: "Футболка" },
-    sweatshirt: { label: "Свитшот" },
-    cap: { label: "Кепка" },
-    shopper: { label: "Шоппер" },
+    tshirt: { label: "Футболка", enabled: true },
+    sweatshirt: { label: "Свитшот", enabled: true },
+    cap: { label: "Кепка", enabled: true },
+    shopper: { label: "Шоппер", enabled: true },
   },
   colors: Object.fromEntries(
     GARMENT_COLORS.map((color) => [
       color.id,
-      { label: DEFAULT_COLOR_LABELS[color.id] ?? color.id, hex: color.hex },
+      { label: DEFAULT_COLOR_LABELS[color.id] ?? color.id, hex: color.hex, enabled: true },
     ]),
   ),
-  sizes: Object.fromEntries(GARMENT_SIZES.map((size) => [size, { label: size }])),
+  sizes: Object.fromEntries(GARMENT_SIZES.map((size) => [size, { label: size, enabled: true }])),
   fabrics: {
-    cotton: { label: "Хлопок" },
-    premium: { label: "Премиум" },
+    cotton: { label: "Хлопок", enabled: true },
+    premium: { label: "Премиум", enabled: true },
   },
 };
 
@@ -144,6 +147,7 @@ export function withGarmentCatalogDefaults(
   for (const type of garmentTypeSchema.options) {
     types[type] = {
       label: clipLabel(stored?.types?.[type]?.label, CATALOG_LABEL_MAX_LENGTH, types[type]!.label),
+      enabled: stored?.types?.[type]?.enabled !== false,
     };
   }
 
@@ -155,6 +159,7 @@ export function withGarmentCatalogDefaults(
     colors[color.id] = {
       label: clipLabel(override?.label, CATALOG_LABEL_MAX_LENGTH, fallback.label),
       hex,
+      enabled: override?.enabled !== false,
     };
   }
 
@@ -162,6 +167,7 @@ export function withGarmentCatalogDefaults(
   for (const size of GARMENT_SIZES) {
     sizes[size] = {
       label: clipLabel(stored?.sizes?.[size]?.label, SIZE_LABEL_MAX_LENGTH, sizes[size]!.label),
+      enabled: stored?.sizes?.[size]?.enabled !== false,
     };
   }
 
@@ -169,6 +175,7 @@ export function withGarmentCatalogDefaults(
   for (const fabric of GARMENT_FABRICS) {
     fabrics[fabric] = {
       label: clipLabel(stored?.fabrics?.[fabric]?.label, CATALOG_LABEL_MAX_LENGTH, fabrics[fabric]!.label),
+      enabled: stored?.fabrics?.[fabric]?.enabled !== false,
     };
   }
 
@@ -264,19 +271,39 @@ export function withGarmentAvailabilityDefaults(
   };
 }
 
-export function isGarmentTypeEnabled(availability: GarmentAvailabilityConfig, type: GarmentType): boolean {
+export function isGarmentTypeEnabled(
+  availability: GarmentAvailabilityConfig,
+  type: GarmentType,
+  catalog?: GarmentCatalogConfig,
+): boolean {
+  if (catalog && catalog.types[type]?.enabled === false) return false;
   return availability.types[type] !== false;
 }
 
-export function isGarmentColorEnabled(availability: GarmentAvailabilityConfig, colorId: string): boolean {
+export function isGarmentColorEnabled(
+  availability: GarmentAvailabilityConfig,
+  colorId: string,
+  catalog?: GarmentCatalogConfig,
+): boolean {
+  if (catalog && catalog.colors[colorId]?.enabled === false) return false;
   return availability.colors[colorId] !== false;
 }
 
-export function isGarmentSizeEnabled(availability: GarmentAvailabilityConfig, size: string): boolean {
+export function isGarmentSizeEnabled(
+  availability: GarmentAvailabilityConfig,
+  size: string,
+  catalog?: GarmentCatalogConfig,
+): boolean {
+  if (catalog && catalog.sizes[size]?.enabled === false) return false;
   return availability.sizes[size] !== false;
 }
 
-export function isGarmentFabricEnabled(availability: GarmentAvailabilityConfig, fabric: string): boolean {
+export function isGarmentFabricEnabled(
+  availability: GarmentAvailabilityConfig,
+  fabric: string,
+  catalog?: GarmentCatalogConfig,
+): boolean {
+  if (catalog && catalog.fabrics[fabric]?.enabled === false) return false;
   return availability.fabrics[fabric] !== false;
 }
 

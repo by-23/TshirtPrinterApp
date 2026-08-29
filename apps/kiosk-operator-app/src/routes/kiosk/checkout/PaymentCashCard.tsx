@@ -8,10 +8,8 @@ import {
   useKioskImage,
 } from "../../../lib/kioskImages.js";
 import { blockBorderStyle, cardGradientStyle, contentBoxStyle } from "./borderStyle.js";
+import { displayOrderNumber } from "../../../lib/orderNumber.js";
 import { checkoutThemeSection } from "./themeSections.js";
-
-/** Offset so a fresh point-server (order #1, #2...) still shows a realistic-looking 4-digit number, like on `checkout.png` ("№ 1247"). */
-const ORDER_NUMBER_OFFSET = 1000;
 
 export interface PaymentCashCardProps {
   orderId: string;
@@ -23,7 +21,7 @@ export interface PaymentCashCardProps {
  */
 export function PaymentCashCard({ orderId }: PaymentCashCardProps) {
   const { t } = useTranslation();
-  const orderNumber = ORDER_NUMBER_OFFSET + Number(orderId);
+  const orderNumber = displayOrderNumber(orderId);
   const imageKey = checkoutCashIllustrationKey();
   const storedUrl = useKioskImage(imageKey);
   const hasOverride = hasKioskImageOverride(imageKey);

@@ -1,6 +1,13 @@
 import { useAuthStore } from "./authStore.js";
 
-export const BASE_URL = import.meta.env.VITE_CENTRAL_RELAY_URL ?? "http://localhost:4100";
+const configuredBase = import.meta.env.VITE_CENTRAL_RELAY_URL as string | undefined;
+/** Same host as the panel in production; local Vite still talks to the relay on 4100. */
+export const BASE_URL =
+  configuredBase && configuredBase.length > 0
+    ? configuredBase
+    : import.meta.env.DEV
+      ? "http://localhost:4100"
+      : "";
 
 export class ApiError extends Error {
   constructor(

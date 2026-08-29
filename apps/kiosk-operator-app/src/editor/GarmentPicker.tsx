@@ -63,7 +63,7 @@ export function GarmentPicker() {
         >
           {colors.map((option) => {
             const active = color === option.hex;
-            const catalogEnabled = isGarmentColorEnabled(availability, option.id);
+            const catalogEnabled = isGarmentColorEnabled(availability, option.id, catalog);
             const colorName = garmentCatalogColorLabel(catalog, option.id, t(`editor.colors.${option.id}`));
             return (
               <button
@@ -103,7 +103,7 @@ export function GarmentPicker() {
         >
           {GARMENT_SIZES.map((sizeOption) => {
             const active = size === sizeOption;
-            const catalogEnabled = isGarmentSizeEnabled(availability, sizeOption);
+            const catalogEnabled = isGarmentSizeEnabled(availability, sizeOption, catalog);
             return (
               <PillButton
                 key={sizeOption}
@@ -133,7 +133,7 @@ export function GarmentPicker() {
         <div className="flex flex-wrap" style={{ gap: "var(--editor-fabric-pill-gap)", ...blockContentRowStyle("fabric-block") }}>
           {GARMENT_FABRICS.map((fabricOption) => {
             const active = fabricName === fabricOption;
-            const catalogEnabled = isGarmentFabricEnabled(availability, fabricOption);
+            const catalogEnabled = isGarmentFabricEnabled(availability, fabricOption, catalog);
             return (
               <PillButton
                 key={fabricOption}

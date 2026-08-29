@@ -142,22 +142,22 @@ export function MaterialsPanel() {
   }, [storeAvailability, storeOverride]);
 
   function setType(type: GarmentType, enabled: boolean) {
-    if (adminOverrideActive) return;
+    if (adminOverrideActive || catalog.types[type]?.enabled === false) return;
     setAvailability((prev) => ({ ...prev, types: { ...prev.types, [type]: enabled } }));
   }
 
   function setColor(colorId: string, enabled: boolean) {
-    if (adminOverrideActive) return;
+    if (adminOverrideActive || catalog.colors[colorId]?.enabled === false) return;
     setAvailability((prev) => ({ ...prev, colors: { ...prev.colors, [colorId]: enabled } }));
   }
 
   function setSize(size: GarmentSize, enabled: boolean) {
-    if (adminOverrideActive) return;
+    if (adminOverrideActive || catalog.sizes[size]?.enabled === false) return;
     setAvailability((prev) => ({ ...prev, sizes: { ...prev.sizes, [size]: enabled } }));
   }
 
   function setFabric(fabric: GarmentFabric, enabled: boolean) {
-    if (adminOverrideActive) return;
+    if (adminOverrideActive || catalog.fabrics[fabric]?.enabled === false) return;
     setAvailability((prev) => ({ ...prev, fabrics: { ...prev.fabrics, [fabric]: enabled } }));
   }
 
@@ -245,52 +245,64 @@ export function MaterialsPanel() {
       </div>
 
       <Section title="Тип изделия">
-        {garmentTypeSchema.options.map((type) => (
-          <ToggleRow
-            key={type}
-            label={garmentCatalogTypeLabel(catalog, type, TYPE_LABELS[type])}
-            checked={availability.types[type] !== false}
-            disabled={adminOverrideActive}
-            onChange={(enabled) => setType(type, enabled)}
-          />
-        ))}
+        {garmentTypeSchema.options.map((type) => {
+          const catalogOn = catalog.types[type]?.enabled !== false;
+          return (
+            <ToggleRow
+              key={type}
+              label={garmentCatalogTypeLabel(catalog, type, TYPE_LABELS[type])}
+              checked={catalogOn && availability.types[type] !== false}
+              disabled={adminOverrideActive || !catalogOn}
+              onChange={(enabled) => setType(type, enabled)}
+            />
+          );
+        })}
       </Section>
 
       <Section title="Цвета">
-        {colors.map((color) => (
-          <ToggleRow
-            key={color.id}
-            label={garmentCatalogColorLabel(catalog, color.id, color.id)}
-            swatch={color.hex}
-            checked={availability.colors[color.id] !== false}
-            disabled={adminOverrideActive}
-            onChange={(enabled) => setColor(color.id, enabled)}
-          />
-        ))}
+        {colors.map((color) => {
+          const catalogOn = catalog.colors[color.id]?.enabled !== false;
+          return (
+            <ToggleRow
+              key={color.id}
+              label={garmentCatalogColorLabel(catalog, color.id, color.id)}
+              swatch={color.hex}
+              checked={catalogOn && availability.colors[color.id] !== false}
+              disabled={adminOverrideActive || !catalogOn}
+              onChange={(enabled) => setColor(color.id, enabled)}
+            />
+          );
+        })}
       </Section>
 
       <Section title="Размеры">
-        {GARMENT_SIZES.map((size) => (
-          <ToggleRow
-            key={size}
-            label={garmentCatalogSizeLabel(catalog, size)}
-            checked={availability.sizes[size] !== false}
-            disabled={adminOverrideActive}
-            onChange={(enabled) => setSize(size, enabled)}
-          />
-        ))}
+        {GARMENT_SIZES.map((size) => {
+          const catalogOn = catalog.sizes[size]?.enabled !== false;
+          return (
+            <ToggleRow
+              key={size}
+              label={garmentCatalogSizeLabel(catalog, size)}
+              checked={catalogOn && availability.sizes[size] !== false}
+              disabled={adminOverrideActive || !catalogOn}
+              onChange={(enabled) => setSize(size, enabled)}
+            />
+          );
+        })}
       </Section>
 
       <Section title="Материалы">
-        {GARMENT_FABRICS.map((fabric) => (
-          <ToggleRow
-            key={fabric}
-            label={garmentCatalogFabricLabel(catalog, fabric, FABRIC_FALLBACK[fabric])}
-            checked={availability.fabrics[fabric] !== false}
-            disabled={adminOverrideActive}
-            onChange={(enabled) => setFabric(fabric, enabled)}
-          />
-        ))}
+        {GARMENT_FABRICS.map((fabric) => {
+          const catalogOn = catalog.fabrics[fabric]?.enabled !== false;
+          return (
+            <ToggleRow
+              key={fabric}
+              label={garmentCatalogFabricLabel(catalog, fabric, FABRIC_FALLBACK[fabric])}
+              checked={catalogOn && availability.fabrics[fabric] !== false}
+              disabled={adminOverrideActive || !catalogOn}
+              onChange={(enabled) => setFabric(fabric, enabled)}
+            />
+          );
+        })}
       </Section>
     </div>
   );

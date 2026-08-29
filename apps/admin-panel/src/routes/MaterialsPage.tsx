@@ -166,7 +166,17 @@ export function MaterialsPage() {
   function setTypeLabel(type: GarmentType, label: string) {
     setCatalog((prev) => ({
       ...prev,
-      types: { ...prev.types, [type]: { label: label.slice(0, CATALOG_LABEL_MAX_LENGTH) } },
+      types: {
+        ...prev.types,
+        [type]: { ...prev.types[type]!, label: label.slice(0, CATALOG_LABEL_MAX_LENGTH) },
+      },
+    }));
+  }
+
+  function setTypeEnabled(type: GarmentType, enabled: boolean) {
+    setCatalog((prev) => ({
+      ...prev,
+      types: { ...prev.types, [type]: { ...prev.types[type]!, enabled } },
     }));
   }
 
@@ -180,6 +190,13 @@ export function MaterialsPage() {
     }));
   }
 
+  function setColorEnabled(colorId: string, enabled: boolean) {
+    setCatalog((prev) => ({
+      ...prev,
+      colors: { ...prev.colors, [colorId]: { ...prev.colors[colorId]!, enabled } },
+    }));
+  }
+
   function setColorHex(colorId: string, hex: string) {
     setCatalog((prev) => ({
       ...prev,
@@ -190,14 +207,34 @@ export function MaterialsPage() {
   function setSizeLabel(size: GarmentSize, label: string) {
     setCatalog((prev) => ({
       ...prev,
-      sizes: { ...prev.sizes, [size]: { label: label.slice(0, SIZE_LABEL_MAX_LENGTH) } },
+      sizes: {
+        ...prev.sizes,
+        [size]: { ...prev.sizes[size]!, label: label.slice(0, SIZE_LABEL_MAX_LENGTH) },
+      },
+    }));
+  }
+
+  function setSizeEnabled(size: GarmentSize, enabled: boolean) {
+    setCatalog((prev) => ({
+      ...prev,
+      sizes: { ...prev.sizes, [size]: { ...prev.sizes[size]!, enabled } },
     }));
   }
 
   function setFabricLabel(fabric: GarmentFabric, label: string) {
     setCatalog((prev) => ({
       ...prev,
-      fabrics: { ...prev.fabrics, [fabric]: { label: label.slice(0, CATALOG_LABEL_MAX_LENGTH) } },
+      fabrics: {
+        ...prev.fabrics,
+        [fabric]: { ...prev.fabrics[fabric]!, label: label.slice(0, CATALOG_LABEL_MAX_LENGTH) },
+      },
+    }));
+  }
+
+  function setFabricEnabled(fabric: GarmentFabric, enabled: boolean) {
+    setCatalog((prev) => ({
+      ...prev,
+      fabrics: { ...prev.fabrics, [fabric]: { ...prev.fabrics[fabric]!, enabled } },
     }));
   }
 
@@ -206,25 +243,38 @@ export function MaterialsPage() {
       <Card title="Названия и цвета каталога" loading={catalogLoading} style={{ marginBottom: 24 }}>
         <Typography.Paragraph type="secondary">
           Эти названия и цвета общие для всех точек: после сохранения они появятся у оператора и в
-          киоске. Внутренние коды заказов не меняются.
+          киоске. Снимите галочку — пункт останется на экране киоска, но станет тусклым и нажать
+          на него будет нельзя. Внутренние коды заказов не меняются.
         </Typography.Paragraph>
 
         <ToggleGrid title="Тип изделия">
           {garmentTypeSchema.options.map((type) => (
-            <Input
-              key={type}
-              value={catalog.types[type]?.label ?? TYPE_FALLBACK[type]}
-              maxLength={CATALOG_LABEL_MAX_LENGTH}
-              showCount
-              onChange={(event) => setTypeLabel(type, event.target.value)}
-              style={{ width: 180 }}
-            />
+            <CatalogFieldRow key={type}>
+              <Checkbox
+                checked={catalog.types[type]?.enabled !== false}
+                onChange={(event) => setTypeEnabled(type, event.target.checked)}
+              />
+              <Input
+                value={catalog.types[type]?.label ?? TYPE_FALLBACK[type]}
+                maxLength={CATALOG_LABEL_MAX_LENGTH}
+                showCount
+                onChange={(event) => setTypeLabel(type, event.target.value)}
+                style={{
+                  width: 180,
+                  opacity: catalog.types[type]?.enabled === false ? 0.45 : 1,
+                }}
+              />
+            </CatalogFieldRow>
           ))}
         </ToggleGrid>
 
         <ToggleGrid title="Цвета">
           {GARMENT_COLORS.map((color) => (
             <CatalogFieldRow key={color.id}>
+              <Checkbox
+                checked={catalog.colors[color.id]?.enabled !== false}
+                onChange={(event) => setColorEnabled(color.id, event.target.checked)}
+              />
               <ColorPicker
                 value={catalog.colors[color.id]?.hex ?? color.hex}
                 disabledAlpha
@@ -238,7 +288,10 @@ export function MaterialsPage() {
                 maxLength={CATALOG_LABEL_MAX_LENGTH}
                 showCount
                 onChange={(event) => setColorLabel(color.id, event.target.value)}
-                style={{ width: 180 }}
+                style={{
+                  width: 180,
+                  opacity: catalog.colors[color.id]?.enabled === false ? 0.45 : 1,
+                }}
               />
             </CatalogFieldRow>
           ))}
@@ -246,27 +299,43 @@ export function MaterialsPage() {
 
         <ToggleGrid title="Размеры">
           {GARMENT_SIZES.map((size) => (
-            <Input
-              key={size}
-              value={catalog.sizes[size]?.label ?? size}
-              maxLength={SIZE_LABEL_MAX_LENGTH}
-              showCount
-              onChange={(event) => setSizeLabel(size, event.target.value)}
-              style={{ width: 120 }}
-            />
+            <CatalogFieldRow key={size}>
+              <Checkbox
+                checked={catalog.sizes[size]?.enabled !== false}
+                onChange={(event) => setSizeEnabled(size, event.target.checked)}
+              />
+              <Input
+                value={catalog.sizes[size]?.label ?? size}
+                maxLength={SIZE_LABEL_MAX_LENGTH}
+                showCount
+                onChange={(event) => setSizeLabel(size, event.target.value)}
+                style={{
+                  width: 120,
+                  opacity: catalog.sizes[size]?.enabled === false ? 0.45 : 1,
+                }}
+              />
+            </CatalogFieldRow>
           ))}
         </ToggleGrid>
 
         <ToggleGrid title="Материалы">
           {GARMENT_FABRICS.map((fabric) => (
-            <Input
-              key={fabric}
-              value={catalog.fabrics[fabric]?.label ?? FABRIC_FALLBACK[fabric]}
-              maxLength={CATALOG_LABEL_MAX_LENGTH}
-              showCount
-              onChange={(event) => setFabricLabel(fabric, event.target.value)}
-              style={{ width: 180 }}
-            />
+            <CatalogFieldRow key={fabric}>
+              <Checkbox
+                checked={catalog.fabrics[fabric]?.enabled !== false}
+                onChange={(event) => setFabricEnabled(fabric, event.target.checked)}
+              />
+              <Input
+                value={catalog.fabrics[fabric]?.label ?? FABRIC_FALLBACK[fabric]}
+                maxLength={CATALOG_LABEL_MAX_LENGTH}
+                showCount
+                onChange={(event) => setFabricLabel(fabric, event.target.value)}
+                style={{
+                  width: 180,
+                  opacity: catalog.fabrics[fabric]?.enabled === false ? 0.45 : 1,
+                }}
+              />
+            </CatalogFieldRow>
           ))}
         </ToggleGrid>
 

@@ -76,6 +76,11 @@ export async function buildServer() {
       decorateReply: true,
       maxAge: "1y",
       immutable: true,
+      setHeaders(res, filePath) {
+        if (filePath.endsWith("index.html")) {
+          res.setHeader("Cache-Control", "no-cache");
+        }
+      },
     });
     app.get("/", async (_request, reply) => reply.redirect("/admin/"));
     app.setNotFoundHandler((request, reply) => {

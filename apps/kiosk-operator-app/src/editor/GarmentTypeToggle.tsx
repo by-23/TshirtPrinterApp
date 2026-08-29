@@ -26,7 +26,7 @@ export function GarmentTypeToggle() {
 
   function handleSelect(nextType: GarmentType) {
     if (nextType === garmentType) return;
-    if (!isGarmentTypeEnabled(availability, nextType)) return;
+    if (!isGarmentTypeEnabled(availability, nextType, catalog)) return;
     setGarmentType(nextType);
   }
 
@@ -41,7 +41,7 @@ export function GarmentTypeToggle() {
       <div className="flex flex-wrap justify-center" style={{ gap: "var(--editor-toggle-gap)" }}>
         {garmentTypeSchema.options.map((typeOption) => {
           const active = garmentType === typeOption;
-          const catalogEnabled = isGarmentTypeEnabled(availability, typeOption);
+          const catalogEnabled = isGarmentTypeEnabled(availability, typeOption, catalog);
           return (
             <PillButton
               key={typeOption}
