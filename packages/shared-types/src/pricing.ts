@@ -59,7 +59,7 @@ export type PartialPriceConfig = z.infer<typeof partialPriceConfigSchema>;
 export const DEFAULT_PRICE_CONFIG: PriceConfig = {
   basePriceTenge: { tshirt: 6990, sweatshirt: 11990, cap: 4990, shopper: 3990 },
   fabricSurchargeTenge: { cotton: 0, premium: 1500 },
-  sizeSurchargeTenge: { S: 0, M: 0, L: 0, XL: 500, XXL: 1000, "3XL": 1500 },
+  sizeSurchargeTenge: { S: 0, M: 0, L: 0, XL: 500, XXL: 1000, "3XL": 1500, "4XL": 2000, "5XL": 2500, "6XL": 3000 },
   printSizeSurchargeTenge: { small: 0, medium: 1000, large: 2000 },
   aiProviderSurchargeTenge: { standard: 0, chatgpt: 1500, gemini: 1500 },
   printCoverageThresholds: DEFAULT_PRINT_COVERAGE_THRESHOLDS,

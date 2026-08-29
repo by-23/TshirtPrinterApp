@@ -11,6 +11,7 @@ import { authRoutes } from "./modules/auth/routes.js";
 import { pointsRoutes } from "./modules/points/routes.js";
 import { pricingRoutes } from "./modules/pricing/routes.js";
 import { garmentAvailabilityRoutes } from "./modules/garment-availability/routes.js";
+import { garmentCatalogRoutes } from "./modules/garment-catalog/routes.js";
 import { statsRoutes } from "./modules/stats/routes.js";
 import { uploadRelayRoutes } from "./modules/upload-relay/routes.js";
 import { catalogManualRoutes } from "./modules/catalog-manual/routes.js";
@@ -60,6 +61,7 @@ export async function buildServer() {
   await app.register(pointsRoutes);
   await app.register(pricingRoutes);
   await app.register(garmentAvailabilityRoutes);
+  await app.register(garmentCatalogRoutes);
   await app.register(statsRoutes);
   await app.register(uploadRelayRoutes);
   await app.register(catalogManualRoutes);

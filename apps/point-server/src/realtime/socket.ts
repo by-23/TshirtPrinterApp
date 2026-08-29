@@ -5,6 +5,7 @@ import {
   ORDER_EVENT_CHANNEL,
   type AiPhotoReceivedPayload,
   type GarmentAvailabilityEvent,
+  type GarmentCatalogConfig,
   type ManagedFont,
   type Order,
   type OrderEvent,
@@ -22,6 +23,8 @@ export const PRICING_EVENT_CHANNEL = "pricing:event";
 export const GARMENT_AVAILABILITY_EVENT_CHANNEL = "garment-availability:event";
 /** Local event when the enabled editor font catalog changes after a central sync. */
 export const FONTS_EVENT_CHANNEL = "fonts:event";
+/** Local event when admin-edited garment names/colors arrive from central-relay. */
+export const GARMENT_CATALOG_EVENT_CHANNEL = "garment-catalog:event";
 
 /**
  * Attaches Socket.IO to the same underlying HTTP server Fastify listens on
@@ -67,6 +70,12 @@ export function emitGarmentAvailabilityEvent(payload: GarmentAvailabilityEvent):
 export function emitFontsEvent(fonts: ManagedFont[]): void {
   if (!io) return;
   io.emit(FONTS_EVENT_CHANNEL, fonts);
+}
+
+/** Broadcasts admin-edited type/color/size/fabric names and color hex values. */
+export function emitGarmentCatalogEvent(catalog: GarmentCatalogConfig): void {
+  if (!io) return;
+  io.emit(GARMENT_CATALOG_EVENT_CHANNEL, catalog);
 }
 
 /**

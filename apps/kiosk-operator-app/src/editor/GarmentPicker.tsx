@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  GARMENT_COLORS,
   GARMENT_SIZES,
   GARMENT_FABRICS,
+  garmentCatalogColorLabel,
+  garmentCatalogFabricLabel,
+  garmentCatalogSizeLabel,
   garmentUsesSizeFabric,
   isGarmentColorEnabled,
   isGarmentFabricEnabled,
   isGarmentSizeEnabled,
+  resolvedGarmentColors,
   type GarmentFabric,
 } from "@tshirt/shared-types";
 import { PillButton } from "@tshirt/ui-kit";
@@ -15,6 +18,7 @@ import { Diamond, RAIL_ICON_CLASS } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
 import { blockBorderStyle, blockContentRowStyle } from "./borderStyle.js";
 import { useGarmentAvailabilityStore } from "../lib/garmentAvailabilityStore.js";
+import { useGarmentCatalogStore } from "../lib/garmentCatalogStore.js";
 import { editorThemeSection } from "./themeSections.js";
 
 const FABRIC_ICONS: Partial<Record<GarmentFabric, ReactNode>> = {
@@ -36,6 +40,8 @@ export function GarmentPicker() {
   const setSize = useEditorStore((state) => state.setSize);
   const setFabricName = useEditorStore((state) => state.setFabricName);
   const availability = useGarmentAvailabilityStore((state) => state.availability);
+  const catalog = useGarmentCatalogStore((state) => state.catalog);
+  const colors = resolvedGarmentColors(catalog);
   // Cap/shopper are one-size/one-material — the pills stay visible (so the
   // panel's layout doesn't shift) but disabled + dimmed, per the editor's
   // decision to never show empty gaps for unavailable options.
@@ -47,10 +53,18 @@ export function GarmentPicker() {
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.color")}
         </h3>
-        <div className="flex flex-wrap" style={{ gap: "var(--editor-swatch-gap)", ...blockContentRowStyle("color-block") }}>
-          {GARMENT_COLORS.map((option) => {
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: "repeat(3, var(--editor-swatch-width))",
+            gap: "var(--editor-swatch-gap)",
+            ...blockContentRowStyle("color-block"),
+          }}
+        >
+          {colors.map((option) => {
             const active = color === option.hex;
             const catalogEnabled = isGarmentColorEnabled(availability, option.id);
+            const colorName = garmentCatalogColorLabel(catalog, option.id, t(`editor.colors.${option.id}`));
             return (
               <button
                 key={option.id}
@@ -58,8 +72,8 @@ export function GarmentPicker() {
                 disabled={!catalogEnabled}
                 onClick={() => setColor(option.hex)}
                 aria-pressed={active}
-                aria-label={t(`editor.colors.${option.id}`)}
-                title={t(`editor.colors.${option.id}`)}
+                aria-label={colorName}
+                title={colorName}
                 className={`flex-shrink-0 transition-transform disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none ${
                   active && catalogEnabled ? "scale-105 shadow-neon-pink" : ""
                 }`}
@@ -79,7 +93,14 @@ export function GarmentPicker() {
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-200">
           {t("editor.size")}
         </h3>
-        <div className="flex flex-wrap" style={{ gap: "var(--editor-size-pill-gap)", ...blockContentRowStyle("size-block") }}>
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: "repeat(3, var(--editor-size-pill-width))",
+            gap: "var(--editor-size-pill-gap)",
+            ...blockContentRowStyle("size-block"),
+          }}
+        >
           {GARMENT_SIZES.map((sizeOption) => {
             const active = size === sizeOption;
             const catalogEnabled = isGarmentSizeEnabled(availability, sizeOption);
@@ -98,7 +119,7 @@ export function GarmentPicker() {
                   backgroundColor: active ? "var(--editor-size-pill-active-bg)" : "var(--editor-size-pill-idle-bg)",
                 }}
               >
-                {sizeOption}
+                {garmentCatalogSizeLabel(catalog, sizeOption)}
               </PillButton>
             );
           })}
@@ -129,7 +150,7 @@ export function GarmentPicker() {
                   backgroundColor: active ? "var(--editor-fabric-pill-active-bg)" : "var(--editor-fabric-pill-idle-bg)",
                 }}
               >
-                {t(`editor.fabrics.${fabricOption}`)}
+                {garmentCatalogFabricLabel(catalog, fabricOption, t(`editor.fabrics.${fabricOption}`))}
               </PillButton>
             );
           })}

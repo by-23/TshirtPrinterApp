@@ -5,16 +5,19 @@ import { describeDtfPrintJobs, sendOrderToDtfPrint } from "../../lib/printOrder.
 import { GarmentMockup } from "../../editor/mockup/index.js";
 import { StatusBadge } from "./StatusBadge.js";
 import { OrderImage } from "./OrderImage.js";
+import { displayOrderNumber } from "../../lib/orderNumber.js";
 import {
-  FABRIC_LABELS,
   GARMENT_SIDE_LABELS,
-  GARMENT_TYPE_LABELS,
   formatOrderDate,
   formatOrderSides,
   formatOrderTime,
   formatPrice,
   garmentColorLabel,
+  garmentFabricLabel,
+  garmentSizeLabel,
+  garmentTypeLabel,
 } from "./orderLabels.js";
+import { useGarmentCatalogStore } from "../../lib/garmentCatalogStore.js";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -26,6 +29,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | null; onUpdated: (order: Order) => void }) {
+  const catalog = useGarmentCatalogStore((state) => state.catalog);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [printHint, setPrintHint] = useState<string | null>(null);
@@ -54,12 +58,13 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
   const isFinal = order.status === "done" || order.status === "cancelled";
 
   async function applyStatus(status: "accepted" | "done" | "cancelled") {
-    if (status === "cancelled" && !window.confirm(`Отменить заказ №${order.id}?`)) return;
+    const ticket = displayOrderNumber(order.id);
+    if (status === "cancelled" && !window.confirm(`Отменить заказ №${ticket}?`)) return;
     if (status === "accepted" && isFinal) {
       const message =
         order.status === "cancelled"
-          ? `Заказ №${order.id} отменён. Отправить на печать повторно?`
-          : `Заказ №${order.id} уже выполнен. Отправить на печать повторно?`;
+          ? `Заказ №${ticket} отменён. Отправить на печать повторно?`
+          : `Заказ №${ticket} уже выполнен. Отправить на печать повторно?`;
       if (!window.confirm(message)) return;
     }
     setError(null);
@@ -96,7 +101,7 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
       <div className="mb-4 flex flex-shrink-0 items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h2 className="font-extrabold text-white" style={{ fontSize: "var(--operator-details-title-size)" }}>
-            Заказ №{order.id}
+            Заказ №{displayOrderNumber(order.id)}
           </h2>
           <StatusBadge status={order.status} />
         </div>
@@ -148,7 +153,7 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
             {activePrint?.mockupImageUrl ? (
               <OrderImage
                 src={activePrint.mockupImageUrl}
-                alt={`Мокап заказа №${order.id}`}
+                alt={`Мокап заказа №${displayOrderNumber(order.id)}`}
                 className="max-w-full object-contain"
                 style={{ maxHeight: "var(--operator-details-preview-max-height)" }}
                 iconClassName="h-24 w-24"
@@ -185,11 +190,11 @@ export function OrderDetails({ order: orderProp, onUpdated }: { order: Order | n
             >
               Детали заказа
             </h3>
-            <DetailRow label="Изделие" value={`${GARMENT_TYPE_LABELS[order.garment.type]}, ${garmentColorLabel(order.garment.color)}`} />
-            <DetailRow label="Размер" value={order.garment.size} />
+            <DetailRow label="Изделие" value={`${garmentTypeLabel(order.garment.type, catalog)}, ${garmentColorLabel(order.garment.color, catalog)}`} />
+            <DetailRow label="Размер" value={garmentSizeLabel(order.garment.size, catalog)} />
             <DetailRow label="Сторона печати" value={sideLabels} />
             <DetailRow label="Дизайнов" value={String(printSides.length)} />
-            <DetailRow label="Материал" value={FABRIC_LABELS[order.garment.fabric] ?? order.garment.fabric} />
+            <DetailRow label="Материал" value={garmentFabricLabel(order.garment.fabric, catalog)} />
             <DetailRow label="Цена" value={formatPrice(order.price)} />
             <DetailRow label="Печатей" value={String(order.printCount)} />
             <DetailRow label="Клиент" value="—" />

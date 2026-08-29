@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Order } from "@tshirt/shared-types";
+import { orderNumberMatchesQuery } from "../../lib/orderNumber.js";
 import { fetchOrders, subscribeOrderEvents } from "../../lib/pointServer.js";
+import { initGarmentCatalog, subscribeGarmentCatalogStore } from "../../lib/garmentCatalogStore.js";
 import { syncAllOperatorScrollElements } from "../../lib/operatorScrollTheme.js";
 import { OPERATOR_HEIGHT } from "../../components/OperatorFrame.js";
 import { OperatorSidebar, type OperatorView } from "./OperatorSidebar.js";
@@ -30,6 +32,8 @@ export function OperatorHome() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    initGarmentCatalog();
+    const unsubscribeCatalog = subscribeGarmentCatalogStore();
     let cancelled = false;
     fetchOrders()
       .then((rows) => {
@@ -42,6 +46,7 @@ export function OperatorHome() {
       });
     return () => {
       cancelled = true;
+      unsubscribeCatalog();
     };
   }, []);
 
@@ -76,7 +81,7 @@ export function OperatorHome() {
   const filteredOrders = useMemo(() => {
     const query = search.trim();
     if (!query) return ordersInView;
-    return ordersInView.filter((order) => order.id.includes(query));
+    return ordersInView.filter((order) => orderNumberMatchesQuery(order.id, query));
   }, [ordersInView, search]);
 
   useEffect(() => {

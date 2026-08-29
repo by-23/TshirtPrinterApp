@@ -1,9 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { garmentTypeSchema, isGarmentTypeEnabled, type GarmentType } from "@tshirt/shared-types";
+import {
+  garmentCatalogTypeLabel,
+  garmentTypeSchema,
+  isGarmentTypeEnabled,
+  type GarmentType,
+} from "@tshirt/shared-types";
 import { PillButton } from "@tshirt/ui-kit";
 import { RAIL_ICON_CLASS, TshirtIcon } from "../components/icons.js";
 import { useEditorStore } from "./store.js";
 import { useGarmentAvailabilityStore } from "../lib/garmentAvailabilityStore.js";
+import { useGarmentCatalogStore } from "../lib/garmentCatalogStore.js";
 
 /**
  * Garment type switch (футболка / свитшот / кепка / шоппер) shown above
@@ -16,6 +22,7 @@ export function GarmentTypeToggle() {
   const garmentType = useEditorStore((state) => state.garmentType);
   const setGarmentType = useEditorStore((state) => state.setGarmentType);
   const availability = useGarmentAvailabilityStore((state) => state.availability);
+  const catalog = useGarmentCatalogStore((state) => state.catalog);
 
   function handleSelect(nextType: GarmentType) {
     if (nextType === garmentType) return;
@@ -50,7 +57,7 @@ export function GarmentTypeToggle() {
                 backgroundColor: active ? "var(--editor-toggle-active-bg)" : "var(--editor-toggle-idle-bg)",
               }}
             >
-              {t(`editor.garmentTypes.${typeOption}`)}
+              {garmentCatalogTypeLabel(catalog, typeOption, t(`editor.garmentTypes.${typeOption}`))}
             </PillButton>
           );
         })}

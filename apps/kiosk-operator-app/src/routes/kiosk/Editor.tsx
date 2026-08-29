@@ -3,15 +3,16 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
 import {
-  GARMENT_COLORS,
   GARMENT_FABRICS,
   GARMENT_SIZES,
+  findGarmentColorByHex,
   garmentTypeSchema,
   garmentUsesSizeFabric,
   isGarmentColorEnabled,
   isGarmentFabricEnabled,
   isGarmentSizeEnabled,
   isGarmentTypeEnabled,
+  resolvedGarmentColors,
   type GarmentFabric,
 } from "@tshirt/shared-types";
 import { getPriceBreakdown } from "@tshirt/shared-pricing";
@@ -23,6 +24,7 @@ import {
   subscribeGarmentAvailabilityStore,
   useGarmentAvailabilityStore,
 } from "../../lib/garmentAvailabilityStore.js";
+import { initGarmentCatalog, subscribeGarmentCatalogStore, useGarmentCatalogStore } from "../../lib/garmentCatalogStore.js";
 import {
   deselectCanvasSelection,
   shouldDeselectCanvasOnPointerDown,
@@ -71,6 +73,7 @@ export function Editor() {
   const priceConfig = usePricingConfigStore((state) => state.config);
   const availability = useGarmentAvailabilityStore((state) => state.availability);
   const availabilityLoaded = useGarmentAvailabilityStore((state) => state.loaded);
+  const catalog = useGarmentCatalogStore((state) => state.catalog);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [printError, setPrintError] = useState(false);
@@ -85,7 +88,13 @@ export function Editor() {
     initPricingConfig();
     initPrintAreaConfig();
     initGarmentAvailabilityConfig();
-    return subscribeGarmentAvailabilityStore();
+    initGarmentCatalog();
+    const unsubscribeAvailability = subscribeGarmentAvailabilityStore();
+    const unsubscribeCatalog = subscribeGarmentCatalogStore();
+    return () => {
+      unsubscribeAvailability();
+      unsubscribeCatalog();
+    };
   }, []);
 
   // If the operator disabled the current selection, snap to the first enabled option.
@@ -97,9 +106,10 @@ export function Editor() {
       if (nextType) setGarmentType(nextType);
     }
 
-    const activeColor = GARMENT_COLORS.find((option) => option.hex === color);
+    const colors = resolvedGarmentColors(catalog);
+    const activeColor = findGarmentColorByHex(catalog, color);
     if (!activeColor || !isGarmentColorEnabled(availability, activeColor.id)) {
-      const nextColor = GARMENT_COLORS.find((option) => isGarmentColorEnabled(availability, option.id));
+      const nextColor = colors.find((option) => isGarmentColorEnabled(availability, option.id));
       if (nextColor) setColor(nextColor.hex);
     }
 
@@ -116,6 +126,7 @@ export function Editor() {
   }, [
     availability,
     availabilityLoaded,
+    catalog,
     garmentType,
     color,
     size,

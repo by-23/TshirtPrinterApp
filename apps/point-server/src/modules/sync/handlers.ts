@@ -4,6 +4,7 @@ import { db } from "../../db/client.js";
 import { pointConfig } from "../../db/schema.js";
 import { emitPointConfigEvent, emitPricingEvent } from "../../realtime/socket.js";
 import { applyGarmentAvailabilityFromSnapshot } from "../garment-availability/config.js";
+import { applyGarmentCatalogFromSnapshot } from "../garment-catalog/config.js";
 import { applyFontsFromSnapshot } from "../fonts/service.js";
 
 const POINT_CONFIG_ROW_ID = 1;
@@ -18,6 +19,7 @@ const POINT_CONFIG_ROW_ID = 1;
 export async function applySnapshot(snapshot: SyncSnapshotPayload, log: FastifyBaseLogger): Promise<void> {
   await upsertPointConfig(snapshot, log);
   await applyGarmentAvailability(snapshot, log);
+  await applyGarmentCatalog(snapshot, log);
   await applyFonts(snapshot, log);
 }
 
@@ -50,6 +52,14 @@ async function applyGarmentAvailability(snapshot: SyncSnapshotPayload, log: Fast
     });
   } catch (err) {
     log.error(err, "Failed to apply synced garment availability override");
+  }
+}
+
+async function applyGarmentCatalog(snapshot: SyncSnapshotPayload, log: FastifyBaseLogger): Promise<void> {
+  try {
+    await applyGarmentCatalogFromSnapshot(snapshot.garmentCatalog);
+  } catch (err) {
+    log.error(err, "Failed to apply synced garment catalog");
   }
 }
 

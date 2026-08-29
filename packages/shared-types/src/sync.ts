@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { pointStatusSchema, uploadModeSchema } from "./point.js";
 import { priceConfigSchema } from "./pricing.js";
-import { garmentAvailabilityConfigSchema, garmentTypeSchema, printSizeSchema } from "./garment.js";
+import {
+  garmentAvailabilityConfigSchema,
+  garmentCatalogConfigSchema,
+  garmentTypeSchema,
+  printSizeSchema,
+} from "./garment.js";
 import { orderStatusSchema } from "./order.js";
 import { managedFontSchema } from "./fonts.js";
 
@@ -35,6 +40,8 @@ export const syncSnapshotSchema = z.object({
   priceConfig: priceConfigSchema,
   garmentAvailabilityOverrideActive: z.boolean().default(false),
   garmentAvailability: garmentAvailabilityConfigSchema.optional(),
+  /** Admin-edited type/color/size/fabric names and color hex values. */
+  garmentCatalog: garmentCatalogConfigSchema.optional(),
   /**
    * Editor font catalog from central admin. When omitted (older relay), the
    * point keeps its last-applied / seeded local list. When present (even

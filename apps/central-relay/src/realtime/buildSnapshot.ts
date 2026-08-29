@@ -13,6 +13,7 @@ import {
   pointPriceOverrides,
   points,
 } from "../db/schema.js";
+import { getGlobalGarmentCatalog } from "../modules/garment-catalog/service.js";
 import { listFontsForSnapshot } from "../modules/fonts/service.js";
 
 const GLOBAL_ROW_ID = "global";
@@ -88,6 +89,7 @@ export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapsh
   const global = withPriceConfigDefaults(globalRow?.config);
   const priceConfig = mergePriceConfig(global, overrideRow?.config);
   const fonts = await listFontsForSnapshot();
+  const garmentCatalog = await getGlobalGarmentCatalog();
 
   if (garmentOverrideRow) {
     return {
@@ -95,6 +97,7 @@ export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapsh
       priceConfig,
       garmentAvailabilityOverrideActive: true,
       garmentAvailability: withGarmentAvailabilityDefaults(garmentOverrideRow.availability),
+      garmentCatalog,
       fonts,
     };
   }
@@ -103,6 +106,7 @@ export async function buildSnapshotForPoint(pointId: string): Promise<SyncSnapsh
     pointConfig: { name: point.name, status: point.status, uploadMode: point.uploadMode },
     priceConfig,
     garmentAvailabilityOverrideActive: false,
+    garmentCatalog,
     fonts,
   };
 }

@@ -11,7 +11,12 @@ import {
   unique,
   primaryKey,
 } from "drizzle-orm/pg-core";
-import type { GarmentAvailabilityConfig, PartialPriceConfig, PriceConfig } from "@tshirt/shared-types";
+import type {
+  GarmentAvailabilityConfig,
+  GarmentCatalogConfig,
+  PartialPriceConfig,
+  PriceConfig,
+} from "@tshirt/shared-types";
 
 export const pointStatusEnum = pgEnum("point_status", ["open", "closed"]);
 export const uploadModeEnum = pgEnum("upload_mode", ["relay", "wifi"]);
@@ -75,6 +80,13 @@ export const ordersArchive = pgTable(
   },
   (table) => [unique("orders_archive_point_order_unique").on(table.pointId, table.pointOrderId)],
 );
+
+/** Single-row table (fixed id `"global"`) holding type/color/size/fabric names and color hex values. */
+export const globalGarmentCatalog = pgTable("global_garment_catalog", {
+  id: text("id").primaryKey().default("global"),
+  config: jsonb("config").notNull().$type<GarmentCatalogConfig>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Single-row table (fixed id `"global"`) holding the global price config edited on `PricingPage`. */
 export const globalPriceConfig = pgTable("global_price_config", {

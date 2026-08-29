@@ -6,6 +6,7 @@ import { KioskAmbientBackdrop } from "./KioskAmbientBackdrop.js";
 import { KioskPageTransition } from "./KioskPageTransition.js";
 import { ScreensaverOverlay } from "./ScreensaverOverlay.js";
 import { initPointStatus, usePointStatusStore } from "../lib/pointStatusStore.js";
+import { initGarmentCatalog, subscribeGarmentCatalogStore } from "../lib/garmentCatalogStore.js";
 import { warmBackgroundRemoval } from "../lib/backgroundRemoval.js";
 import {
   resolveKioskNavDirection,
@@ -60,11 +61,14 @@ export function KioskShell() {
       document.documentElement.classList.add("kiosk-weak-client");
     }
     initPointStatus();
+    initGarmentCatalog();
+    const unsubscribeCatalog = subscribeGarmentCatalogStore();
     // Skip ONNX/WASM warm-up on weak Android — it competes for RAM/CPU at boot
     // and the model still loads on first real use in `/kiosk/ai`.
     if (!isWeakClient()) {
       warmBackgroundRemoval();
     }
+    return unsubscribeCatalog;
   }, []);
 
   return (

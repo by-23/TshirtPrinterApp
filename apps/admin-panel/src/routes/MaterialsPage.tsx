@@ -1,13 +1,18 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Alert, Button, Card, Checkbox, Empty, Select, Space, Typography, message } from "antd";
+import { Alert, Button, Card, Checkbox, ColorPicker, Empty, Input, Select, Space, Typography, message } from "antd";
 import {
+  CATALOG_LABEL_MAX_LENGTH,
   DEFAULT_GARMENT_AVAILABILITY,
+  DEFAULT_GARMENT_CATALOG,
   GARMENT_COLORS,
   GARMENT_FABRICS,
   GARMENT_SIZES,
+  SIZE_LABEL_MAX_LENGTH,
   garmentTypeSchema,
   withGarmentAvailabilityDefaults,
+  withGarmentCatalogDefaults,
   type GarmentAvailabilityConfig,
+  type GarmentCatalogConfig,
   type GarmentFabric,
   type GarmentSize,
   type GarmentType,
@@ -15,29 +20,14 @@ import {
 } from "@tshirt/shared-types";
 import { apiClient, ApiError } from "../lib/apiClient.js";
 
-const TYPE_LABELS: Record<GarmentType, string> = {
+const TYPE_FALLBACK: Record<GarmentType, string> = {
   tshirt: "Футболка",
   sweatshirt: "Свитшот",
   cap: "Кепка",
   shopper: "Шоппер",
 };
 
-const COLOR_LABELS: Record<string, string> = {
-  white: "Белый",
-  black: "Чёрный",
-  gray: "Серый",
-  cream: "Кремовый",
-  pink: "Розовый",
-  lightBlue: "Голубой",
-  green: "Зелёный",
-  yellow: "Жёлтый",
-  red: "Красный",
-  darkGreen: "Тёмно-зелёный",
-  purple: "Фиолетовый",
-  navy: "Тёмно-синий",
-};
-
-const FABRIC_LABELS: Record<GarmentFabric, string> = {
+const FABRIC_FALLBACK: Record<GarmentFabric, string> = {
   cotton: "Хлопок",
   premium: "Премиум",
 };
@@ -59,6 +49,14 @@ function ToggleGrid({
   );
 }
 
+function CatalogFieldRow({ children }: { children: ReactNode }) {
+  return (
+    <Space wrap size={[12, 12]} align="center">
+      {children}
+    </Space>
+  );
+}
+
 /**
  * Per-point garment availability override. Saving creates/updates a central
  * override that pushes to the point and locks the local operator «Материалы»
@@ -71,13 +69,34 @@ export function MaterialsPage() {
   const [hasOverride, setHasOverride] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [catalog, setCatalog] = useState<GarmentCatalogConfig>(DEFAULT_GARMENT_CATALOG);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogSaving, setCatalogSaving] = useState(false);
 
   useEffect(() => {
     apiClient
       .get<PointDetail[]>("/points")
       .then(setPoints)
       .catch(() => message.error("Не удалось загрузить точки"));
+    apiClient
+      .get<GarmentCatalogConfig>("/garment-catalog")
+      .then((next) => setCatalog(withGarmentCatalogDefaults(next)))
+      .catch(() => message.error("Не удалось загрузить каталог названий"))
+      .finally(() => setCatalogLoading(false));
   }, []);
+
+  async function saveCatalog() {
+    setCatalogSaving(true);
+    try {
+      const saved = await apiClient.put<GarmentCatalogConfig>("/garment-catalog", catalog);
+      setCatalog(withGarmentCatalogDefaults(saved));
+      message.success("Названия и цвета отправлены на все точки");
+    } catch {
+      message.error("Не удалось сохранить каталог");
+    } finally {
+      setCatalogSaving(false);
+    }
+  }
 
   async function loadOverride(pointId: string) {
     setSelectedPointId(pointId);
@@ -144,8 +163,118 @@ export function MaterialsPage() {
     setAvailability((prev) => ({ ...prev, fabrics: { ...prev.fabrics, [fabric]: enabled } }));
   }
 
+  function setTypeLabel(type: GarmentType, label: string) {
+    setCatalog((prev) => ({
+      ...prev,
+      types: { ...prev.types, [type]: { label: label.slice(0, CATALOG_LABEL_MAX_LENGTH) } },
+    }));
+  }
+
+  function setColorLabel(colorId: string, label: string) {
+    setCatalog((prev) => ({
+      ...prev,
+      colors: {
+        ...prev.colors,
+        [colorId]: { ...prev.colors[colorId]!, label: label.slice(0, CATALOG_LABEL_MAX_LENGTH) },
+      },
+    }));
+  }
+
+  function setColorHex(colorId: string, hex: string) {
+    setCatalog((prev) => ({
+      ...prev,
+      colors: { ...prev.colors, [colorId]: { ...prev.colors[colorId]!, hex } },
+    }));
+  }
+
+  function setSizeLabel(size: GarmentSize, label: string) {
+    setCatalog((prev) => ({
+      ...prev,
+      sizes: { ...prev.sizes, [size]: { label: label.slice(0, SIZE_LABEL_MAX_LENGTH) } },
+    }));
+  }
+
+  function setFabricLabel(fabric: GarmentFabric, label: string) {
+    setCatalog((prev) => ({
+      ...prev,
+      fabrics: { ...prev.fabrics, [fabric]: { label: label.slice(0, CATALOG_LABEL_MAX_LENGTH) } },
+    }));
+  }
+
   return (
     <div>
+      <Card title="Названия и цвета каталога" loading={catalogLoading} style={{ marginBottom: 24 }}>
+        <Typography.Paragraph type="secondary">
+          Эти названия и цвета общие для всех точек: после сохранения они появятся у оператора и в
+          киоске. Внутренние коды заказов не меняются.
+        </Typography.Paragraph>
+
+        <ToggleGrid title="Тип изделия">
+          {garmentTypeSchema.options.map((type) => (
+            <Input
+              key={type}
+              value={catalog.types[type]?.label ?? TYPE_FALLBACK[type]}
+              maxLength={CATALOG_LABEL_MAX_LENGTH}
+              showCount
+              onChange={(event) => setTypeLabel(type, event.target.value)}
+              style={{ width: 180 }}
+            />
+          ))}
+        </ToggleGrid>
+
+        <ToggleGrid title="Цвета">
+          {GARMENT_COLORS.map((color) => (
+            <CatalogFieldRow key={color.id}>
+              <ColorPicker
+                value={catalog.colors[color.id]?.hex ?? color.hex}
+                disabledAlpha
+                onChange={(value) => {
+                  const hex = value.toHexString();
+                  if (/^#[0-9A-Fa-f]{6}$/i.test(hex)) setColorHex(color.id, hex);
+                }}
+              />
+              <Input
+                value={catalog.colors[color.id]?.label ?? color.id}
+                maxLength={CATALOG_LABEL_MAX_LENGTH}
+                showCount
+                onChange={(event) => setColorLabel(color.id, event.target.value)}
+                style={{ width: 180 }}
+              />
+            </CatalogFieldRow>
+          ))}
+        </ToggleGrid>
+
+        <ToggleGrid title="Размеры">
+          {GARMENT_SIZES.map((size) => (
+            <Input
+              key={size}
+              value={catalog.sizes[size]?.label ?? size}
+              maxLength={SIZE_LABEL_MAX_LENGTH}
+              showCount
+              onChange={(event) => setSizeLabel(size, event.target.value)}
+              style={{ width: 120 }}
+            />
+          ))}
+        </ToggleGrid>
+
+        <ToggleGrid title="Материалы">
+          {GARMENT_FABRICS.map((fabric) => (
+            <Input
+              key={fabric}
+              value={catalog.fabrics[fabric]?.label ?? FABRIC_FALLBACK[fabric]}
+              maxLength={CATALOG_LABEL_MAX_LENGTH}
+              showCount
+              onChange={(event) => setFabricLabel(fabric, event.target.value)}
+              style={{ width: 180 }}
+            />
+          ))}
+        </ToggleGrid>
+
+        <Button type="primary" loading={catalogSaving} onClick={() => void saveCatalog()}>
+          Сохранить каталог
+        </Button>
+      </Card>
+
       <Card title="Материалы по точкам" loading={loading}>
         <Typography.Paragraph type="secondary">
           Пока override активен, настройки из админки перезаписывают локальные на точке и блокируют
@@ -187,7 +316,7 @@ export function MaterialsPage() {
                   checked={availability.types[type] !== false}
                   onChange={(event) => setType(type, event.target.checked)}
                 >
-                  {TYPE_LABELS[type]}
+                  {catalog.types[type]?.label ?? TYPE_FALLBACK[type]}
                 </Checkbox>
               ))}
             </ToggleGrid>
@@ -205,13 +334,13 @@ export function MaterialsPage() {
                       width: 12,
                       height: 12,
                       borderRadius: 3,
-                      backgroundColor: color.hex,
+                      backgroundColor: catalog.colors[color.id]?.hex ?? color.hex,
                       border: "1px solid #d9d9d9",
                       marginRight: 6,
                       verticalAlign: "middle",
                     }}
                   />
-                  {COLOR_LABELS[color.id] ?? color.id}
+                  {catalog.colors[color.id]?.label ?? color.id}
                 </Checkbox>
               ))}
             </ToggleGrid>
@@ -223,7 +352,7 @@ export function MaterialsPage() {
                   checked={availability.sizes[size] !== false}
                   onChange={(event) => setSize(size, event.target.checked)}
                 >
-                  {size}
+                  {catalog.sizes[size]?.label ?? size}
                 </Checkbox>
               ))}
             </ToggleGrid>
@@ -235,7 +364,7 @@ export function MaterialsPage() {
                   checked={availability.fabrics[fabric] !== false}
                   onChange={(event) => setFabric(fabric, event.target.checked)}
                 >
-                  {FABRIC_LABELS[fabric]}
+                  {catalog.fabrics[fabric]?.label ?? FABRIC_FALLBACK[fabric]}
                 </Checkbox>
               ))}
             </ToggleGrid>

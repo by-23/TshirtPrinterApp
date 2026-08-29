@@ -34,6 +34,7 @@ import {
   type PrintAreaConfig,
   type GarmentAvailabilityConfig,
   type GarmentAvailabilityEvent,
+  type GarmentCatalogConfig,
   type SetDesignIsolatedInput,
   type StylizeResponse,
   type UpdateCatalogScrapeConfigInput,
@@ -54,6 +55,7 @@ const POINT_CONFIG_EVENT_CHANNEL = "point-config:event";
 const PRICING_EVENT_CHANNEL = "pricing:event";
 const GARMENT_AVAILABILITY_EVENT_CHANNEL = "garment-availability:event";
 const FONTS_EVENT_CHANNEL = "fonts:event";
+const GARMENT_CATALOG_EVENT_CHANNEL = "garment-catalog:event";
 
 /** Same host as the UI (LAN IP on phones), so API calls don't hit the device's own localhost. */
 function resolvePointServerUrl(): string {
@@ -604,6 +606,23 @@ export interface GarmentAvailabilityConfigResponse {
   availability: GarmentAvailabilityConfig;
   adminOverrideActive: boolean;
   updatedAt: string;
+}
+
+export async function fetchGarmentCatalog(): Promise<GarmentCatalogConfig> {
+  const res = await fetch(`${POINT_SERVER_URL}/garment-catalog`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch garment catalog: ${res.status}`);
+  }
+  return res.json();
+}
+
+export function subscribeGarmentCatalogEvents(callback: (catalog: GarmentCatalogConfig) => void): () => void {
+  const socket = getSocket();
+  const handler = (payload: GarmentCatalogConfig) => callback(payload);
+  socket.on(GARMENT_CATALOG_EVENT_CHANNEL, handler);
+  return () => {
+    socket.off(GARMENT_CATALOG_EVENT_CHANNEL, handler);
+  };
 }
 
 export async function fetchGarmentAvailabilityConfig(): Promise<GarmentAvailabilityConfigResponse> {

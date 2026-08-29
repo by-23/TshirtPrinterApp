@@ -1,13 +1,16 @@
 import { getOrderPrintSides, type Order } from "@tshirt/shared-types";
+import { useGarmentCatalogStore } from "../../lib/garmentCatalogStore.js";
 import { StatusBadge } from "./StatusBadge.js";
 import { OrderImage } from "./OrderImage.js";
+import { displayOrderNumber } from "../../lib/orderNumber.js";
 import {
-  GARMENT_TYPE_LABELS,
   formatDesignCount,
   formatOrderSides,
   formatOrderTime,
   formatPrice,
   garmentColorLabel,
+  garmentSizeLabel,
+  garmentTypeLabel,
 } from "./orderLabels.js";
 
 export function OrderListItem({
@@ -19,8 +22,9 @@ export function OrderListItem({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const catalog = useGarmentCatalogStore((state) => state.catalog);
   const printSides = getOrderPrintSides(order);
-  const garmentLine = `${GARMENT_TYPE_LABELS[order.garment.type]} ${garmentColorLabel(order.garment.color)}, ${order.garment.size}`;
+  const garmentLine = `${garmentTypeLabel(order.garment.type, catalog)} ${garmentColorLabel(order.garment.color, catalog)}, ${garmentSizeLabel(order.garment.size, catalog)}`;
 
   return (
     <button
@@ -59,7 +63,7 @@ export function OrderListItem({
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <span className="font-bold text-white" style={{ fontSize: "var(--operator-item-number-size)" }}>
-            №{order.id}
+            №{displayOrderNumber(order.id)}
           </span>
           <span style={{ fontSize: "var(--operator-item-time-size)", color: "var(--operator-text-muted)" }}>
             {formatOrderTime(order.createdAt)}

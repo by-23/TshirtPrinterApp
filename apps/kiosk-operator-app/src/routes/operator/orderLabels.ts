@@ -1,4 +1,14 @@
-import { GARMENT_COLORS, type GarmentSide, type GarmentType, type OrderStatus } from "@tshirt/shared-types";
+import {
+  findGarmentColorByHex,
+  garmentCatalogColorLabel,
+  garmentCatalogFabricLabel,
+  garmentCatalogSizeLabel,
+  garmentCatalogTypeLabel,
+  type GarmentCatalogConfig,
+  type GarmentSide,
+  type GarmentType,
+  type OrderStatus,
+} from "@tshirt/shared-types";
 
 /**
  * The operator screen is Russian-only (matches `docs/ui-mockups/operator.png`,
@@ -53,9 +63,30 @@ const COLOR_NAME_BY_ID: Record<string, string> = {
   navy: "Тёмно-синий",
 };
 
-export function garmentColorLabel(hex: string): string {
-  const match = GARMENT_COLORS.find((option) => option.hex.toLowerCase() === hex.toLowerCase());
-  return match ? (COLOR_NAME_BY_ID[match.id] ?? hex) : hex;
+export function garmentTypeLabel(type: GarmentType, catalog?: GarmentCatalogConfig): string {
+  return catalog
+    ? garmentCatalogTypeLabel(catalog, type, GARMENT_TYPE_LABELS[type])
+    : GARMENT_TYPE_LABELS[type];
+}
+
+export function garmentSizeLabel(size: string, catalog?: GarmentCatalogConfig): string {
+  return catalog ? garmentCatalogSizeLabel(catalog, size) : size;
+}
+
+export function garmentFabricLabel(fabric: string, catalog?: GarmentCatalogConfig): string {
+  return catalog
+    ? garmentCatalogFabricLabel(catalog, fabric, FABRIC_LABELS[fabric] ?? fabric)
+    : (FABRIC_LABELS[fabric] ?? fabric);
+}
+
+export function garmentColorLabel(hex: string, catalog?: GarmentCatalogConfig): string {
+  if (catalog) {
+    const match = findGarmentColorByHex(catalog, hex);
+    if (match) {
+      return garmentCatalogColorLabel(catalog, match.id, COLOR_NAME_BY_ID[match.id] ?? hex);
+    }
+  }
+  return hex;
 }
 
 export interface StatusPresentation {

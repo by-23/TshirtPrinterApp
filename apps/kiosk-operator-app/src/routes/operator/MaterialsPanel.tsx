@@ -1,10 +1,14 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
   DEFAULT_GARMENT_AVAILABILITY,
-  GARMENT_COLORS,
   GARMENT_FABRICS,
   GARMENT_SIZES,
+  garmentCatalogColorLabel,
+  garmentCatalogFabricLabel,
+  garmentCatalogSizeLabel,
+  garmentCatalogTypeLabel,
   garmentTypeSchema,
+  resolvedGarmentColors,
   type GarmentAvailabilityConfig,
   type GarmentFabric,
   type GarmentSize,
@@ -19,6 +23,7 @@ import {
   subscribeGarmentAvailabilityStore,
   useGarmentAvailabilityStore,
 } from "../../lib/garmentAvailabilityStore.js";
+import { initGarmentCatalog, subscribeGarmentCatalogStore, useGarmentCatalogStore } from "../../lib/garmentCatalogStore.js";
 import { SpinnerIcon } from "../../components/icons.js";
 
 const CARD_STYLE = { backgroundColor: "var(--operator-card-bg)", border: "1px solid var(--operator-card-border)" };
@@ -31,22 +36,7 @@ const TYPE_LABELS: Record<GarmentType, string> = {
   shopper: "Шоппер",
 };
 
-const COLOR_LABELS: Record<string, string> = {
-  white: "Белый",
-  black: "Чёрный",
-  gray: "Серый",
-  cream: "Кремовый",
-  pink: "Розовый",
-  lightBlue: "Голубой",
-  green: "Зелёный",
-  yellow: "Жёлтый",
-  red: "Красный",
-  darkGreen: "Тёмно-зелёный",
-  purple: "Фиолетовый",
-  navy: "Тёмно-синий",
-};
-
-const FABRIC_LABELS: Record<GarmentFabric, string> = {
+const FABRIC_FALLBACK: Record<GarmentFabric, string> = {
   cotton: "Хлопок",
   premium: "Премиум",
 };
@@ -121,10 +111,14 @@ export function MaterialsPanel() {
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const storeAvailability = useGarmentAvailabilityStore((state) => state.availability);
   const storeOverride = useGarmentAvailabilityStore((state) => state.adminOverrideActive);
+  const catalog = useGarmentCatalogStore((state) => state.catalog);
+  const colors = resolvedGarmentColors(catalog);
 
   useEffect(() => {
     initGarmentAvailabilityConfig();
-    const unsubscribe = subscribeGarmentAvailabilityStore();
+    initGarmentCatalog();
+    const unsubscribeAvailability = subscribeGarmentAvailabilityStore();
+    const unsubscribeCatalog = subscribeGarmentCatalogStore();
     fetchGarmentAvailabilityConfig()
       .then((config) => {
         setAvailability(config.availability);
@@ -136,7 +130,10 @@ export function MaterialsPanel() {
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
-    return unsubscribe;
+    return () => {
+      unsubscribeAvailability();
+      unsubscribeCatalog();
+    };
   }, []);
 
   useEffect(() => {
@@ -251,7 +248,7 @@ export function MaterialsPanel() {
         {garmentTypeSchema.options.map((type) => (
           <ToggleRow
             key={type}
-            label={TYPE_LABELS[type]}
+            label={garmentCatalogTypeLabel(catalog, type, TYPE_LABELS[type])}
             checked={availability.types[type] !== false}
             disabled={adminOverrideActive}
             onChange={(enabled) => setType(type, enabled)}
@@ -260,10 +257,10 @@ export function MaterialsPanel() {
       </Section>
 
       <Section title="Цвета">
-        {GARMENT_COLORS.map((color) => (
+        {colors.map((color) => (
           <ToggleRow
             key={color.id}
-            label={COLOR_LABELS[color.id] ?? color.id}
+            label={garmentCatalogColorLabel(catalog, color.id, color.id)}
             swatch={color.hex}
             checked={availability.colors[color.id] !== false}
             disabled={adminOverrideActive}
@@ -276,7 +273,7 @@ export function MaterialsPanel() {
         {GARMENT_SIZES.map((size) => (
           <ToggleRow
             key={size}
-            label={size}
+            label={garmentCatalogSizeLabel(catalog, size)}
             checked={availability.sizes[size] !== false}
             disabled={adminOverrideActive}
             onChange={(enabled) => setSize(size, enabled)}
@@ -288,7 +285,7 @@ export function MaterialsPanel() {
         {GARMENT_FABRICS.map((fabric) => (
           <ToggleRow
             key={fabric}
-            label={FABRIC_LABELS[fabric]}
+            label={garmentCatalogFabricLabel(catalog, fabric, FABRIC_FALLBACK[fabric])}
             checked={availability.fabrics[fabric] !== false}
             disabled={adminOverrideActive}
             onChange={(enabled) => setFabric(fabric, enabled)}

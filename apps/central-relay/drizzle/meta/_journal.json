@@ -64,6 +64,13 @@
       "when": 1787409000000,
       "tag": "0008_misc_category",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787418000000,
+      "tag": "0009_global_garment_catalog",
+      "breakpoints": true
     }
   ]
 }

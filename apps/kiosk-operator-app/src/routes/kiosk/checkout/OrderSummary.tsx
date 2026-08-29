@@ -1,6 +1,13 @@
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { GARMENT_COLORS } from "@tshirt/shared-types";
+import {
+  findGarmentColorByHex,
+  garmentCatalogColorLabel,
+  garmentCatalogFabricLabel,
+  garmentCatalogSizeLabel,
+  garmentCatalogTypeLabel,
+} from "@tshirt/shared-types";
+import { useGarmentCatalogStore } from "../../../lib/garmentCatalogStore.js";
 import type { PriceBreakdownKey, PriceBreakdownLine } from "@tshirt/shared-pricing";
 import { Clock, type IconProps, Layers, Ruler, Sparkles, TshirtIcon } from "../../../components/icons.js";
 import type { CheckoutGarment } from "../../../lib/checkoutStore.js";
@@ -41,15 +48,16 @@ function formatAmount(key: PriceBreakdownKey, amount: number): string {
  */
 export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
   const { t } = useTranslation();
-  const colorId = GARMENT_COLORS.find((option) => option.hex === garment.color)?.id ?? "white";
+  const catalog = useGarmentCatalogStore((state) => state.catalog);
+  const colorId = findGarmentColorByHex(catalog, garment.color)?.id ?? "white";
   const total = priceBreakdown.reduce((sum, line) => sum + line.amountTenge, 0);
   const amountByKey = new Map(priceBreakdown.map((line) => [line.key, line.amountTenge]));
   const aiProvider = useAiFlowStore((state) => state.aiProvider);
 
   const rowMeta: Record<PriceBreakdownKey, { label: string; detail: string }> = {
     garment: {
-      label: t(`editor.garmentTypes.${garment.type}`),
-      detail: `${t(`editor.colors.${colorId}`)}, ${t(`checkout.summary.fabric.${garment.fabricName}`)}`,
+      label: garmentCatalogTypeLabel(catalog, garment.type, t(`editor.garmentTypes.${garment.type}`)),
+      detail: `${garmentCatalogColorLabel(catalog, colorId, t(`editor.colors.${colorId}`))}, ${garmentCatalogFabricLabel(catalog, garment.fabricName, t(`checkout.summary.fabric.${garment.fabricName}`))}`,
     },
     design: {
       label: t("checkout.summary.designLabel"),
@@ -57,7 +65,7 @@ export function OrderSummary({ garment, priceBreakdown }: OrderSummaryProps) {
     },
     size: {
       label: t("editor.size"),
-      detail: garment.size,
+      detail: garmentCatalogSizeLabel(catalog, garment.size),
     },
     side: {
       label: t("editor.printSide"),

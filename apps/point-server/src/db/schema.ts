@@ -308,6 +308,20 @@ export const garmentAvailabilityConfig = sqliteTable("garment_availability_confi
 });
 
 /**
+ * Singleton (single row, id=1) of admin-edited type/color/size/fabric names
+ * and color hex values, cached from central-relay `sync:snapshot`.
+ */
+export const garmentCatalogConfig = sqliteTable("garment_catalog_config", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  catalogJson: text("catalog_json", { mode: "json" })
+    .$type<import("@tshirt/shared-types").GarmentCatalogConfig>()
+    .notNull(),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+/**
  * Idle attract-loop videos (Этап 8) — uploaded from the operator «Реклама»
  * panel, stored under `data/ads-videos/` and served at `/files/ads-videos/`.
  * The kiosk plays `enabled` rows in `sortOrder` after idle timeout.

@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
-import { DEFAULT_PRICE_CONFIG } from "@tshirt/shared-types";
+import { DEFAULT_GARMENT_CATALOG, DEFAULT_PRICE_CONFIG } from "@tshirt/shared-types";
 import { db, pool } from "./client.js";
-import { admins, globalPriceConfig, ordersArchive, points } from "./schema.js";
+import { admins, globalGarmentCatalog, globalPriceConfig, ordersArchive, points } from "./schema.js";
 import { env } from "../env.js";
 import { ensureBuiltinFontsSeeded } from "../modules/fonts/service.js";
 
@@ -36,6 +36,20 @@ async function seedGlobalPriceConfig() {
 
   await db.insert(globalPriceConfig).values({ id: GLOBAL_ROW_ID, config: DEFAULT_PRICE_CONFIG });
   console.log("Global price config seeded");
+}
+
+async function seedGlobalGarmentCatalog() {
+  const [existing] = await db
+    .select()
+    .from(globalGarmentCatalog)
+    .where(eq(globalGarmentCatalog.id, GLOBAL_ROW_ID));
+  if (existing) {
+    console.log("Global garment catalog already seeded, skipping");
+    return;
+  }
+
+  await db.insert(globalGarmentCatalog).values({ id: GLOBAL_ROW_ID, config: DEFAULT_GARMENT_CATALOG });
+  console.log("Global garment catalog seeded");
 }
 
 /** Demo point + `orders_archive` rows so `StatsPage` has something to chart before Stage 7 wires real order push. */
@@ -93,6 +107,7 @@ async function seedDemoPointAndStats() {
 async function seed() {
   await seedAdmin();
   await seedGlobalPriceConfig();
+  await seedGlobalGarmentCatalog();
   await ensureBuiltinFontsSeeded();
   console.log("Built-in editor fonts seeded");
   await seedDemoPointAndStats();
