@@ -79,11 +79,23 @@ function writePackagedPackageJson(staging, version) {
 
 function npmInstallNested(staging) {
   process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
-  execFileSync(
-    process.platform === "win32" ? "npm.cmd" : "npm",
-    ["install", "--omit=dev", "--install-strategy=nested", "--no-fund", "--no-audit"],
-    { cwd: staging, stdio: "inherit", windowsHide: true, env: process.env },
-  );
+  const args = ["install", "--omit=dev", "--install-strategy=nested", "--no-fund", "--no-audit"];
+  // Node 22 on Windows often throws EINVAL for spawnSync("npm.cmd", …) without a shell.
+  if (process.platform === "win32") {
+    execFileSync("cmd.exe", ["/d", "/s", "/c", ["npm", ...args].join(" ")], {
+      cwd: staging,
+      stdio: "inherit",
+      windowsHide: true,
+      env: process.env,
+    });
+    return;
+  }
+  execFileSync("npm", args, {
+    cwd: staging,
+    stdio: "inherit",
+    windowsHide: true,
+    env: process.env,
+  });
 }
 
 function sha512File(filePath) {
