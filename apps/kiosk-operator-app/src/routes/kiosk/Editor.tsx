@@ -325,15 +325,16 @@ export function Editor() {
       <GarmentTypeToggle />
       <PrintSideToggle />
 
+      {/* Row is unconditional: viewport `lg:` sees the window, not the 1080 canvas. */}
       <div
-        className="flex min-h-0 flex-1 flex-col lg:flex-row lg:items-start"
+        className="flex min-h-0 flex-1 flex-row items-start"
         style={{ gap: "var(--editor-main-columns-gap)" }}
       >
         <div
           className="flex min-w-0 flex-1 flex-col"
           style={{ gap: "var(--editor-center-column-gap)" }}
         >
-          <div className="flex flex-col lg:flex-row lg:items-start" style={{ gap: "var(--editor-main-columns-gap)" }}>
+          <div className="flex flex-row items-start" style={{ gap: "var(--editor-main-columns-gap)" }}>
             <aside
               className={isPreview ? "editor-preview-dimmed relative z-40" : "relative z-40"}
               aria-hidden={isPreview}
@@ -404,7 +405,7 @@ export function Editor() {
         </div>
 
         <aside
-          className={`flex w-full flex-shrink-0 flex-col lg:w-[var(--editor-right-panel-width)] ${isPreview ? "editor-preview-dimmed" : ""}`}
+          className={`flex w-[var(--editor-right-panel-width)] flex-shrink-0 flex-col ${isPreview ? "editor-preview-dimmed" : ""}`}
           aria-hidden={isPreview}
           {...editorThemeSection("rightPanel")}
           style={{ gap: "var(--editor-right-panel-gap)" }}

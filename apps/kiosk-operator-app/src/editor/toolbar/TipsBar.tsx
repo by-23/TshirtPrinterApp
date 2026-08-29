@@ -19,13 +19,13 @@ export function TipsBar() {
       <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-200">
         {t("editor.tipsTitle")}
       </h3>
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+      <div className="flex flex-row justify-between gap-3">
         {tips.map((tip, index) => {
           const TipIcon = TIP_ICONS[index % TIP_ICONS.length]!;
           return (
             <div
               key={tip}
-              className="flex items-center gap-3 text-ink-200 sm:max-w-[23%]"
+              className="flex max-w-[23%] items-center gap-3 text-ink-200"
               style={{ fontSize: "var(--editor-tips-text-size)" }}
             >
               <span

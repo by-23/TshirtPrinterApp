@@ -23,7 +23,7 @@ export function CheckoutFooter() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row" style={{ gap: "var(--checkout-footer-gap)" }}>
+    <div className="flex flex-row" style={{ gap: "var(--checkout-footer-gap)" }}>
       <button
         type="button"
         onClick={() => showPlaceholder("help")}

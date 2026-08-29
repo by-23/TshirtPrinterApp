@@ -137,8 +137,8 @@ export function Checkout() {
 
       <div aria-hidden style={dividerStyle("header")} />
 
-      <div className="flex flex-col lg:flex-row lg:items-stretch" style={{ gap: "var(--checkout-main-columns-gap)" }}>
-        <div className="flex flex-shrink-0 justify-center lg:w-[var(--checkout-preview-column-width)]">
+      <div className="flex flex-row items-stretch" style={{ gap: "var(--checkout-main-columns-gap)" }}>
+        <div className="flex w-[var(--checkout-preview-column-width)] flex-shrink-0 justify-center">
           <CheckoutPreview garment={garment} />
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
