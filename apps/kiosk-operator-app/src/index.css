@@ -2041,6 +2041,21 @@ textarea {
   filter: brightness(1.15);
 }
 
+/* Header + search stay pinned while the card grid scrolls underneath.
+   Top padding lives here (not on the scroll root) so the back button keeps
+   the same offset as the fixed language switcher. */
+.gallery-sticky-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--gallery-page-section-gap);
+  padding-top: var(--gallery-page-padding-y);
+  background: transparent;
+}
+
 .gallery-search {
   height: var(--gallery-search-height);
   border-width: var(--gallery-search-border-width);

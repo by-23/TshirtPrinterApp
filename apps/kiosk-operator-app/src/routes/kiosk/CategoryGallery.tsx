@@ -302,59 +302,61 @@ export function CategoryGallery() {
       {...galleryThemeSection("page")}
       style={{
         paddingInline: "var(--gallery-page-padding-x)",
-        paddingBlock: "var(--gallery-page-padding-y)",
+        paddingBottom: "var(--gallery-page-padding-y)",
         gap: "var(--gallery-page-section-gap)",
       }}
     >
-      <header
-        className="relative z-10 flex flex-shrink-0 items-center justify-between gap-4"
-        {...galleryThemeSection("header")}
-      >
-        <Link
-          to="/kiosk"
-          aria-label={t("common.back")}
-          className="flex flex-shrink-0 items-center gap-2 px-5 font-bold uppercase tracking-wide text-white transition-colors hover:border-neon-pink hover:text-neon-pink"
-          style={{
-            height: "var(--gallery-back-btn-height)",
-            borderRadius: "var(--gallery-back-btn-radius)",
-            backgroundColor: "var(--gallery-back-btn-bg)",
-            borderStyle: "solid",
-            borderWidth: "var(--gallery-back-btn-border-width)",
-            borderColor: "var(--gallery-back-btn-border-color)",
-            fontSize: "var(--gallery-back-btn-font-size)",
-          }}
+      <div className="gallery-sticky-chrome">
+        <header
+          className="relative z-10 flex flex-shrink-0 items-center justify-between gap-4"
+          {...galleryThemeSection("header")}
         >
-          <ArrowLeft aria-hidden className="h-5 w-5 flex-shrink-0" strokeWidth={2.6} />
-          <span>{t("common.back")}</span>
-        </Link>
-        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-          <h1
-            className="font-black uppercase tracking-wide"
-            style={{ fontSize: "var(--gallery-header-title-size)", color: "var(--gallery-header-title-color)" }}
+          <Link
+            to="/kiosk"
+            aria-label={t("common.back")}
+            className="flex flex-shrink-0 items-center gap-2 px-5 font-bold uppercase tracking-wide text-white transition-colors hover:border-neon-pink hover:text-neon-pink"
+            style={{
+              height: "var(--gallery-back-btn-height)",
+              borderRadius: "var(--gallery-back-btn-radius)",
+              backgroundColor: "var(--gallery-back-btn-bg)",
+              borderStyle: "solid",
+              borderWidth: "var(--gallery-back-btn-border-width)",
+              borderColor: "var(--gallery-back-btn-border-color)",
+              fontSize: "var(--gallery-back-btn-font-size)",
+            }}
           >
-            {title}
-          </h1>
-        </div>
-        <LanguageSwitcherSlot />
-      </header>
+            <ArrowLeft aria-hidden className="h-5 w-5 flex-shrink-0" strokeWidth={2.6} />
+            <span>{t("common.back")}</span>
+          </Link>
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+            <h1
+              className="font-black uppercase tracking-wide"
+              style={{ fontSize: "var(--gallery-header-title-size)", color: "var(--gallery-header-title-color)" }}
+            >
+              {title}
+            </h1>
+          </div>
+          <LanguageSwitcherSlot />
+        </header>
 
-      <div
-        className="gallery-search relative z-10 flex flex-shrink-0 items-center gap-3 px-6"
-        {...galleryThemeSection("search")}
-      >
-        <SearchIcon
-          aria-hidden
-          className="pointer-events-none flex-shrink-0"
-          style={{ width: "var(--gallery-search-icon-size)", height: "var(--gallery-search-icon-size)", color: "var(--gallery-search-icon-color)" }}
-        />
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder={t("gallery.searchPlaceholder")}
-          className="w-full bg-transparent focus:outline-none"
-          style={{ fontSize: "var(--gallery-search-font-size)", color: "var(--gallery-search-text-color)" }}
-        />
+        <div
+          className="gallery-search relative z-10 flex flex-shrink-0 items-center gap-3 px-6"
+          {...galleryThemeSection("search")}
+        >
+          <SearchIcon
+            aria-hidden
+            className="pointer-events-none flex-shrink-0"
+            style={{ width: "var(--gallery-search-icon-size)", height: "var(--gallery-search-icon-size)", color: "var(--gallery-search-icon-color)" }}
+          />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t("gallery.searchPlaceholder")}
+            className="w-full bg-transparent focus:outline-none"
+            style={{ fontSize: "var(--gallery-search-font-size)", color: "var(--gallery-search-text-color)" }}
+          />
+        </div>
       </div>
 
       {state === "loading" && (
