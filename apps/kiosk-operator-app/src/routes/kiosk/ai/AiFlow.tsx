@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAiFlowStore, type AiFlowStep } from "../../../lib/aiFlowStore.js";
@@ -6,6 +6,8 @@ import { LanguageSwitcherSlot } from "../../../components/KioskShell.js";
 import { KioskPageTransition } from "../../../components/KioskPageTransition.js";
 import { ArrowLeft } from "../../../components/icons.js";
 import type { PageTransitionDirection } from "../../../lib/pageTransitionStore.js";
+import { resetEditorSession } from "../../../editor/history.js";
+import { useCheckoutStore } from "../../../lib/checkoutStore.js";
 import { aiThemeSection } from "./themeSections.js";
 import { AiSourceSelect } from "./AiSourceSelect.js";
 import { AiCameraCapture } from "./AiCameraCapture.js";
@@ -44,6 +46,11 @@ export function AiFlow() {
   const isSourceStep = step === "source";
   const isThemedHeaderStep =
     isSourceStep || step === "camera" || step === "qr" || step === "style" || step === "processing" || step === "result";
+
+  useEffect(() => {
+    resetEditorSession();
+    useCheckoutStore.getState().reset();
+  }, []);
 
   const prevStepRef = useRef(step);
   const directionRef = useRef<PageTransitionDirection>("forward");

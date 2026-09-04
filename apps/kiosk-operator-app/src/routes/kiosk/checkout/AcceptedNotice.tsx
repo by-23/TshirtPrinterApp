@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CircleCheck } from "../../../components/icons.js";
-import { useEditorStore } from "../../../editor/store.js";
-import { resetAllHistory } from "../../../editor/history.js";
+import { resetEditorSession } from "../../../editor/history.js";
 import { useCheckoutStore } from "../../../lib/checkoutStore.js";
 import { checkoutThemeSection } from "./themeSections.js";
 
@@ -20,8 +19,7 @@ export function AcceptedNotice() {
   const navigate = useNavigate();
 
   const goHome = () => {
-    useEditorStore.getState().reset();
-    resetAllHistory();
+    resetEditorSession();
     useCheckoutStore.getState().reset();
     navigate("/kiosk", { replace: true });
   };

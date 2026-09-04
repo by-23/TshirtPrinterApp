@@ -3,8 +3,12 @@
  * фото" QR (Этап 9, `uploadMode: "wifi"`) — plain HTML/JS (no React/build
  * step) since it's served directly by Fastify to an unknown phone browser
  * on the point's own network. Posts the chosen photo as multipart to
- * `POST /ai/upload/:token/photo` on the same origin. Mirrors
- * `apps/central-relay/src/modules/upload-relay/uploadPage.ts` (relay mode)
+ * `POST /ai/upload/:token/photo` on the same origin. Re-encodes via
+ * canvas first so Android JPEGs that browsers display but libvips rejects
+ * (`Invalid SOS parameters`) arrive as a clean sequential JPEG. Falls
+ * back to the original file if the phone cannot re-encode (HEIC on some
+ * browsers — handled server-side).
+ * Mirrors `apps/central-relay/src/modules/upload-relay/uploadPage.ts` (relay mode)
  * — kept independently per-app rather than shared, same as other
  * central-relay/point-server literal duplication (see
  * `kiosk-operator-app/src/lib/pointServer.ts`).
@@ -84,6 +88,7 @@ export function renderUploadPage(token: string): string {
     var statusEl = document.getElementById("status");
     var preview = document.getElementById("preview");
     var chosenFile = null;
+    var MAX_SIDE = 1600;
 
     fileInput.addEventListener("change", function () {
       chosenFile = fileInput.files && fileInput.files[0];
@@ -94,13 +99,57 @@ export function renderUploadPage(token: string): string {
       }
     });
 
+    function preparePhoto(file) {
+      if (typeof createImageBitmap !== "function") return Promise.resolve(file);
+      return createImageBitmap(file, { imageOrientation: "from-image" })
+        .then(function (bitmap) {
+          return bitmapToJpeg(bitmap);
+        })
+        .catch(function () {
+          return file;
+        });
+    }
+
+    function bitmapToJpeg(bitmap) {
+      var w = bitmap.width;
+      var h = bitmap.height;
+      if (w < 1 || h < 1) throw new Error("empty image");
+      if (w > MAX_SIDE || h > MAX_SIDE) {
+        var scale = Math.min(MAX_SIDE / w, MAX_SIDE / h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      var canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas");
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      if (typeof bitmap.close === "function") bitmap.close();
+      return new Promise(function (resolve, reject) {
+        canvas.toBlob(
+          function (blob) {
+            if (!blob) {
+              reject(new Error("toBlob"));
+              return;
+            }
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.85
+        );
+      });
+    }
+
     submitBtn.addEventListener("click", function () {
       if (!chosenFile) return;
       submitBtn.disabled = true;
       statusEl.textContent = "Загружаем…";
-      var formData = new FormData();
-      formData.append("photo", chosenFile);
-      fetch("/ai/upload/" + token + "/photo", { method: "POST", body: formData })
+      preparePhoto(chosenFile).then(function (photo) {
+        var formData = new FormData();
+        formData.append("photo", photo, "photo.jpg");
+        return fetch("/ai/upload/" + token + "/photo", { method: "POST", body: formData });
+      })
         .then(function (res) {
           if (res.ok) {
             statusEl.textContent = "Готово! Смотрите на экран киоска.";

@@ -8,6 +8,8 @@ import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { CATEGORY_LABEL_KEYS, parseDesignCategoryParam } from "../../lib/categoryLabels.js";
 import { ArrowLeft, FilmIcon, GamepadIcon, Heart, PhotoIcon, SearchIcon, SpinnerIcon } from "../../components/icons.js";
 import { galleryThemeSection } from "./themeSectionsGallery.js";
+import { resetEditorSession } from "../../editor/history.js";
+import { useCheckoutStore } from "../../lib/checkoutStore.js";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -136,6 +138,11 @@ function LoadingMoreCard() {
 export function CategoryGallery() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    resetEditorSession();
+    useCheckoutStore.getState().reset();
+  }, []);
   const { category } = useParams<{ category: string }>();
   const categoryValue = parseDesignCategoryParam(category);
   const categorySuccess = categoryValue !== null;

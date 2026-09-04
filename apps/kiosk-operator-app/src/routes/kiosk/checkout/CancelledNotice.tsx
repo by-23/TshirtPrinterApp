@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CircleX } from "../../../components/icons.js";
-import { useEditorStore } from "../../../editor/store.js";
-import { resetAllHistory } from "../../../editor/history.js";
+import { resetEditorSession } from "../../../editor/history.js";
 import { useCheckoutStore } from "../../../lib/checkoutStore.js";
 
 /** Same dwell time as `AcceptedNotice` before returning to the kiosk home. */
@@ -16,8 +15,7 @@ export function CancelledNotice() {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      useEditorStore.getState().reset();
-      resetAllHistory();
+      resetEditorSession();
       useCheckoutStore.getState().reset();
       navigate("/kiosk", { replace: true });
     }, AUTO_HIDE_MS);

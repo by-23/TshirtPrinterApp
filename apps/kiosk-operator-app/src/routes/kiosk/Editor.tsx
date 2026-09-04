@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FabricImage, type Canvas } from "fabric";
 import {
@@ -31,6 +31,7 @@ import {
 } from "../../editor/canvasSelectionStyle.js";
 import { editorThemeSection } from "../../editor/themeSections.js";
 import { useEditorStore } from "../../editor/store.js";
+import { keepEditorSession, resetEditorSession } from "../../editor/history.js";
 import { useAiFlowStore } from "../../lib/aiFlowStore.js";
 import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { placeImageCentered } from "../../editor/canvasImage.js";
@@ -60,7 +61,11 @@ import {
 export function Editor() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const restoreEditor = Boolean(
+    (location.state as { restoreEditor?: boolean } | null)?.restoreEditor,
+  );
   const garmentType = useEditorStore((state) => state.garmentType);
   const side = useEditorStore((state) => state.side);
   const color = useEditorStore((state) => state.color);
@@ -146,13 +151,28 @@ export function Editor() {
   const backRoute = getEditorBackRoute(category);
   const designId = searchParams.get("designId");
 
+  // Wipe leftover artwork when opening a new design — not on unmount.
+  // The page transition keeps this screen mounted while going back to the
+  // gallery, so an unmount cleanup either never runs or runs after the
+  // canvas has already written the old print back. Checkout "Назад" passes
+  // `restoreEditor` so the current garment is kept.
+  useLayoutEffect(() => {
+    if (restoreEditor) {
+      keepEditorSession();
+      return;
+    }
+    resetEditorSession();
+    useCheckoutStore.getState().reset();
+    appliedDesignIdRef.current = null;
+    appliedAiImageRef.current = null;
+  }, [restoreEditor, designId, category]);
+
   // Preload the design picked in the category gallery (Stage 3) onto the
   // canvas once it's ready. Guarded by a ref (not just the effect deps) so a
   // canvas remount (e.g. after leaving/returning to the editor) doesn't
   // silently re-run for the same design twice.
   useEffect(() => {
     if (!canvas || !designId || appliedDesignIdRef.current === designId) return;
-    appliedDesignIdRef.current = designId;
 
     let cancelled = false;
     fetchDesign(designId)
@@ -167,6 +187,7 @@ export function Editor() {
         return FabricImage.fromURL(resolveDesignImageUrl(design.imageUrl), { crossOrigin: "anonymous" }).then((image) => {
           if (cancelled) return;
           placeImageCentered(canvas, image);
+          appliedDesignIdRef.current = designId;
         });
       })
       .catch(() => {
@@ -189,12 +210,12 @@ export function Editor() {
     if (!canvas || category !== "ai_style") return;
     const finalImage = useAiFlowStore.getState().finalImage;
     if (!finalImage || appliedAiImageRef.current === finalImage) return;
-    appliedAiImageRef.current = finalImage;
 
     let cancelled = false;
     void FabricImage.fromURL(finalImage).then((image) => {
       if (cancelled) return;
       placeImageCentered(canvas, image);
+      appliedAiImageRef.current = finalImage;
       useAiFlowStore.getState().clearAfterEditorApply();
     });
 
@@ -282,6 +303,7 @@ export function Editor() {
       if (designId) {
         void markDesignUsed(designId).catch(() => {});
       }
+      keepEditorSession();
       navigate("/kiosk/checkout");
     } catch {
       setPrintError(true);
@@ -298,9 +320,14 @@ export function Editor() {
       style={{ backgroundColor: "var(--editor-page-bg)", gap: "var(--editor-page-section-gap)" }}
     >
       <header className="relative flex items-center justify-between gap-4" {...editorThemeSection("header")}>
-        <Link
-          to={backRoute}
+        <button
+          type="button"
           aria-label={t("common.back")}
+          onClick={() => {
+            resetEditorSession();
+            useCheckoutStore.getState().reset();
+            navigate(backRoute);
+          }}
           className="flex flex-shrink-0 items-center justify-center gap-2 px-3 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:brightness-125"
           style={{
             width: "var(--editor-back-btn-width)",
@@ -315,7 +342,7 @@ export function Editor() {
         >
           <ArrowLeft aria-hidden className="h-5 w-5 flex-shrink-0" strokeWidth={2.6} />
           <span>{t("common.back")}</span>
-        </Link>
+        </button>
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
           <h1
             className="font-bold uppercase tracking-wide"
@@ -393,6 +420,7 @@ export function Editor() {
                   */}
                   <div ref={printAreaRef} className="absolute inset-0 overflow-visible">
                     <FabricCanvas
+                      key={`${designId ?? "none"}:${category ?? "none"}:${restoreEditor ? "keep" : "fresh"}`}
                       side={side}
                       printArea={printArea}
                       garmentType={garmentType}

@@ -99,6 +99,7 @@ export function Checkout() {
       <header className="relative flex items-center justify-between gap-4" {...checkoutThemeSection("header")}>
         <Link
           to="/kiosk/editor"
+          state={{ restoreEditor: true }}
           aria-label={t("checkout.backTitle")}
           className="flex flex-shrink-0 items-center gap-2 px-3 text-white transition-colors hover:brightness-125"
           style={{

@@ -1,12 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import sharp from "sharp";
 import { getUploadSession, isSessionUsable, markSessionUploaded } from "./service.js";
 import { renderUploadPage } from "./uploadPage.js";
 import { emitPhotoReadyToPoint } from "../../realtime/socket.js";
-import { looksLikeHeic, convertHeicToJpeg } from "./heic.js";
-
-/** Longest side a phone photo is downscaled to before it's pushed over the socket to point-server as base64. */
-const MAX_PHOTO_DIMENSION_PX = 1600;
+import { normalizePhonePhoto } from "./normalizePhoto.js";
 
 /**
  * ИИ-раздел (Этап 9), `uploadMode: "relay"` — public (no auth) routes a
@@ -45,14 +41,7 @@ export async function uploadRelayRoutes(app: FastifyInstance) {
         "Received phone photo upload",
       );
 
-      const sharpInput = looksLikeHeic(rawBuffer, file.filename, file.mimetype)
-        ? await convertHeicToJpeg(rawBuffer)
-        : rawBuffer;
-      const resized = await sharp(sharpInput)
-        .rotate()
-        .resize(MAX_PHOTO_DIMENSION_PX, MAX_PHOTO_DIMENSION_PX, { fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 85 })
-        .toBuffer();
+      const resized = await normalizePhonePhoto(rawBuffer, file.filename, file.mimetype);
       const imageBase64 = `data:image/jpeg;base64,${resized.toString("base64")}`;
 
       await markSessionUploaded(session.id);

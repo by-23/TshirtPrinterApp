@@ -6,6 +6,7 @@ import { snapshotCanvasJson } from "./applyGarmentClipToCanvas.js";
 import { syncPrintSizeFromCanvas } from "./printSize.js";
 import { applySelectionControlOverscan } from "./selectionControlOverscan.js";
 import { useEditorStore } from "./store.js";
+import { discardCanvasSession } from "./canvasSession.js";
 
 /**
  * Undo/redo history — a JSON snapshot stack **per print side**, so undoing on
@@ -167,9 +168,21 @@ export async function redoLastEntry(canvas: Canvas): Promise<void> {
   refreshFlags();
 }
 
-/** Called alongside `useEditorStore.getState().reset()` (see `CancelledNotice`/`AcceptedNotice`) so a new customer starts with clean undo history. */
+/** Called alongside `useEditorStore.getState().reset()` so a new customer starts with clean undo history. */
 export function resetAllHistory(): void {
   historyBySide.clear();
   currentJsonBySide.clear();
   useHistoryStore.setState({ canUndo: false, canRedo: false });
+}
+
+/** Checkout "Назад" keeps the current garment — session id stays the same. */
+export function keepEditorSession(): void {
+  // Snapshots stay; the live canvas may persist into the same session.
+}
+
+/** Clears garment options, canvas snapshots and undo stacks. */
+export function resetEditorSession(): void {
+  discardCanvasSession();
+  useEditorStore.getState().reset();
+  resetAllHistory();
 }

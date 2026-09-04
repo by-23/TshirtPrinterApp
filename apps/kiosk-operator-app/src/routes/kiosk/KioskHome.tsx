@@ -1,10 +1,17 @@
+import { useEffect } from "react";
 import { Banner } from "../../components/Banner.js";
 import { LanguageSwitcherSlot } from "../../components/KioskShell.js";
 import { CategoryGrid } from "../../components/CategoryGrid.js";
 import { CategorySelectBanner } from "../../components/CategorySelectBanner.js";
+import { resetEditorSession } from "../../editor/history.js";
+import { useCheckoutStore } from "../../lib/checkoutStore.js";
 import { homeThemeSection } from "./themeSectionsHome.js";
 
 export function KioskHome() {
+  useEffect(() => {
+    resetEditorSession();
+    useCheckoutStore.getState().reset();
+  }, []);
   return (
     <div
       // Background intentionally left transparent: KioskAmbientBackdrop

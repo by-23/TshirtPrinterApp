@@ -1,5 +1,4 @@
 import type { FastifyInstance } from "fastify";
-import sharp from "sharp";
 import { eq } from "drizzle-orm";
 import {
   stylizeRequestSchema,
@@ -31,7 +30,7 @@ import { testOpenAIApiKey } from "./testOpenAIApiKey.js";
 import { testGeminiApiKey } from "./testGeminiApiKey.js";
 import { createWifiUploadSession, isWifiUploadSessionUsable, consumeWifiUploadSession } from "./uploadSessions.js";
 import { renderUploadPage } from "./uploadPage.js";
-import { looksLikeHeic, convertHeicToJpeg } from "./heic.js";
+import { normalizePhonePhoto } from "./normalizePhoto.js";
 import { stylizeWithPollinations } from "./pollinations.js";
 import { stylizeWithOpenAI, isOpenAIConfigured } from "./openai.js";
 import { stylizeWithGemini, isGeminiConfigured } from "./gemini.js";
@@ -44,8 +43,6 @@ import {
 } from "./local/previewCache.js";
 
 const POINT_CONFIG_ROW_ID = 1;
-/** Longest side a phone photo is downscaled to before being emitted as base64 (wifi mode; relay mode is resized by central-relay instead). */
-const MAX_PHOTO_DIMENSION_PX = 1600;
 const RELAY_SESSION_TIMEOUT_MS = 10_000;
 
 /** Fail-open default matches `configRoutes`' `FAIL_OPEN_POINT_CONFIG` — a point that never synced yet behaves as `relay`. */
@@ -279,14 +276,7 @@ export async function aiRoutes(app: FastifyInstance) {
         "Received phone photo upload",
       );
 
-      const sharpInput = looksLikeHeic(rawBuffer, file.filename, file.mimetype)
-        ? await convertHeicToJpeg(rawBuffer)
-        : rawBuffer;
-      const resized = await sharp(sharpInput)
-        .rotate()
-        .resize(MAX_PHOTO_DIMENSION_PX, MAX_PHOTO_DIMENSION_PX, { fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 85 })
-        .toBuffer();
+      const resized = await normalizePhonePhoto(rawBuffer, file.filename, file.mimetype);
       const imageBase64 = `data:image/jpeg;base64,${resized.toString("base64")}`;
 
       consumeWifiUploadSession(request.params.sessionId);

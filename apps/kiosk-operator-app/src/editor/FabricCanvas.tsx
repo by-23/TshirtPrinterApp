@@ -21,7 +21,13 @@ import {
 } from "./selectionControlOverscan.js";
 import { useEditorStore } from "./store.js";
 import { syncPrintSizeFromCanvas } from "./printSize.js";
-import { initHistoryForSide, isHistorySuspended, recordHistoryEntry, setHistorySuspended } from "./history.js";
+import { getCanvasSessionId, isLiveCanvasSession } from "./canvasSession.js";
+import {
+  initHistoryForSide,
+  isHistorySuspended,
+  recordHistoryEntry,
+  setHistorySuspended,
+} from "./history.js";
 
 export interface FabricCanvasProps {
   side: GarmentSide;
@@ -47,6 +53,7 @@ export function FabricCanvas({
   const setHasSelection = useEditorStore((state) => state.setHasSelection);
   /** Tracks which side is currently loaded into the live canvas instance. */
   const loadedSideRef = useRef<GarmentSide>(side);
+  const sessionTokenRef = useRef(getCanvasSessionId());
 
   function syncViewportAndClip(canvas: Canvas, area: PrintAreaRect = printAreaRef.current) {
     const overscan = computeMockupControlOverscan(area);
@@ -65,6 +72,13 @@ export function FabricCanvas({
 
   useEffect(() => {
     if (!canvasElRef.current) return;
+
+    const sessionToken = getCanvasSessionId();
+    sessionTokenRef.current = sessionToken;
+    const persistSnapshot = (targetSide: GarmentSide, json: string) => {
+      if (!isLiveCanvasSession(sessionToken)) return;
+      useEditorStore.getState().setCanvasSnapshot(targetSide, json);
+    };
 
     configureCanvasSelectionStyle();
 
@@ -98,10 +112,10 @@ export function FabricCanvas({
     });
 
     function recomputePrintSize() {
-      if (isHistorySuspended()) return;
+      if (isHistorySuspended() || !isLiveCanvasSession(sessionToken)) return;
       const currentSide = loadedSideRef.current;
       syncPrintSizeFromCanvas(currentSide, canvas);
-      useEditorStore.getState().setCanvasSnapshot(currentSide, snapshotCanvasJson(canvas));
+      persistSnapshot(currentSide, snapshotCanvasJson(canvas));
     }
 
     canvas.on("object:added", (event) => {
@@ -127,7 +141,7 @@ export function FabricCanvas({
         syncViewportAndClip(canvas);
         applySelectionStyleToAllObjects(canvas);
         syncPrintSizeFromCanvas(loadedSideRef.current, canvas);
-        useEditorStore.getState().setCanvasSnapshot(loadedSideRef.current, snapshotCanvasJson(canvas));
+        persistSnapshot(loadedSideRef.current, snapshotCanvasJson(canvas));
         setHistorySuspended(false);
         initHistoryForSide(side, snapshotCanvasJson(canvas));
       });
@@ -137,9 +151,11 @@ export function FabricCanvas({
     }
 
     return () => {
+      setHistorySuspended(true);
+      canvas.off();
       uninstallControlsRenderer();
       clearGarmentClipFromCanvas(canvas);
-      useEditorStore.getState().setCanvasSnapshot(loadedSideRef.current, snapshotCanvasJson(canvas));
+      persistSnapshot(loadedSideRef.current, snapshotCanvasJson(canvas));
       canvasRef.current = null;
       onReady(null);
       void canvas.dispose();
@@ -164,7 +180,9 @@ export function FabricCanvas({
 
     const previousSide = loadedSideRef.current;
     syncPrintSizeFromCanvas(previousSide, canvas);
-    useEditorStore.getState().setCanvasSnapshot(previousSide, snapshotCanvasJson(canvas));
+    if (isLiveCanvasSession(sessionTokenRef.current)) {
+      useEditorStore.getState().setCanvasSnapshot(previousSide, snapshotCanvasJson(canvas));
+    }
     loadedSideRef.current = side;
 
     setHistorySuspended(true);
